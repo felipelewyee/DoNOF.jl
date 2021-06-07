@@ -93,6 +93,10 @@ function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
     J_MO,K_MO,H_core = integrals.JKH_MO_Full(C,H,I,p)
     #J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
 
+#    grad = pnof.calcg(gamma,J_MO,K_MO,H_core,p)
+#    println(grad)
+#    exit()
+
     if  !convgdelag && p.ndoc>0
 #        if p.gradient=="analytical"
 #            res = minimize(pnof.calce, gamma[:p.nv], args=(J_MO,K_MO,H_core,p), jac=pnof.calcg, method=p.optimizer)
@@ -100,7 +104,7 @@ function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
 #         res = optimize(pnof.calce, gamma,LBFGS())
 #            res = minimize(pnof.calce, gamma[:p.nv], args=(J_MO,K_MO,H_core,p),  method=p.optimizer)
          #res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
-	 res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
+	 res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma->pnof.calcg(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient(); inplace=false)
          gamma = Optim.minimizer(res)
     end
     n,dR = pnof.ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)

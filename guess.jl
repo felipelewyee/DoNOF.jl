@@ -1,7 +1,7 @@
 module guess
 
 function compute_gamma(p)
-    gamma = zeros(p.nbf5)
+    gamma = zeros(p.nv)
     for i in 1:p.ndoc
         gamma[i] = acos(sqrt(2.0*0.999-1.0))
         for j in 1:p.ncwo-1

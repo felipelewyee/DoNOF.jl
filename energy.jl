@@ -29,7 +29,7 @@ function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfi
 
     if printmode 
         println(" ")
-        @printf("PNOF%i Calculation",p.ipnof)
+        @printf("PNOF%i Calculation\n",p.ipnof)
         println("==================")
         println(" ")
         @printf("%s %s % s %s  %s %s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
