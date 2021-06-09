@@ -54,11 +54,21 @@ function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfi
         println(" ")
         println("RESULTS OF THE OCCUPATION OPTIMIZATION")
         println("========================================")
-        for i in 1:p.nbf5
-            @printf(" %3i    %9.7f  %10.8f",i,2*n[i],elag[i,i])
-            println(" ")
+        for i in 1:p.nbeta
+            @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
+        end
+        for i in p.nbeta+1:p.nalpha
+	    if p.MSpin==0
+                @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
+	    else
+                @printf(" %3i    %9.7f  %10.8f\n",i,n[i],elag[i,i])
+	    end
+        end
+        for i in p.nalpha+1:p.nbf5
+            @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
         end
 
+        println(" ")
         println("----------------")
         println(" Final Energies ")
         println("----------------")

@@ -46,7 +46,7 @@ function CJCKD7(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 
     if MSpin==0 && nsoc>1
 	n_beta_alpha = view(n,nbeta+1:nalpha)
-	ck12_beta_alpha = view(ck,nbeta+1:nalpha,nbeta+1:nalpha)
+	ck12_beta_alpha = view(ck12,nbeta+1:nalpha,nbeta+1:nalpha)
 	@tullio ck12_beta_alpha[i,j] = 2*n_beta_alpha[i]*n_beta_alpha[j]
         #ck12[nbeta:nalpha,nbeta:nalpha] = 2*np.outer(n[nbeta:nalpha],n[nbeta:nalpha])
     end

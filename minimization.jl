@@ -88,11 +88,11 @@ function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
     #J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
 
     if !convgdelag && p.ndoc>0
-        #if p.gradient=="analytical"
-	#   res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma->pnof.calcg(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient(); inplace=false)
-        #elseif p.gradient=="numerical"
+        if p.gradient=="analytical"
+            res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma->pnof.calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
+        elseif p.gradient=="numerical"
 	   res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
-	#end
+	end
         gamma = Optim.minimizer(res)
     end
     n,dR = pnof.ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
