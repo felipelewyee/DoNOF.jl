@@ -15,7 +15,7 @@ H  0.0000  -0.749  -0.453
   symmetry c1
 """)
 
-psi4.set_options(Dict("basis"=>"3-21G"))
+psi4.set_options(Dict("basis"=>"aug-cc-pVDZ"))
 
 wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option("basis"))
 

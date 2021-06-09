@@ -1,6 +1,7 @@
 module integrals
 
 using Tullio
+using LoopVectorization
 
 function JKj_Full(C,I,b_mnl,p)
 
