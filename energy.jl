@@ -32,7 +32,7 @@ function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfi
         @printf("PNOF%i Calculation\n",p.ipnof)
         println("==================")
         println(" ")
-        @printf("%s %s % s %s  %s %s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
+        @printf("  %6s  %6s %8s %13s %15s %16s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
     end
     for i_ext in 1:p.maxit
         #t1 = time()
@@ -55,7 +55,7 @@ function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfi
         println("RESULTS OF THE OCCUPATION OPTIMIZATION")
         println("========================================")
         for i in 1:p.nbf5
-            @printf(" %i    %9.7f  %10.8f",i,2*n[i],elag[i,i])
+            @printf(" %3i    %9.7f  %10.8f",i,2*n[i],elag[i,i])
             println(" ")
         end
 

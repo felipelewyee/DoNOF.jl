@@ -184,8 +184,30 @@ function Param(natoms,nbf,nalpha,nbeta,mul,Z_list)
     MSpin)
 end
 
+function set_ncwo(p,ncwo)
+    if p.ne==2
+        ncwo= -1
+    end
+    if p.ndns!=0
+        if p.ndoc>0
+            if ncwo!=1
+                if ncwo==-1 || ncwo > p.nvir/p.ndoc
+                    ncwo = trunc(Int,p.nvir/p.ndoc)
+		end
+	    end
+        else
+            ncwo = 0
+	end
+    end
 
+    p.ncwo = ncwo
 
+    p.nac = p.ndoc * (1 + ncwo)
+    p.nbf5 = p.no1 + p.nac + p.nsoc   #JFHLY warning: nbf must be >nbf5
+    p.no0 = p.nbf - p.nbf5
+    p.nv = p.ncwo*p.ndoc
+
+end
 
 end
 

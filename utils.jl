@@ -127,7 +127,6 @@ function computeE_elec(H,C,n,elag,p)
 
 function computeLagrangeConvergency(elag)
     # Convergency
-
     sumdiff = sum(abs.(elag-Transpose(elag)))
     maxdiff = maximum(abs.(elag-Transpose(elag)))
 

@@ -22,6 +22,7 @@ wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option("basis"))
 Z = [mol.Z(i-1) for i=1:mol.natom()]
 
 p = parameters.Param(mol.natom(),wfn.basisset().nbf(),wfn.nalpha(),wfn.nbeta(),mol.multiplicity(),Z)
+parameters.set_ncwo(p,2)
 
 # Integrador
 mints = psi4.core.MintsHelper(wfn.basisset())

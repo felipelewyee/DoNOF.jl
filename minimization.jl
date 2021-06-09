@@ -28,7 +28,7 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
         @printf("Hartree-Fock\n")
         @printf("============\n")
         @printf("\n")
-        @printf("%s %s % s %s  %s %s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
+        @printf("  %6s  %6s %8s %13s %15s %16s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
     end
 
     E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
@@ -53,16 +53,14 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
             end
             fmiug0, W = eigen(fmiug)
 	    @tullio Cnew[i,j] := C[i,k]*W[k,j]
-#            C = matmul(C,W)
             C = Cnew
             E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
             E_diff = E-E_old
             if(abs(E_diff)<p.thresheid)
                 if(printmode)
-                    @printf("%3i %3i %14.8f %14.8f %14.8f %14.8f \n",i_ext,maxlp,E,E+E_nuc,E_diff,maxdiff)
+                    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,maxlp,E,E+E_nuc,E_diff,maxdiff)
 		end
-#                    print('{:6d} {:6d} {:14.8f} {:14.8f} {:14.8f} {:14.8f}'.format(i_ext,i_int,E,E+E_nuc,E_diff,maxdiff))
 		fmiug0 = diag(elag)
                 ext = false
                 break
@@ -73,11 +71,8 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
             break
 	end
         if printmode
-            #println(i_ext,i_int,E,E_diff,maxdiff)
-            @printf("%3i %3i %14.8f %14.8f %14.8f %14.8f \n",i_ext,maxlp,E,E+E_nuc,E_diff,maxdiff)
-            #println(i_ext,i_int,E,E+E_nuc,E_diff,maxdiff)
+            @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,maxlp,E,E+E_nuc,E_diff,maxdiff)
         end
-#            print('{:6d} {:6d} {:14.8f} {:14.8f} {:14.8f} {:14.8f}'.format(i_ext,i_int,E,E+E_nuc,E_diff,maxdiff))
 
     end
     # Regresamos no1 a su estado original
@@ -89,26 +84,21 @@ end
 
 function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
 
-    #integrals.computeJKH_MO(C,H,I,b_mnl,p)
     J_MO,K_MO,H_core = integrals.JKH_MO_Full(C,H,I,p)
     #J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
 
-#    grad = pnof.calcg(gamma,J_MO,K_MO,H_core,p)
-#    println(grad)
-#    exit()
-
-    if  !convgdelag && p.ndoc>0
-#        if p.gradient=="analytical"
-#            res = minimize(pnof.calce, gamma[:p.nv], args=(J_MO,K_MO,H_core,p), jac=pnof.calcg, method=p.optimizer)
-#        elseif p.gradient=="numerical"
-#         res = optimize(pnof.calce, gamma,LBFGS())
-#            res = minimize(pnof.calce, gamma[:p.nv], args=(J_MO,K_MO,H_core,p),  method=p.optimizer)
-         #res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
-	 res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma->pnof.calcg(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient(); inplace=false)
-         gamma = Optim.minimizer(res)
+    if !convgdelag && p.ndoc>0
+        if p.gradient=="analytical"
+	   res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma->pnof.calcg(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient(); inplace=false)
+        elseif p.gradient=="numerical"
+	   res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
+	end
+        gamma = Optim.minimizer(res)
+	pnof.calcg(gamma,J_MO,K_MO,H_core,p)
     end
     n,dR = pnof.ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
     cj12,ck12 = pnof.PNOFi_selector(n,p)
+
     return gamma,n,cj12,ck12
 
 end
@@ -126,7 +116,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
     if maxdiff<p.threshl && abs(E_diff)<p.threshe
         convgdelag = true
         if printmode
-            @printf("%3i %3i %14.8f %14.8f %14.8f %14.8f \n",i_ext,0,E,E+E_nuc,E_diff,maxdiff)
+	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,0,E,E+E_nuc,E_diff,maxdiff)
 	end
         return convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag
     end
@@ -171,7 +161,6 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
 
 	@tullio Cnew[i,j] := C[i,k]*eigvec[k,j]
 	C = Cnew
-        #C = matmul(C,eigvec)
 
         E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
@@ -181,7 +170,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
             E_diff = E-E_old
             E_old = E
             if printmode
-                @printf("%3i %3i %14.8f %14.8f %14.8f %14.8f %i\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
+		@printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff)
 	    end
             break
         end
