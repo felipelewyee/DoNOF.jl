@@ -67,4 +67,15 @@ function JK_HF_Full(D,I,p)
 
     end
 
+function iajb_Full_jit(C,I,no1,nalpha,nbf,nbf5)
+
+    Cocc = view(C,:,no1+1:nalpha)
+    Ccwo = view(C,:,nalpha+1:nbf)
+
+    @tullio iajb[i,a,j,b] := Cocc[m,i]*Ccwo[n,a]*I[m,n,s,l]*Cocc[s,j]*Ccwo[l,b]
+
+    return iajb
+
+end
+
 end
