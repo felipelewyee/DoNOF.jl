@@ -253,19 +253,19 @@ function calce(gamma,J_MO,K_MO,H_core,p)
 
     E = 0
 
+    n_beta = view(n,1:p.nbeta)
+    n_alpha = view(n,p.nbeta+1:p.nalpha)
+    n_nbf5 = view(n,p.nalpha+1:p.nbf5)
+    H_beta = view(H_core,1:p.nbeta)
+    H_alpha= view(H_core,p.nbeta+1:p.nalpha)
+    H_nbf5 = view(H_core,p.nalpha+1:p.nbf5)
+    J_MO_beta = view(J_MO,1:p.nbeta,1:p.nbeta)
+    J_MO_nbf5 = view(J_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
     if p.MSpin==0
 
         # 2H + J
-	n_beta = view(n,1:p.nbeta)
-	n_alpha = view(n,p.nbeta+1:p.nalpha)
-	n_nbf5 = view(n,p.nalpha+1:p.nbf5)
-	H_beta = view(H_core,1:p.nbeta)
-	H_alpha= view(H_core,p.nbeta+1:p.nalpha)
-	H_nbf5 = view(H_core,p.nalpha+1:p.nbf5)
-	J_MO_beta = view(J_MO,1:p.nbeta,1:p.nbeta)
-	J_MO_nbf5 = view(J_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
-	@tullio E += n_beta[i]*(2*H_beta[i] + J_MO_beta[i,i])
 	#E = E + np.einsum('i,i',n[:p.nbeta],2*H_core[:p.nbeta]+np.diagonal(J_MO)[:p.nbeta],optimize=True) # [0,Nbeta]
+        @tullio E += n_beta[i]*(2*H_beta[i] + J_MO_beta[i,i])
 	@tullio E += n_alpha[i]*2*H_alpha[i]
         #E = E + np.einsum('i,i',n[p.nbeta:p.nalpha],2*H_core[p.nbeta:p.nalpha],optimize=True)               # (Nbeta,Nalpha]
 	@tullio E += n_nbf5[i]*(2*H_nbf5[i]+J_MO_nbf5[i,i])
@@ -283,36 +283,78 @@ function calce(gamma,J_MO,K_MO,H_core,p)
         #np.fill_diagonal(ck12,0) # Remove diag.
         #E = E - np.einsum('ij,ji->',ck12,K_MO,optimize=True) # sum_ij
 
-#    elif(not p.MSpin==0):
-#        E = 0
-#
-#        # 2H + J
+    elseif p.MSpin!=0
+
+        # 2H + J
+        @tullio E += n_beta[i]*(2*H_beta[i] + J_MO_beta[i,i])
 #        E = E + np.einsum('i,i',n[:p.nbeta],2*H_core[:p.nbeta]+np.diagonal(J_MO)[:p.nbeta],optimize=True) # [0,Nbeta]
+	@tullio E += n_alpha[i]*2*H_alpha[i]
 #        E = E + np.einsum('i,i',n[p.nbeta:p.nalpha],2*H_core[p.nbeta:p.nalpha],optimize=True)               # (Nbeta,Nalpha]
+	@tullio E += n_nbf5[i]*(2*H_nbf5[i]+J_MO_nbf5[i,i])
 #        E = E + np.einsum('i,i',n[p.nalpha:p.nbf5],2*H_core[p.nalpha:p.nbf5]+np.diagonal(J_MO)[p.nalpha:p.nbf5],optimize=True) # (Nalpha,Nbf5)
 #
 #        #C^J JMO
 #        np.fill_diagonal(cj12,0) # Remove diag.
+        cj12[diagind(cj12)] .= 0
+        cj12_beta_beta = view(cj12,1:p.nbeta,1:p.nbeta)
+        cj12_beta_nbf5 = view(cj12,1:p.nbeta,p.nalpha+1:p.nbf5)
+        cj12_nbf5_beta = view(cj12,p.nalpha+1:p.nbf5,1:p.nbeta)
+        cj12_nbf5_nbf5 = view(cj12,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        J_MO_beta_beta = view(J_MO,1:p.nbeta,1:p.nbeta)
+        J_MO_nbf5_beta = view(J_MO,p.nalpha+1:p.nbf5,1:p.nbeta)
+        J_MO_beta_nbf5 = view(J_MO,1:p.nbeta,p.nalpha+1:p.nbf5)
+        J_MO_nbf5_nbf5 = view(J_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        J_MO_alpha_beta = view(J_MO,p.nbeta+1:p.nalpha,1:p.nbeta)
+        J_MO_alpha_alpha = view(J_MO,p.nbeta+1:p.nalpha,p.nbeta+1:p.nalpha)
+        J_MO_alpha_nbf5 = view(J_MO,p.nbeta+1:p.nalpha,p.nalpha+1:p.nbf5)
+	@tullio E += cj12_beta_beta[i,j]*J_MO_beta_beta[j,i]
 #        E = E + np.einsum('ij,ji->',cj12[:p.nbeta,:p.nbeta],J_MO[:p.nbeta,:p.nbeta],optimize=True) # sum_ij
+	@tullio E += cj12_beta_nbf5[i,j]*J_MO_nbf5_beta[j,i]
 #        E = E + np.einsum('ij,ji->',cj12[:p.nbeta,p.nalpha:p.nbf5],J_MO[p.nalpha:p.nbf5,:p.nbeta],optimize=True) # sum_ij
+	@tullio E += cj12_nbf5_beta[i,j]*J_MO_beta_nbf5[j,i]
 #        E = E + np.einsum('ij,ji->',cj12[p.nalpha:p.nbf5,:p.nbeta],J_MO[:p.nbeta,p.nalpha:p.nbf5],optimize=True) # sum_ij
+	@tullio E += cj12_nbf5_nbf5[i,j]*J_MO_nbf5_nbf5[j,i]
 #        E = E + np.einsum('ij,ji->',cj12[p.nalpha:p.nbf5,p.nalpha:p.nbf5],J_MO[p.nalpha:p.nbf5,p.nalpha:p.nbf5],optimize=True) # sum_ij
 #
 #        #C^K KMO
 #        np.fill_diagonal(ck12,0) # Remove diag.
+        ck12[diagind(ck12)] .= 0
+        ck12_beta_beta = view(ck12,1:p.nbeta,1:p.nbeta)
+        ck12_beta_nbf5 = view(ck12,1:p.nbeta,p.nalpha+1:p.nbf5)
+        ck12_nbf5_beta = view(ck12,p.nalpha+1:p.nbf5,1:p.nbeta)
+        ck12_nbf5_nbf5 = view(ck12,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        K_MO_beta_beta = view(K_MO,1:p.nbeta,1:p.nbeta)
+        K_MO_nbf5_beta = view(K_MO,p.nalpha+1:p.nbf5,1:p.nbeta)
+        K_MO_beta_nbf5 = view(K_MO,1:p.nbeta,p.nalpha+1:p.nbf5)
+        K_MO_nbf5_nbf5 = view(K_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        K_MO_alpha_beta = view(K_MO,p.nbeta+1:p.nalpha,1:p.nbeta)
+        K_MO_alpha_alpha = view(K_MO,p.nbeta+1:p.nalpha,p.nbeta+1:p.nalpha)
+	K_MO_alpha_nbf5 = view(K_MO,p.nbeta+1:p.nalpha,p.nalpha+1:p.nbf5)
+	@tullio E += -ck12_beta_beta[i,j]*K_MO_beta_beta[j,i]
 #        E = E - np.einsum('ij,ji->',ck12[:p.nbeta,:p.nbeta],K_MO[:p.nbeta,:p.nbeta],optimize=True) # sum_ij
+	@tullio E += -ck12_beta_nbf5[i,j]*K_MO_nbf5_beta[j,i]
 #        E = E - np.einsum('ij,ji->',ck12[:p.nbeta,p.nalpha:p.nbf5],K_MO[p.nalpha:p.nbf5,:p.nbeta],optimize=True) # sum_ij
+	@tullio E += -ck12_nbf5_beta[i,j]*K_MO_beta_nbf5[j,i]
 #        E = E - np.einsum('ij,ji->',ck12[p.nalpha:p.nbf5,:p.nbeta],K_MO[:p.nbeta,p.nalpha:p.nbf5],optimize=True) # sum_ij
+	@tullio E += -ck12_nbf5_nbf5[i,j]*K_MO_nbf5_nbf5[j,i]
 #        E = E - np.einsum('ij,ji->',ck12[p.nalpha:p.nbf5,p.nalpha:p.nbf5],K_MO[p.nalpha:p.nbf5,p.nalpha:p.nbf5],optimize=True) # sum_ij
 #
 #        #n JMO
+	@tullio E += 2*n_beta[i]*J_MO_alpha_beta[j,i]
 #        E = E + 2*np.einsum('i,ji->',n[:p.nbeta],J_MO[p.nbeta:p.nalpha,:p.nbeta],optimize=True) # sum_ij
+	@tullio E += 2*n_nbf5[i]*J_MO_alpha_nbf5[j,i]
 #        E = E + 2*np.einsum('i,ji->',n[p.nalpha:p.nbf5],J_MO[p.nbeta:p.nalpha,p.nalpha:p.nbf5],optimize=True) # sum_ij
+	@tullio E += 0.5*n_alpha[i]*J_MO_alpha_alpha[j,i]
+	@tullio E += -0.5*n_alpha[i]*J_MO_alpha_alpha[i,i]
 #        E = E + 0.5*(np.einsum('i,ji->',n[p.nbeta:p.nalpha],J_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True) - np.einsum('i,ii->',n[p.nbeta:p.nalpha],J_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True))
 #
 #        #n KMO
+	@tullio E += -n_beta[i]*K_MO_alpha_beta[j,i]
 #        E = E - np.einsum('i,ji->',n[:p.nbeta],K_MO[p.nbeta:p.nalpha,:p.nbeta],optimize=True) # sum_ij
+	@tullio E += -n_nbf5[i]*K_MO_alpha_nbf5[j,i]
 #        E = E - np.einsum('i,ji->',n[p.nalpha:p.nbf5],K_MO[p.nbeta:p.nalpha,p.nalpha:p.nbf5],optimize=True) # sum_ij
+	@tullio E += -n_alpha[i]*K_MO_alpha_alpha[j,i]
+	@tullio E += n_alpha[i]*K_MO_alpha_alpha[i,i]
 #        E = E - np.einsum('i,ji->',n[p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True) - np.einsum('i,ii->',n[p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True)
     end
     return E
@@ -339,12 +381,6 @@ function calcg(gamma,J_MO,K_MO,H_core,p)
         #grad += np.einsum('ik,i->k',dn_dgamma[p.no1:p.nbeta,:p.nv],2*H_core[p.no1:p.nbeta]+np.diagonal(J_MO)[p.no1:p.nbeta],optimize=True) # [0,Nbeta]
 	@tullio grad[k] += dn_dgamma_nbf5[i,k]*2*H_core_nbf5[i]# + J_MO_nbf5[i,i])
 	@tullio grad[k] += dn_dgamma_nbf5[i,k]*J_MO_nbf5[i,i]
-	#println("1",gradf)
-	#@tullio grad1[k] := dn_dgamma_nbf5[i,k]*(2*H_core_nbf5[i])
-	#println("2",grad1)
-	#@tullio grad1[k] += dn_dgamma_nbf5[i,k]*(J_MO_nbf5[i,i])
-	#println("3",grad1)
-        #grad += np.einsum('ik,i->k',dn_dgamma[p.nalpha:p.nbf5,:p.nv],2*H_core[p.nalpha:p.nbf5]+np.diagonal(J_MO)[p.nalpha:p.nbf5],optimize=True) # [Nalpha,Nbf5]
 
         # 2 dCJ_dgamma J_MO
         #diag = np.diag_indices(p.nbf5)
@@ -382,13 +418,41 @@ function calcg(gamma,J_MO,K_MO,H_core,p)
 	@tullio grad[k] += -2*Dck12r_nbf5[i,j,k]*K_MO_nbf5[j,i]
         #grad -= 2*np.einsum('ijk,ji->k',Dck12r[p.nalpha:p.nbf5,:p.nbf5,:p.nv],K_MO[:p.nbf5,p.nalpha:p.nbf5],optimize=True)
 
-#    elif !p.MSpin==0
+    elseif p.MSpin!=0
 #
 #        # dn_dgamma (2H+J)
+        dn_dgamma_beta = view(dn_dgamma,p.no1+1:p.nbeta,1:p.nv)
+        dn_dgamma_nbf5 = view(dn_dgamma,p.nalpha+1:p.nbf5,1:p.nv)
+        H_core_beta = view(H_core,p.no1+1:p.nbeta)
+        H_core_nbf5 = view(H_core,p.nalpha+1:p.nbf5)
+        J_MO_beta = view(J_MO,p.no1+1:p.nbeta,p.no1+1:p.nbeta)
+        J_MO_nbf5 = view(J_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        @tullio grad[k] += dn_dgamma_beta[i,k]*2*H_core_beta[i]# + J_MO_beta[i,i])
+        @tullio grad[k] += dn_dgamma_beta[i,k]*J_MO_beta[i,i]
+        #grad += np.einsum('ik,i->k',dn_dgamma[p.no1:p.nbeta,:p.nv],2*H_core[p.no1:p.nbeta]+np.diagonal(J_MO)[p.no1:p.nbeta],optimize=True) # [0,Nbeta]
+        @tullio grad[k] += dn_dgamma_nbf5[i,k]*2*H_core_nbf5[i]# + J_MO_nbf5[i,i])
+        @tullio grad[k] += dn_dgamma_nbf5[i,k]*J_MO_nbf5[i,i]
 #        grad += np.einsum('ik,i->k',dn_dgamma[p.no1:p.nbeta,:p.nv],2*H_core[p.no1:p.nbeta]+np.diagonal(J_MO)[p.no1:p.nbeta],optimize=True) # [0,Nbeta]
 #        grad += np.einsum('ik,i->k',dn_dgamma[p.nalpha:p.nbf5,:p.nv],2*H_core[p.nalpha:p.nbf5]+np.diagonal(J_MO)[p.nalpha:p.nbf5],optimize=True) # [Nalpha,Nbf5]
 #
 #        # 2 dCJ_dgamma J_MO
+        for i in 1:p.nv
+            for j in 1:p.nbf5
+                Dcj12r[j,j,i] = 0
+            end
+        end
+        Dcj12r_beta_beta = view(Dcj12r,p.no1+1:p.nbeta,1:p.nbeta,1:p.nv)
+        Dcj12r_nbf5_beta = view(Dcj12r,p.nalpha+1:p.nbf5,1:p.nbeta,1:p.nv)
+        Dcj12r_beta_nbf5 = view(Dcj12r,p.no1+1:p.nbeta,p.nalpha+1:p.nbf5,1:p.nv)
+        Dcj12r_nbf5_nbf5 = view(Dcj12r,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5,1:p.nv)
+        J_MO_beta_beta = view(J_MO,1:p.nbeta,p.no1+1:p.nbeta)
+        J_MO_beta_nbf5 = view(J_MO,1:p.nbeta,p.nalpha+1:p.nbf5)
+        J_MO_nbf5_beta = view(J_MO,p.nalpha+1:p.nbf5,p.no1+1:p.nbeta)
+        J_MO_nbf5_nbf5 = view(J_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        @tullio grad[k] += 2*Dcj12r_beta_beta[i,j,k]*J_MO_beta_beta[j,i]
+        @tullio grad[k] += 2*Dcj12r_beta_nbf5[i,j,k]*J_MO_nbf5_beta[j,i]
+        @tullio grad[k] += 2*Dcj12r_nbf5_beta[i,j,k]*J_MO_beta_nbf5[j,i]
+        @tullio grad[k] += 2*Dcj12r_nbf5_nbf5[i,j,k]*J_MO_nbf5_nbf5[j,i]
 #        Dcj12r[np.diag_indices(p.nbf5)] = 0
 #        grad += 2*np.einsum('ijk,ji->k',Dcj12r[p.no1:p.nbeta,:p.nbeta,:p.nv],J_MO[:p.nbeta,p.no1:p.nbeta],optimize=True)
 #        grad += 2*np.einsum('ijk,ji->k',Dcj12r[p.no1:p.nbeta,p.nalpha:p.nbf5,:p.nv],J_MO[p.nalpha:p.nbf5,p.no1:p.nbeta],optimize=True)
@@ -396,17 +460,45 @@ function calcg(gamma,J_MO,K_MO,H_core,p)
 #        grad += 2*np.einsum('ijk,ji->k',Dcj12r[p.nalpha:p.nbf5,p.nalpha:p.nbf5,:p.nv],J_MO[p.nalpha:p.nbf5,p.nalpha:p.nbf5],optimize=True)
 #
 #        # -2 dCK_dgamma K_MO
+        for i in 1:p.nv
+            for j in 1:p.nbf5
+                Dck12r[j,j,i] = 0
+            end
+        end
+        Dck12r_beta_beta = view(Dck12r,p.no1+1:p.nbeta,1:p.nbeta,1:p.nv)
+        Dck12r_nbf5_beta = view(Dck12r,p.nalpha+1:p.nbf5,1:p.nbeta,1:p.nv)
+        Dck12r_beta_nbf5 = view(Dck12r,p.no1+1:p.nbeta,p.nalpha+1:p.nbf5,1:p.nv)
+        Dck12r_nbf5_nbf5 = view(Dck12r,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5,1:p.nv)
+        K_MO_beta_beta = view(K_MO,1:p.nbeta,p.no1+1:p.nbeta)
+        K_MO_beta_nbf5 = view(K_MO,1:p.nbeta,p.nalpha+1:p.nbf5)
+        K_MO_nbf5_beta = view(K_MO,p.nalpha+1:p.nbf5,p.no1+1:p.nbeta)
+        K_MO_nbf5_nbf5 = view(K_MO,p.nalpha+1:p.nbf5,p.nalpha+1:p.nbf5)
+        @tullio grad[k] += -2*Dck12r_beta_beta[i,j,k]*K_MO_beta_beta[j,i]
+        @tullio grad[k] += -2*Dck12r_beta_nbf5[i,j,k]*K_MO_nbf5_beta[j,i]
+        @tullio grad[k] += -2*Dck12r_nbf5_beta[i,j,k]*K_MO_beta_nbf5[j,i]
+        @tullio grad[k] += -2*Dck12r_nbf5_nbf5[i,j,k]*K_MO_nbf5_nbf5[j,i]
 #        Dck12r[np.diag_indices(p.nbf5)] = 0
 #        grad -= 2*np.einsum('ijk,ji->k',Dck12r[p.no1:p.nbeta,:p.nbeta,:p.nv],K_MO[:p.nbeta,p.no1:p.nbeta],optimize=True)
 #        grad -= 2*np.einsum('ijk,ji->k',Dck12r[p.no1:p.nbeta,p.nalpha:p.nbf5,:p.nv],K_MO[p.nalpha:p.nbf5,p.no1:p.nbeta],optimize=True)
 #        grad -= 2*np.einsum('ijk,ji->k',Dck12r[p.nalpha:p.nbf5,:p.nbeta,:p.nv],K_MO[:p.nbeta,p.nalpha:p.nbf5],optimize=True)
 #        grad -= 2*np.einsum('ijk,ji->k',Dck12r[p.nalpha:p.nbf5,p.nalpha:p.nbf5,:p.nv],K_MO[p.nalpha:p.nbf5,p.nalpha:p.nbf5],optimize=True)
 #
+#
 #        # 2 dn_dgamma J_MO
+        dn_dgamma_beta = view(dn_dgamma,p.no1+1:p.nbeta,1:p.nv)
+        dn_dgamma_nbf5 = view(dn_dgamma,p.nalpha+1:p.nbf5,1:p.nv)
+	J_MO_alpha_beta = view(J_MO,p.nbeta+1:p.nalpha,p.no1+1:p.nbeta)
+	J_MO_alpha_nbf5 = view(J_MO,p.nbeta+1:p.nalpha,p.nalpha+1:p.nbf5)
+	@tullio grad[k] += 2*dn_dgamma_beta[j,k]*J_MO_alpha_beta[i,j]
+	@tullio grad[k] += 2*dn_dgamma_nbf5[j,k]*J_MO_alpha_nbf5[i,j]
 #        grad += 2*np.einsum('jk,ij->k',dn_dgamma[p.no1:p.nbeta,:p.nv],J_MO[p.nbeta:p.nalpha,p.no1:p.nbeta],optimize=True)
 #        grad += 2*np.einsum('jk,ij->k',dn_dgamma[p.nalpha:p.nbf5,:p.nv],J_MO[p.nbeta:p.nalpha,p.nalpha:p.nbf5],optimize=True)
 #
 #        # - dn_dgamma K_MO
+	K_MO_alpha_beta = view(K_MO,p.nbeta+1:p.nalpha,p.no1+1:p.nbeta)
+	K_MO_alpha_nbf5 = view(K_MO,p.nbeta+1:p.nalpha,p.nalpha+1:p.nbf5)
+	@tullio grad[k] += -dn_dgamma_beta[j,k]*K_MO_alpha_beta[i,j]
+	@tullio grad[k] += -dn_dgamma_nbf5[j,k]*K_MO_alpha_nbf5[i,j]
 #        grad -= np.einsum('jk,ij->k',dn_dgamma[p.no1:p.nbeta,:p.nv],K_MO[p.nbeta:p.nalpha,p.no1:p.nbeta],optimize=True)
 #        grad -= np.einsum('jk,ij->k',dn_dgamma[p.nalpha:p.nbf5,:p.nv],K_MO[p.nbeta:p.nalpha,p.nalpha:p.nbf5],optimize=True)
     end
