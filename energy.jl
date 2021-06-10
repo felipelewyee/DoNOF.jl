@@ -4,6 +4,7 @@ using Printf
 
 include("minimization.jl")
 include("guess.jl")
+include("postpnof.jl")
 
 function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfidr=true,printmode=true)
 
@@ -83,7 +84,8 @@ function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfi
         println(" ")
         println(" ")
     end
-
+    
+    postpnof.nofmp2(n,C,H,I,b_mnl,E_nuc,p)
 end
 
 end

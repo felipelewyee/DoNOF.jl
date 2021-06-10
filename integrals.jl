@@ -40,4 +40,31 @@ function JKH_MO_Full(C,H,I,p)
     return J_MO,K_MO,H_core
 end
 
+function computeD_HF(C,I,b_mnl,p)
+
+    Cbeta = view(C,:,1:p.nbeta)
+
+    @tullio D[m,n] := Cbeta[m,j]*Cbeta[n,j]
+
+    return D
+end
+
+function computeDalpha_HF(C,I,b_mnl,p)
+
+    Calpha = view(C,:,p.nbeta+1:p.nalpha)
+    @tullio D[m,n] := Calpha[m,j]*Calpha[n,j]
+
+    return D
+end
+
+function JK_HF_Full(D,I,p)
+
+    #denmatj
+    @tullio J[m,n] := D[l,s]*I[m,n,s,l]
+    @tullio K[m,s] := D[n,l]*I[m,n,s,l]
+
+    return J,K
+
+    end
+
 end
