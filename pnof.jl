@@ -1,7 +1,6 @@
 module pnof
 
 using Tullio
-using TensorOperations
 using LinearAlgebra
 
 function PNOFi_selector(n,p)

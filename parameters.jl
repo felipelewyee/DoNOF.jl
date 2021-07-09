@@ -49,13 +49,20 @@ mutable struct Param
     
 end
 
-function Param(natoms,nbf,nalpha,nbeta,mul,Z_list)
+#function Param(natoms,nbf,nalpha,nbeta,mul,Z_list)
+function Param(mol,wfn)
+    natoms = mol.natom()
+    nbf = wfn.basisset().nbf()
+    nalpha = wfn.nalpha()
+    nbeta = wfn.nbeta()
+    mul = mol.multiplicity()
    
     nbfaux = 0	
     ne = nalpha + nbeta
     no1 = 0
     for i in 1:natoms
-	Z = Z_list[i]
+	#Z = Z_list[i]
+        Z = mol.Z(i-1)
         if 1<=Z && Z<=  2
             no1 += 0           # H-He
         elseif 3<=Z && Z<= 10

@@ -84,8 +84,7 @@ end
 
 function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
 
-    J_MO,K_MO,H_core = integrals.JKH_MO_Full(C,H,I,p)
-    #J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
+    J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
 
     if !convgdelag && p.ndoc>0
         if p.gradient=="analytical"

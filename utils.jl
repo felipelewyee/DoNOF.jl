@@ -7,8 +7,7 @@ include("integrals.jl")
 
 function ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
-    #J,K = integrals.computeJKj(C,I,b_mnl,p)
-    J,K = integrals.JKj_Full(C,I,b_mnl,p)
+    J,K = integrals.computeJKj(C,I,b_mnl,p)
     
     if p.MSpin==0
         #F = computeF_RC_driver(J,K,n,H,cj12,ck12,p)

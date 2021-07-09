@@ -3,10 +3,30 @@ using LinearAlgebra
 using Printf
 
 include("minimization.jl")
+include("integrals.jl")
 include("guess.jl")
 include("postpnof.jl")
 
-function compute_energy(S,T,V,H,I,b_mnl,E_nuc,p;fmiug0=nothing,gamma=nothing,hfidr=true,printmode=true)
+function compute_energy(wfn,mol,p;fmiug0=nothing,gamma=nothing,hfidr=true,printmode=true)
+
+    S,T,V,H,I,b_mnl = integrals.compute_integrals(wfn,mol,p)
+
+    if(printmode)
+        println("Number of basis functions                   (NBF)    = ",p.nbf)
+        if(p.RI)
+            println("Number of auxiliary basis functions         (NBFAUX) = ",p.nbfaux)
+	end
+        println("Inactive Doubly occupied orbitals up to     (NO1)    = ",p.no1)
+        println("No. considered Strongly Doubly occupied MOs (NDOC)   = ",p.ndoc)
+        println("No. considered Strongly Singly occupied MOs (NSOC)   = ",p.nsoc)
+        println("NO. of Weakly occ. per St. Doubly occ.  MOs (NCWO)   = ",p.ncwo)
+        println("Dimension of the Nat. Orb. subspace         (NBF5)   = ",p.nbf5)
+        println("No. of electrons                                     = ",p.ne)
+        println("Multiplicity                                         = ",p.mul)
+        println("")
+    end
+
+    E_nuc = mol.nuclear_repulsion_energy()
 
     Ei,C = eigen(H, S)
 

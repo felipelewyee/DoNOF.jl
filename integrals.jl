@@ -2,10 +2,86 @@ module integrals
 
 using Tullio
 using LoopVectorization
+using PyCall
+using CUDA, CUDAKernels, KernelAbstractions # Now defined with a GPU version:
 
-function JKj_Full(C,I,b_mnl,p)
+function compute_integrals(wfn,mol,p)
 
-    Cnbf5 = view(C,:,1:p.nbf5)
+    psi4 = pyimport_conda("psi4", "psi4")
+    np = pyimport_conda("numpy","psi4")
+
+    # Integrador
+    mints = psi4.core.MintsHelper(wfn.basisset())
+    
+    # Overlap, Kinetics, Potential
+    S = copy(np.asarray(mints.ao_overlap()))
+    T = copy(np.asarray(mints.ao_kinetic()))
+    V = copy(np.asarray(mints.ao_potential()))
+    H = T + V
+    I = []
+    b_mnl = []
+    if (!p.RI)
+        # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
+        I = copy(np.asarray(mints.ao_eri()))
+    else
+    
+        orb = wfn.basisset()
+        aux = psi4.core.BasisSet.build(mol, "DF_BASIS_SCF", "", "JKFIT", orb.blend())
+        zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
+    
+        Ppq = mints.ao_eri(orb, orb, aux, zero_bas)
+    
+        metric = mints.ao_eri(aux, zero_bas, aux, zero_bas)
+        metric.power(-0.5, 1.e-14)
+        p.nbfaux = metric.shape[1]
+    
+        Ppq = copy(np.squeeze(Ppq))
+        metric = copy(np.squeeze(metric))
+    
+        @tullio b_mnl[p,q,Q] := Ppq[p,q,P]*metric[P,Q]
+    end
+
+    if(p.gpu)
+        if (!p.RI)
+            I = cu(I)
+        else
+            b_mnl = cu(b_mnl)
+        end
+    end
+
+    return S,T,V,H,I,b_mnl
+
+end
+
+
+######################################### J_mn^(j) K_mn^(j) #########################################
+
+function computeJKj(C,I,b_mnl,p)
+
+    if(p.gpu)
+        if(p.RI)
+            J,K = JKj_RI(cu(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+        else
+            J,K = JKj_Full(cu(C),I,p.nbf,p.nbf5)
+        end
+        return Array(J),Array(K)
+    else
+        if(p.RI)
+            J,K = JKj_RI(C,b_mnl,p.nbf,p.nbf5,p.nbfaux)
+        else
+            J,K = JKj_Full(C,I,p.nbf,p.nbf5)
+        end
+        return J,K
+    end
+
+end
+
+#########################################
+
+
+function JKj_Full(C,I,nbf,nbf5)
+
+    Cnbf5 = view(C,:,1:nbf5)
     
     @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
     @tullio J[i,m,n] := D[i,s,l]*I[m,n,s,l]
@@ -15,11 +91,77 @@ function JKj_Full(C,I,b_mnl,p)
 
 end
 
-function JKH_MO_Full(C,H,I,p)
+function JKj_RI(C,b_mnl,nbf,nbf5,nbfaux)
+
+    Cnbf5 = view(C,:,1:nbf5)
+    
+    #Cnbf5 = cu(Cnbf5)
+    #b_transform
+    @tullio b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
+    @tullio b_qql[q,l] := Cnbf5[n,q]*b_qnl[q,n,l]
+    #hstarj
+    @tullio J[q,m,n] := b_qql[q,l]*b_mnl[m,n,l]
+    #hstark
+    @tullio K[q,m,n] := b_qnl[q,m,l]*b_qnl[q,n,l]
+
+    return J,K
+
+end
+
+######################################### J_pq K_pq #########################################
+
+function computeJKH_MO(C,H,I,b_mnl,p)
+
+    if(p.gpu)
+        if(p.RI)
+            J_MO,K_MO,H_core = JKH_MO_RI(cu(C),cu(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+        else
+            J_MO,K_MO,H_core = JKH_MO_Full(cu(C),cu(H),I,p.nbf,p.nbf5)
+        end
+        return Array(J_MO),Array(K_MO),Array(H_core)
+     else
+        if(p.RI)
+             J_MO,K_MO,H_core = JKH_MO_RI(C,H,b_mnl,p.nbf,p.nbf5,p.nbfaux)
+         else
+             J_MO,K_MO,H_core = JKH_MO_Full(C,H,I,p.nbf,p.nbf5)
+         end
+         return J_MO,K_MO,H_core
+      end
+
+end
+
+#########################################
+
+function JKH_MO_RI(C,H,b_mnl,nbf,nbf5,nbfaux)
+
+    Cnbf5 = view(C,:,1:nbf5)
+
+    #denmatj
+    #D = np.einsum('mi,ni->imn', C[:,0:p.nbf5], C[:,0:p.nbf5],optimize=True)
+    @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
+    #b transform
+    @tullio b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
+    @tullio b_pql[p,q,l] := Cnbf5[n,q] * b_pnl[p,n,l]
+    #b_pnl = np.tensordot(C[:,0:p.nbf5],b_mnl, axes=([0],[0]))
+    #b_pql = np.einsum('nq,pnl->pql',C[:,0:p.nbf5],b_pnl, optimize=True)
+    #QJMATm
+    #J_MO = np.einsum('ppl,qql->pq', b_pql, b_pql, optimize=True)
+    @tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
+    #QKMATm
+    #K_MO = np.einsum('pql,pql->pq', b_pql, b_pql, optimize=True)
+    @tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
+    #QHMATm
+    #H_core = np.tensordot(D,H, axes=([1,2],[0,1]))
+    @tullio H_core[i] := D[i,m,n]*H[m,n]
+
+    return J_MO,K_MO,H_core
+end
+
+function JKH_MO_Full(C,H,I,nbf,nbf5)
 
     #denmatj
 
-    Cnbf5 = view(C,:,1:p.nbf5)
+    Cnbf5 = view(C,:,1:nbf5)
 
     @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
     #D = np.einsum('mi,ni->imn', C[:,0:p.nbf5], C[:,0:p.nbf5],optimize=True)
