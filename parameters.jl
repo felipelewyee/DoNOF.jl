@@ -127,7 +127,7 @@ function Param(mol,wfn)
     scaling = true     # Scaling for f
     nzeros = 1
     nzerosm = 5
-    nzerosr = 2
+    nzerosr = 0
     itziter = 10        # Iteraciones para scaling constante
     diis = true         # DIIS en optimización orbital
     thdiis = 10^-3     # Para iniciar DIIS

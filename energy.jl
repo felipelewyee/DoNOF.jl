@@ -7,7 +7,7 @@ include("integrals.jl")
 include("guess.jl")
 include("postpnof.jl")
 
-function compute_energy(wfn,mol,p;fmiug0=nothing,gamma=nothing,hfidr=true,printmode=true)
+function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=true,nofmp2=false,printmode=true)
 
     S,T,V,H,I,b_mnl = integrals.compute_integrals(wfn,mol,p)
 
@@ -28,10 +28,17 @@ function compute_energy(wfn,mol,p;fmiug0=nothing,gamma=nothing,hfidr=true,printm
 
     E_nuc = mol.nuclear_repulsion_energy()
 
-    Ei,C = eigen(H, S)
+    Cguess = C
+    if C==nothing
+        Ei,Cguess = eigen(H, S)
+    end
 
     if hfidr
-        EHF,Cguess,fmiug0guess = minimization.hfidr(C,H,I,b_mnl,E_nuc,p)
+        EHF,Cguess,fmiug0guess = minimization.hfidr(Cguess,H,I,b_mnl,E_nuc,p)
+    end
+
+    if C==nothing
+        C = Cguess
     end
 
     if gamma==nothing
@@ -104,8 +111,10 @@ function compute_energy(wfn,mol,p;fmiug0=nothing,gamma=nothing,hfidr=true,printm
         println(" ")
         println(" ")
     end
-    
-    postpnof.nofmp2(n,C,H,I,b_mnl,E_nuc,p)
+
+    if nofmp2
+        postpnof.nofmp2(n,C,H,I,b_mnl,E_nuc,p)
+    end
 end
 
 end

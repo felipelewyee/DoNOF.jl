@@ -125,7 +125,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
         #if p.nzeros>p.nzerosm
         #    p.nzeros = p.nzerosr
         if p.nzeros>abs(trunc(Int,log10(maxdiff)))+1
-            p.nzeros = abs(trunc(Int,log10(maxdiff)))
+            p.nzeros = p.nzerosr#abs(trunc(Int,log10(maxdiff)))
 	end
     end
     sumdiff_old = sumdiff

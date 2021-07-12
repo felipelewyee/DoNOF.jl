@@ -78,7 +78,6 @@ end
 
 #########################################
 
-
 function JKj_Full(C,I,nbf,nbf5)
 
     Cnbf5 = view(C,:,1:nbf5)
@@ -95,12 +94,13 @@ function JKj_RI(C,b_mnl,nbf,nbf5,nbfaux)
 
     Cnbf5 = view(C,:,1:nbf5)
     
-    #Cnbf5 = cu(Cnbf5)
     #b_transform
     @tullio b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
     @tullio b_qql[q,l] := Cnbf5[n,q]*b_qnl[q,n,l]
+
     #hstarj
     @tullio J[q,m,n] := b_qql[q,l]*b_mnl[m,n,l]
+
     #hstark
     @tullio K[q,m,n] := b_qnl[q,m,l]*b_qnl[q,n,l]
 
@@ -137,21 +137,19 @@ function JKH_MO_RI(C,H,b_mnl,nbf,nbf5,nbfaux)
     Cnbf5 = view(C,:,1:nbf5)
 
     #denmatj
-    #D = np.einsum('mi,ni->imn', C[:,0:p.nbf5], C[:,0:p.nbf5],optimize=True)
     @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
+
     #b transform
     @tullio b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
     @tullio b_pql[p,q,l] := Cnbf5[n,q] * b_pnl[p,n,l]
-    #b_pnl = np.tensordot(C[:,0:p.nbf5],b_mnl, axes=([0],[0]))
-    #b_pql = np.einsum('nq,pnl->pql',C[:,0:p.nbf5],b_pnl, optimize=True)
+
     #QJMATm
-    #J_MO = np.einsum('ppl,qql->pq', b_pql, b_pql, optimize=True)
     @tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
+
     #QKMATm
-    #K_MO = np.einsum('pql,pql->pq', b_pql, b_pql, optimize=True)
     @tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
+
     #QHMATm
-    #H_core = np.tensordot(D,H, axes=([1,2],[0,1]))
     @tullio H_core[i] := D[i,m,n]*H[m,n]
 
     return J_MO,K_MO,H_core
@@ -159,25 +157,22 @@ end
 
 function JKH_MO_Full(C,H,I,nbf,nbf5)
 
-    #denmatj
 
     Cnbf5 = view(C,:,1:nbf5)
 
+    #denmatj
     @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
-    #D = np.einsum('mi,ni->imn', C[:,0:p.nbf5], C[:,0:p.nbf5],optimize=True)
+
     #QJMATm
     @tullio J[j,m,n] := D[j,s,l]*I[m,n,s,l]
-    #J = np.tensordot(D, I, axes=([1,2],[2,3]))
     @tullio J_MO[i,j] := D[i,m,n]*J[j,m,n]
-    #J_MO = np.tensordot(J, D,axes=((1,2),(1,2)))
+
     #QKMATm
     @tullio K[j,m,s] := D[j,n,l]*I[m,n,s,l]
-    #K = np.tensordot(D, I, axes=([1,2],[1,3]))
     @tullio K_MO[i,j] := D[i,m,s]*K[j,m,s]
-    #K_MO = np.tensordot(K, D, axes=([1,2],[1,2]))
+
     #QHMATm
     @tullio H_core[i] := D[i,m,n]*H[m,n]
-    #H_core = np.tensordot(D, H, axes=([1,2],[0,1]))
 
     return J_MO,K_MO,H_core
 end
