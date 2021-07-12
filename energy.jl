@@ -29,7 +29,7 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
     E_nuc = mol.nuclear_repulsion_energy()
 
     Cguess = C
-    if C==nothing
+    if isnothing(C)
         Ei,Cguess = eigen(H, S)
     end
 
@@ -37,11 +37,11 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
         EHF,Cguess,fmiug0guess = minimization.hfidr(Cguess,H,I,b_mnl,E_nuc,p)
     end
 
-    if C==nothing
+    if isnothing(C)
         C = Cguess
     end
 
-    if gamma==nothing
+    if isnothing(gamma)
         gamma = guess.compute_gamma(p)
     end
 

@@ -241,7 +241,7 @@ function fmiug_scaling(fmiug0,elag,i_ext,nzeros,nbf,noptorb)
     #scaling
     fmiug = zeros(nbf,nbf)
     fmiug_noptorb_noptorb = view(fmiug,1:noptorb,1:noptorb)
-    if i_ext == 1 && fmiug0==nothing
+    if i_ext == 1 && isnothing(fmiug0)
 	@tullio fmiug[i,j] = (elag[i,j] + elag[j,i])/2
 #        fmiug[:noptorb,:noptorb] = ((elag[:noptorb,:noptorb] + elag[:noptorb,:noptorb].T) / 2)
     else
