@@ -1,14 +1,3 @@
-module minimization
-
-using Tullio
-using Printf
-using LinearAlgebra
-using Optim
-
-include("utils.jl")
-include("pnof.jl")
-include("integrals.jl")
-
 function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
 
     no1_ori = p.no1
@@ -31,7 +20,7 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
         @printf("  %6s  %6s %8s %13s %15s %16s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
     end
 
-    E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+    E,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
     fmiug0 = nothing
 
     ext = true
@@ -49,12 +38,12 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
             E_old = E
 
             if p.scaling
-                fmiug = utils.fmiug_scaling(fmiug0,elag,i_ext,p.nzeros,p.nbf,p.noptorb)
+                fmiug = fmiug_scaling(fmiug0,elag,i_ext,p.nzeros,p.nbf,p.noptorb)
             end
             fmiug0, W = eigen(fmiug)
 	    @tullio Cnew[i,j] := C[i,k]*W[k,j]
             C = Cnew
-            E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+            E,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
             E_diff = E-E_old
             if(abs(E_diff)<p.thresheid)
@@ -84,18 +73,18 @@ end
 
 function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
 
-    J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
+    J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
 
     if !convgdelag && p.ndoc>0
         if p.gradient=="analytical"
-            res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma->pnof.calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
+            res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma->calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
         elseif p.gradient=="numerical"
-	   res = optimize(gamma->pnof.calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
+	   res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
 	end
         gamma = Optim.minimizer(res)
     end
-    n,dR = pnof.ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
-    cj12,ck12 = pnof.PNOFi_selector(n,p)
+    n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    cj12,ck12 = PNOFi_selector(n,p)
 
     return gamma,n,cj12,ck12
 
@@ -105,7 +94,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
 
     convgdelag = false
 
-    E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+    E,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
     #E_diff = E-E_old
     #P_CONV = abs(E_diff)
@@ -149,10 +138,10 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
 
         #scaling
         if p.scaling
-            fmiug = utils.fmiug_scaling(fmiug0,elag,i_ext,p.nzeros,p.nbf,p.noptorb)
+            fmiug = fmiug_scaling(fmiug0,elag,i_ext,p.nzeros,p.nbf,p.noptorb)
 	end
         if p.diis && maxdiff < p.thdiis
-            fk,fmiug,idiis,bdiis = utils.fmiug_diis(fk,fmiug,idiis,bdiis,cdiis,maxdiff,p)
+            fk,fmiug,idiis,bdiis = fmiug_diis(fk,fmiug,idiis,bdiis,cdiis,maxdiff,p)
         end
         eigval, eigvec = eigen(fmiug)
         fmiug0 = eigval
@@ -160,7 +149,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
 	@tullio Cnew[i,j] := C[i,k]*eigvec[k,j]
 	C = Cnew
 
-        E,elag,sumdiff,maxdiff = utils.ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+        E,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
         E_diff2 = E-E_old2
 
@@ -174,6 +163,4 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
         end
     end
     return convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag
-end
-
 end

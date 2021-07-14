@@ -1,5 +1,4 @@
-module parameters
-export Param
+#export Param
 
 mutable struct Param
     natoms::Int64
@@ -215,8 +214,3 @@ function set_ncwo(p,ncwo)
     p.nv = p.ncwo*p.ndoc
 
 end
-
-end
-
-
-

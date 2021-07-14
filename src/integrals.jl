@@ -1,10 +1,3 @@
-module integrals
-
-using Tullio
-using LoopVectorization
-using PyCall
-using CUDA, CUDAKernels, KernelAbstractions # Now defined with a GPU version:
-
 function compute_integrals(wfn,mol,p)
 
     psi4 = pyimport_conda("psi4", "psi4")
@@ -212,7 +205,5 @@ function iajb_Full_jit(C,I,no1,nalpha,nbf,nbf5)
     @tullio iajb[i,a,j,b] := Cocc[m,i]*Ccwo[n,a]*I[m,n,s,l]*Cocc[s,j]*Ccwo[l,b]
 
     return iajb
-
-end
 
 end

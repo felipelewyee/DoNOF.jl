@@ -1,8 +1,3 @@
-module postpnof
-
-using Tullio
-include("integrals.jl")
-
 function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
 
     println(" NOF-MP2")
@@ -11,14 +6,14 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     occ = view(n,p.no1+1:p.nbf5)
     vec = view(C,:,p.no1+1:p.nbf)
 
-    D = integrals.computeD_HF(C,I,b_mnl,p)
+    D = computeD_HF(C,I,b_mnl,p)
     if p.MSpin==0
         if p.nsoc>0
-            Dalpha = integrals.computeDalpha_HF(C,I,b_mnl,p)
+            Dalpha = computeDalpha_HF(C,I,b_mnl,p)
             D = D + 0.5*Dalpha
         end
-        J,K = integrals.JK_HF_Full(D,I,p)
-        #J,K = integrals.computeJK_HF(D,I,b_mnl,p)
+        J,K = JK_HF_Full(D,I,p)
+        #J,K = computeJK_HF(D,I,b_mnl,p)
         F = H + 2*J - K
 	@tullio DH[i,j] := D[i,k]*H[k,j]
 	@tullio DF[i,j] := D[i,k]*F[k,j]
@@ -26,9 +21,9 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
 	@tullio EHFL := DHDF[i,i]
         #EHFL = np.trace(np.matmul(D,H)+np.matmul(D,F))
     elseif p.MSpin!=0
-        D = integrals.computeD_HF(C,I,b_mnl,p)
-        Dalpha = integrals.computeDalpha_HF(C,I,b_mnl,p)
-        J,K = integrals.computeJK_HF(D,I,b_mnl,p)
+        D = computeD_HF(C,I,b_mnl,p)
+        Dalpha = computeDalpha_HF(C,I,b_mnl,p)
+        J,K = computeJK_HF(D,I,b_mnl,p)
         F = 2*J - K
 	DDa1 = D + 0.5*Dalpha
 	@tullio DDa1H[i,j] := DDa1[i,k]*H[k,j]
@@ -39,7 +34,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
         #EHFL = 2*np.trace(np.matmul(D+0.5*Dalpha,H))+np.trace(np.matmul(D+Dalpha,F))
         F = H + F
         if p.nsoc>1
-            J,K = integrals.computeJK_HF(0.5*Dalpha,I,b_mnl,p)
+            J,K = computeJK_HF(0.5*Dalpha,I,b_mnl,p)
             Falpha = J - K
 	    @tullio DaFa[i,j] := 0.5*Dalpha[i,k]*Falpha[k,j]
 	    @tullio EHFL += 2*DaFa[i,i]
@@ -57,8 +52,8 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     @tullio eig[i] := F_MO_act[i,i]
     #eig = np.einsum("ii->i",F_MO[:p.nbf-p.no1,:p.nbf-p.no1])
 
-    iajb = integrals.iajb_Full_jit(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
-    #iajb = integrals.compute_iajb(C,I,b_mnl,p)
+    iajb = iajb_Full_jit(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
+    #iajb = compute_iajb(C,I,b_mnl,p)
     
     FI1 = ones(p.nbf-p.no1)
     FI2 = ones(p.nbf-p.no1)
@@ -109,7 +104,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     #    CK12nd[ll:ul,ll:ul] = -np.outer(beta[ll:ul],beta[ll:ul])
 
     #C^K KMO
-    #J_MO,K_MO,H_core = integrals.computeJKH_MO(C,H,I,b_mnl,p)
+    #J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
 
     #ECndHF = 0
     #ECndl = 0
@@ -424,6 +419,4 @@ end
 end
 end
     return A#,(IROW,ICOL)
-end
-
 end

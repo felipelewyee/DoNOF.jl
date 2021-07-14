@@ -1,13 +1,6 @@
-module utils
-
-using Tullio
-using LinearAlgebra
-
-include("integrals.jl")
-
 function ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
-    J,K = integrals.computeJKj(C,I,b_mnl,p)
+    J,K = computeJKj(C,I,b_mnl,p)
     
     if p.MSpin==0
         #F = computeF_RC_driver(J,K,n,H,cj12,ck12,p)
@@ -193,39 +186,30 @@ end
 function computeE_elec(H,C,n,elag,p)
     #EELECTRr
     E = 0
-    #println("1: ",E)
     elag_nbf5 = view(elag,1:p.nbf5,1:p.nbf5)
     @tullio E += elag_nbf5[i,i]
-    #println("2: ",E)
     #E = E + np.einsum('ii',elag[:p.nbf5,:p.nbf5],optimize=True)
     n_beta = view(n,1:p.nbeta)
     C_beta = view(C,:,1:p.nbeta)
     @tullio E += n_beta[i]*C_beta[m,i]*H[m,n]*C_beta[n,i]
-    #println("3: ",E)
     #E = E + np.einsum('i,mi,mn,ni',n[:p.nbeta],C[:,:p.nbeta],H,C[:,:p.nbeta],optimize=True)
     if(!p.HighSpin)
         n_beta_alpha = view(n,p.nbeta+1:p.nalpha)
         C_beta_alpha = view(C,:,p.nbeta+1:p.nalpha)
-	@tullio E += n_beta_alpha[i]*C_beta_alpha[m,i]*H[m,n]*C_beta_alpha[n,i]
-        #println("4: ",E)
-    #    E = E + np.einsum('i,mi,mn,ni',n[p.nbeta:p.nalpha],C[:,p.nbeta:p.nalpha],H,C[:,p.nbeta:p.nalpha],optimize=True)
+	@tullio avx=false E += n_beta_alpha[i]*C_beta_alpha[m,i]*H[m,n]*C_beta_alpha[n,i]
     elseif(p.HighSpin)
         C_beta_alpha = view(C,:,p.nbeta+1:p.nalpha)
-	@tullio E += 0.5*C_beta_alpha[m,i]*H[m,n]*C_beta_alpha[n,i]
+	@tullio avx=false E += 0.5*C_beta_alpha[m,i]*H[m,n]*C_beta_alpha[n,i]
     #    E = E + 0.5*np.einsum('mi,mn,ni',C[:,p.nbeta:p.nalpha],H,C[:,p.nbeta:p.nalpha],optimize=True)
     end
     n_alpha_nbf5 = view(n,p.nalpha+1:p.nbf5)
     C_alpha_nbf5 = view(C,:,p.nalpha+1:p.nbf5)
     @tullio E += n_alpha_nbf5[i]*C_alpha_nbf5[m,i]*H[m,n]*C_alpha_nbf5[n,i]
-    #println("5: ",E)
     #E = E + np.einsum('i,mi,mn,ni',n[p.nalpha:p.nbf5],C[:,p.nalpha:p.nbf5],H,C[:,p.nalpha:p.nbf5],optimize=True)
 
     return E
 
     end
-
-
-
 
 function computeLagrangeConvergency(elag)
     # Convergency
@@ -303,6 +287,4 @@ function fmiug_diis(fk,fmiug,idiis,bdiis,cdiis,maxdiff,p)
     #end
 
     return fk,fmiug,idiis,bdiis
-end
-
 end

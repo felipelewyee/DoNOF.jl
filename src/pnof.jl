@@ -1,8 +1,3 @@
-module pnof
-
-using Tullio
-using LinearAlgebra
-
 function PNOFi_selector(n,p)
     #if(p.ipnof==5):
     #    cj12,ck12 = CJCKD5(n,p)
@@ -502,6 +497,4 @@ function calcg(gamma,J_MO,K_MO,H_core,p)
 #        grad -= np.einsum('jk,ij->k',dn_dgamma[p.nalpha:p.nbf5,:p.nv],K_MO[p.nbeta:p.nalpha,p.nalpha:p.nbf5],optimize=True)
     end
     return grad
-end
-
 end

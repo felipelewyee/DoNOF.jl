@@ -1,15 +1,6 @@
-module energy
-using LinearAlgebra
-using Printf
-
-include("minimization.jl")
-include("integrals.jl")
-include("guess.jl")
-include("postpnof.jl")
-
 function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=true,nofmp2=false,printmode=true)
 
-    S,T,V,H,I,b_mnl = integrals.compute_integrals(wfn,mol,p)
+    S,T,V,H,I,b_mnl = compute_integrals(wfn,mol,p)
 
     if(printmode)
         println("Number of basis functions                   (NBF)    = ",p.nbf)
@@ -34,7 +25,7 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
     end
 
     if hfidr
-        EHF,Cguess,fmiug0guess = minimization.hfidr(Cguess,H,I,b_mnl,E_nuc,p)
+        EHF,Cguess,fmiug0guess = hfidr(Cguess,H,I,b_mnl,E_nuc,p)
     end
 
     if isnothing(C)
@@ -42,12 +33,12 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
     end
 
     if isnothing(gamma)
-        gamma = guess.compute_gamma(p)
+        gamma = compute_gamma(p)
     end
 
     C = Cguess
     elag = zeros(p.nbf,p.nbf)
-    gamma,n,cj12,ck12 = minimization.occoptr(gamma,true,false,C,H,I,b_mnl,p)
+    gamma,n,cj12,ck12 = occoptr(gamma,true,false,C,H,I,b_mnl,p)
 
     iloop = 0
     itlim = 1
@@ -65,11 +56,11 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
     for i_ext in 1:p.maxit
         #t1 = time()
         #orboptr
-        convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag = minimization.orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
+        convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
         #t2 = time()
 
         #occopt
-        gamma,n,cj12,ck12 = minimization.occoptr(gamma,false,convgdelag,C,H,I,b_mnl,p)
+        gamma,n,cj12,ck12 = occoptr(gamma,false,convgdelag,C,H,I,b_mnl,p)
         #t3 = time()
 
         if convgdelag
@@ -115,6 +106,4 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
     if nofmp2
         postpnof.nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     end
-end
-
 end

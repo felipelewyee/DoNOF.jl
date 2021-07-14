@@ -1,5 +1,3 @@
-module guess
-
 function compute_gamma(p)
     gamma = zeros(p.nv)
     for i in 1:p.ndoc
@@ -11,6 +9,4 @@ function compute_gamma(p)
         end
     end
     return gamma
-end
-
 end
