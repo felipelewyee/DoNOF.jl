@@ -1,4 +1,4 @@
-function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=true,nofmp2=false,printmode=true)
+function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true)
 
     S,T,V,H,I,b_mnl = compute_integrals(wfn,mol,p)
 
@@ -24,7 +24,7 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
         Ei,Cguess = eigen(H, S)
     end
 
-    if hfidr
+    if do_hfidr
         EHF,Cguess,fmiug0guess = hfidr(Cguess,H,I,b_mnl,E_nuc,p)
     end
 
@@ -92,18 +92,21 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,hfidr=t
         println(" Final Energies ")
         println("----------------")
 
-        if hfidr
+        if do_hfidr
             @printf("       HF Total Energy = %15.7f\n",E_nuc + EHF)
 	end
         @printf("Final NOF Total Energy = %15.7f\n",E_nuc + E_old)
-        if hfidr
+        if do_hfidr
             @printf("    Correlation Energy = %15.7f\n",E_old-EHF)
 	end
         println(" ")
         println(" ")
     end
 
-    if nofmp2
-        postpnof.nofmp2(n,C,H,I,b_mnl,E_nuc,p)
+    if do_nofmp2
+        nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     end
+
+    return E_nuc + E_old,C,gamma,fmiug0
+
 end

@@ -43,7 +43,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
         end
     end
 
-    println(EHFL)
+    #println(EHFL)
 
     @tullio F_MO[i,j] := vec[k,i]*F[k,l]*vec[l,j]
     #F_MO = np.matmul(np.matmul(np.transpose(vec),F),vec)
@@ -63,56 +63,90 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     FI2[p.nalpha-p.no1:p.nbf5-p.no1] = abs.(1.0 .-2*occ[p.nalpha-p.no1:p.nbf5-p.no1]).^2
 
     Tijab = CalTijab(iajb,F_MO,eig,FI1,FI2,p)
-    #ECd = 0
-    #for k in range(p.nvir):
-    #    for l in range(p.nvir):
-    #        for i in range(p.ndoc):
-    #            for j in range(p.ndoc):
-    #                Xijkl = iajb[j,k,i,l]
-    #                ijkl = i+j*p.ndns+k*p.ndns*p.ndns+l*p.ndns*p.ndns*p.nvir
-    #                ijlk = i+j*p.ndns+l*p.ndns*p.ndns+k*p.ndns*p.ndns*p.nvir
-    #                ECd = ECd + Xijkl*(2*Tijab[ijkl]-Tijab[ijlk])
-    #            for j in range(p.ndoc,p.ndns):
-    #                Xijkl = iajb[j,k,i,l]
-    #                ijkl = i+j*p.ndns+k*p.ndns*p.ndns+l*p.ndns*p.ndns*p.nvir
-    #                ijlk = i+j*p.ndns+l*p.ndns*p.ndns+k*p.ndns*p.ndns*p.nvir
-    #                ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])
-    #        for i in range(p.ndoc,p.ndns):
-    #            for j in range(p.ndoc):
-    #                Xijkl = iajb[j,k,i,l]
-    #                ijkl = i+j*p.ndns+k*p.ndns*p.ndns+l*p.ndns*p.ndns*p.nvir
-    #                ijlk = i+j*p.ndns+l*p.ndns*p.ndns+k*p.ndns*p.ndns*p.nvir
-    #                ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])
-    #            for j in range(p.ndoc,p.ndns):
-    #                Xijkl = iajb[j,k,i,l]
-    #                ijkl = i+j*p.ndns+k*p.ndns*p.ndns+l*p.ndns*p.ndns*p.nvir
-    #                ijlk = i+j*p.ndns+l*p.ndns*p.ndns+k*p.ndns*p.ndns*p.nvir
-    #                if(j!=i):
-    #                    ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])/2
+    ECd = 0
 
-    #fi = 2*n*(1-n)
+    for k in 1:p.nvir
+        for l in 1:p.nvir
+            for i in 1:p.ndoc
+                for j in 1:p.ndoc
+                    Xijkl = iajb[j,k,i,l]
+                    ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
+                    ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
+                    ECd = ECd + Xijkl*(2*Tijab[ijkl]-Tijab[ijlk])
+                end
+                for j in p.ndoc:p.ndns
+                    Xijkl = iajb[j,k,i,l]
+                    ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
+                    ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
+                    ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])
+                end
+            end
+            for i in p.ndoc:p.ndns
+                for j in 1:p.ndoc
+                    Xijkl = iajb[j,k,i,l]
+                    ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
+                    ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
+                    ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])
+                end
+                for j in p.ndoc:p.ndns
+                    Xijkl = iajb[j,k,i,l]
+                    ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
+                    ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
+                    if(j!=i)
+                        ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])/2
+                    end
+                end
+            end
+        end
+    end
 
+    fi = 2*n.*(1 .-n)
+
+    @tullio CK12nd[i,j] := fi[i]*fi[j]
     #CK12nd = np.outer(fi,fi)
 
+    beta = sqrt.((1 .-abs.(1 .-2*n)).*n)
     #beta = np.sqrt((1-abs(1-2*n))*n)
 
-    #for l in range(p.ndoc):
-    #    ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - l - 1)
-    #    ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - l)
-    #    CK12nd[p.no1+l,ll:ul] = beta[p.no1+l]*beta[ll:ul]
-    #    CK12nd[ll:ul,p.no1+l] = beta[ll:ul]*beta[p.no1+l]
-    #    CK12nd[ll:ul,ll:ul] = -np.outer(beta[ll:ul],beta[ll:ul])
+    for l in 1:p.ndoc
+        ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - l) + 1
+        ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - l + 1)
+        CK12nd[p.no1+l,ll:ul] .= beta[p.no1+l]*beta[ll:ul]
+        CK12nd[ll:ul,p.no1+l] .= beta[ll:ul]*beta[p.no1+l]
+        CK12nd[ll:ul,ll:ul] .= - beta[ll:ul] .* transpose(beta[ll:ul])
+    end
 
     #C^K KMO
-    #J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
+    J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
 
-    #ECndHF = 0
-    #ECndl = 0
-    #if (p.MSpin==0):
+    ECndHF = 0
+    ECndl = 0
+    if (p.MSpin==0)
+        if p.nbeta != p.nalpha
+            CK12nd_alpha_beta = view(CK12nd_alpha_beta,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
+            K_MO_alpha_beta = view(K_MO,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
+            @tullio avx=false ECndHF += -CK12nd_alpha_beta[i,j]*K_MO_alpha_beta[j,i]
+        end
     #   ECndHF = - np.einsum('ii,ii->',CK12nd[p.nbeta:p.nalpha,p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha]) # sum_ij
+        @tullio avx=false ECndl += -CK12nd[i,j]*K_MO[j,i]
+        @tullio avx=false ECndl += CK12nd[i,i]*K_MO[i,i]
     #   ECndl -= np.einsum('ij,ji->',CK12nd,K_MO) # sum_ij
     #   ECndl += np.einsum('ii,ii->',CK12nd,K_MO) # Quita i=j
-    #elif (not p.MSpin==0):
+    elseif (p.MSpin!=0)
+        CK12nd_no1_beta_no1_nbeta = view(CK12nd_no1_beta,p.no1:p.nbeta,p.no1:p.nbeta)
+        CK12nd_no1_beta_alpha_beta = view(CK12nd_no1_beta,p.no1:p.nbeta,p.nalpha:p.nbeta)
+        CK12nd_alpha_beta_no1_beta = view(CK12nd_no1_beta,p.nalpha:p.nbeta,p.no1:p.nbeta)
+        CK12nd_alpha_beta_alpha_beta = view(CK12nd_alpha_beta,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
+        K_MO_no1_beta_no1_nbeta = view(CK12nd_no1_beta,p.no1:p.nbeta,p.no1:p.nbeta)
+        K_MO_no1_beta_alpha_beta = view(CK12nd_no1_beta,p.no1:p.nbeta,p.nalpha:p.nbeta)
+        K_MO_alpha_beta_no1_beta = view(CK12nd_no1_beta,p.nalpha:p.nbeta,p.no1:p.nbeta)
+        K_MO_alpha_beta_alpha_beta = view(CK12nd_alpha_beta,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
+        @tullio avx=false ECndl += -CK12nd_no1_beta_no1_nbeta[i,j]*K_MO_no1_beta_no1_nbeta[j,i]
+        @tullio avx=false ECndl += -CK12nd_no1_beta_alpha_beta[i,j]*K_MO_alpha_beta_no1_nbeta[j,i]
+        @tullio avx=false ECndl += -CK12nd_alpha_beta_no1_nbeta[i,j]*K_MO_no1_beta_alpha_beta[j,i]
+        @tullio avx=false ECndl += -CK12nd_alpha_beta_alpha_beta[i,j]*K_MO_alpha_beta_alpha_beta[j,i]
+        @tullio avx=false ECndl += CK12nd_no1_beta_no1_nbeta[i,i]*K_MO_no1_beta_no1_nbeta[i,i]
+        @tullio avx=false ECndl += CK12nd_alpha_beta_alpha_beta[i,i]*K_MO_alpha_beta_alpha_beta[i,i]
     #   ECndl -= np.einsum('ij,ji->',CK12nd[p.no1:p.nbeta,p.no1:p.nbeta],K_MO[p.no1:p.nbeta,p.no1:p.nbeta]) # sum_ij
     #   ECndl -= np.einsum('ij,ji->',CK12nd[p.no1:p.nbeta,p.nalpha:p.nbf5],K_MO[p.nalpha:p.nbf5,p.no1:p.nbeta]) # sum_ij
     #   ECndl -= np.einsum('ij,ji->',CK12nd[p.nalpha:p.nbf5,p.no1:p.nbeta],K_MO[p.no1:p.nbeta,p.nalpha:p.nbf5]) # sum_ij
@@ -120,32 +154,36 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
     #   ECndl += np.einsum('ii,ii->',CK12nd[p.no1:p.nbeta,p.no1:p.nbeta],K_MO[p.no1:p.nbeta,p.no1:p.nbeta]) # Quita i=j
     #   ECndl += np.einsum('ii,ii->',CK12nd[p.nalpha:p.nbf5,p.nalpha:p.nbf5],K_MO[p.nalpha:p.nbf5,p.nalpha:p.nbf5]) # Quita i=j
 
-    #print("      Ehfc      = {:f}".format(EHFL+E_nuc+ECndHF))
-    #print("")
-    #print("      ECd       = {:f}".format(ECd))
-    #print("      ECnd      = {:f}".format(ECndl))
-    #print("      Ecorre    = {:f}".format(ECd+ECndl))
-    #print("      E(NOFMP2) = {:f}".format(EHFL+ECd+ECndl+E_nuc+ECndHF))
-    #print("")
-
-
+    end
+ 
+    @printf("      Ehfc      = %15.7f\n",EHFL+E_nuc+ECndHF)
+    @printf("\n")
+    @printf("      ECd       = %15.7f\n",ECd)
+    @printf("      ECnd      = %15.7f\n",ECndl)
+    @printf("      Ecorre    = %15.7f\n",ECd+ECndl)
+    @printf("      E(NOFMP2) = %15.7f\n",EHFL+ECd+ECndl+E_nuc+ECndHF)
+    @printf("\n")
 
 end
 
 function CalTijab(iajb,F_MO,eig,FI1,FI2,p)
 
-    print("Starting CalTijab")
+    println("Starting CalTijab")
 
     B = build_B(iajb,FI1,FI2,p.ndoc,p.ndns,p.nvir,p.ncwo)
-    print("....B vector Computed")
+    println("....B vector Computed")
 
     Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
-    print("....Tijab Guess Computed")
+    println("....Tijab Guess Computed")
 
     #A_CSR = csr_matrix(build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf))
-    #print("A matrix has {}/{} elements with Tol = {}".format(len(A),p.nvir**4*p.ndoc**4,1e-10))
+    A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+    println("A matrix built")
+    #"has {}/{} elements with Tol = {}".format(len(A),p.nvir**4*p.ndoc**4,1e-10)    
     #Tijab = solve_Tijab(A_CSR,B,Tijab,p)
 
+    Tijab = B/A
+    println("Tijab found")
     #res = root(build_R, Tijab, args=(B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf),method="krylov")
     #if(res.success):
     #    print("....Tijab found as a Root of R = B - A*Tijab in {} iterations".format(res.nit))
@@ -194,7 +232,7 @@ function build_B(iajb,FI1,FI2,ndoc,ndns,nvir,ncwo)
 	    end
 	end
     end
-    return B
+    return transpose(B)
 
 end
 
@@ -322,9 +360,9 @@ function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
     for i in 1:ndoc
         ll = ncwo*(ndoc - i) + 1
         ul = ncwo*(ndoc - i + 1)
-        npair[ll:ul] = i
+        npair[ll:ul] .= i
     end
-    A = spzeros(ndns^4*nvir^4)
+    A = spzeros(ndns^2*nvir^2,ndns^2*nvir^2)
     #IROW = np.empty((2*ndns**2*nvir**2*(nbf-no1)),dtype=np.int32)
     #ICOL = np.empty((2*ndns**2*nvir**2*(nbf-no1)),dtype=np.int32)
 
@@ -420,3 +458,5 @@ end
 end
     return A#,(IROW,ICOL)
 end
+
+

@@ -8,6 +8,7 @@ using LoopVectorization
 using PyCall
 using CUDA, CUDAKernels, KernelAbstractions # Now defined with a GPU version:
 using Optim
+using SparseArrays
 
 include("param.jl")
 include("integrals.jl")

@@ -136,7 +136,7 @@ function Param(mol,wfn)
     noptorb = noptorb   # Número de orbitales a optimizar Nbf5 <= Noptorb <= Nbf
     nv = ncwo*ndoc
     gradient = "analytical"
-    optimizer = "CG"
+    optimizer = "BFGS"
     gpu = false
     RI = false
 
