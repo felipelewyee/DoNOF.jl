@@ -74,21 +74,21 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
                     ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
                     ECd = ECd + Xijkl*(2*Tijab[ijkl]-Tijab[ijlk])
                 end
-                for j in p.ndoc:p.ndns
+                for j in p.ndoc+1:p.ndns
                     Xijkl = iajb[j,k,i,l]
                     ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
                     ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
                     ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])
                 end
             end
-            for i in p.ndoc:p.ndns
+            for i in p.ndoc+1:p.ndns
                 for j in 1:p.ndoc
                     Xijkl = iajb[j,k,i,l]
                     ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
                     ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
                     ECd = ECd + Xijkl*(Tijab[ijkl]-0.5*Tijab[ijlk])
                 end
-                for j in p.ndoc:p.ndns
+                for j in p.ndoc+1:p.ndns
                     Xijkl = iajb[j,k,i,l]
                     ijkl = i+(j-1)*p.ndns+(k-1)*p.ndns*p.ndns+(l-1)*p.ndns*p.ndns*p.nvir
                     ijlk = i+(j-1)*p.ndns+(l-1)*p.ndns*p.ndns+(k-1)*p.ndns*p.ndns*p.nvir
