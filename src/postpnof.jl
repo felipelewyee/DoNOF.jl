@@ -60,7 +60,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
 
     FI1[1:p.nbf5-p.no1] = 1.0 .- (1.0 .- abs.(1.0 .-2*occ[1:p.nbf5-p.no1])).^2
 
-    FI2[p.nalpha-p.no1:p.nbf5-p.no1] = abs.(1.0 .-2*occ[p.nalpha-p.no1:p.nbf5-p.no1]).^2
+    FI2[p.nalpha-p.no1+1:p.nbf5-p.no1] = abs.(1.0 .-2*occ[p.nalpha-p.no1+1:p.nbf5-p.no1]).^2
 
     Tijab = CalTijab(iajb,F_MO,eig,FI1,FI2,p)
     ECd = 0
@@ -178,12 +178,16 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p)
 
     #A_CSR = csr_matrix(build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf))
     A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
-    println("A matrix built")
-    #"has {}/{} elements with Tol = {}".format(len(A),p.nvir**4*p.ndoc**4,1e-10)    
+    println("....A matrix built")
+    @printf("........It has %d/%d elements with Tol = %4.2e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-10)    
     #Tijab = solve_Tijab(A_CSR,B,Tijab,p)
 
     Tijab = B/A
     println("Tijab found")
+
+    sR = build_R(Tijab,transpose(B),F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+    println(sR)
+
     #res = root(build_R, Tijab, args=(B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf),method="krylov")
     #if(res.success):
     #    print("....Tijab found as a Root of R = B - A*Tijab in {} iterations".format(res.nit))
@@ -258,12 +262,12 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
     for i in 1:ndoc
         ll = ncwo*(ndoc - i) + 1
         ul = ncwo*(ndoc - i + 1)
-        npair[ll:ul] = i
+        npair[ll:ul] .= i
     end
 
     Bp = zeros(ndns^2*nvir^2)
 
-    for ib in 1:nvir
+    @Threads.threads for ib in 1:nvir
         for ia in 1:nvir
             for j in 1:ndns
                 for i in 1:ndns
@@ -278,28 +282,28 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
                     for k in 1:i-1
 			if abs(F_MO[i,k])>1e-10
                             Cki = FI2[k]*FI2[i]
+			    Bp[ijab] += (- Cki*F_MO[i,k])*T[k+jab]
 		        end
-			Bp[ijab] += (- Cki*F_MO[i,k])*T[(k-1)+jab]
 		    end
                     
                     for k in i+1:ndns
 			if abs(F_MO[i,k])>1e-10
                             Cki = FI2[k]*FI2[i]
+	    		    Bp[ijab] += (- Cki*F_MO[i,k])*T[k+jab]
 		        end
-			Bp[ijab] += (- Cki*F_MO[i,k])*T[(k-1)+jab]
 		    end
 
                     for k in 1:j-1
                         if abs(F_MO[j,k])>1e-10
                             Ckj = FI2[k]*FI2[j]
+			    Bp[ijab] += (- Ckj*F_MO[j,k])*T[(k-1)*ndns+iab]
 		        end
-			Bp[ijab] += (- Ckj*F_MO[j,k])*T[(k-1)*ndns+iab]
 		    end
                     for k in j+1:ndns
                         if abs(F_MO[j,k])>1e-10
                             Ckj = FI2[k]*FI2[j]
+    		            Bp[ijab] += (- Ckj*F_MO[j,k])*T[(k-1)*ndns+iab]
 		        end
-    		        Bp[ijab] += (- Ckj*F_MO[j,k])*T[(k-1)*ndns+iab]
 		    end
 
                     for k in 1:ia-1
@@ -348,9 +352,9 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
         end
     end
 
-
     R = B-Bp
-    return R
+
+    return sum(R)
 end
 
 
