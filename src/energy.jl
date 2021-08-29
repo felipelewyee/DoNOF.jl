@@ -1,6 +1,6 @@
-function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true)
+function compute_energy(mol,bas,Z,xyz,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true)
 
-    S,T,V,H,I,b_mnl = compute_integrals(wfn,mol,p)
+    S,T,V,H,I,b_mnl = compute_integrals(mol,bas,p)
 
     if(printmode)
         println("Number of basis functions                   (NBF)    = ",p.nbf)
@@ -17,7 +17,13 @@ function compute_energy(wfn,mol,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfid
         println("")
     end
 
-    E_nuc = mol.nuclear_repulsion_energy()
+    E_nuc = 0#bset.molecule.Vnuc
+    for iatom in 1:p.natoms
+        for jatom in iatom+1:p.natoms
+            E_nuc += Z[iatom]*Z[jatom]/norm(xyz[iatom]-xyz[jatom])
+        end
+    end
+    E_nuc = E_nuc/1.88973
 
     Cguess = C
     if isnothing(C)

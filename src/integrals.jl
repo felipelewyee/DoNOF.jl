@@ -1,37 +1,28 @@
-function compute_integrals(wfn,mol,p)
-
-    psi4 = pyimport_conda("psi4", "psi4")
-    np = pyimport_conda("numpy","psi4")
+function compute_integrals(mol,bas_name,p)
 
     # Integrador
-    mints = psi4.core.MintsHelper(wfn.basisset())
+    @lints bas = Lints.BasisSet(bas_name,mol)
     
     # Overlap, Kinetics, Potential
-    S = copy(np.asarray(mints.ao_overlap()))
-    T = copy(np.asarray(mints.ao_kinetic()))
-    V = copy(np.asarray(mints.ao_potential()))
+    @lints S = Lints.make_S(bas)
+    @lints T = Lints.make_T(bas)
+    @lints V = Lints.make_V(bas)
     H = T + V
     I = []
     b_mnl = []
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
-        I = copy(np.asarray(mints.ao_eri()))
+        @lints I = Lints.make_ERI4(bas)
     else
+        @lints abas = Lints.BasisSet("cc-pvdz-jkfit",mol)
+        @lints Ppq = Lints.make_ERI3(bas,abas)
+        @lints metric = Lints.make_ERI2(abas)
     
-        orb = wfn.basisset()
-        aux = psi4.core.BasisSet.build(mol, "DF_BASIS_SCF", "", "JKFIT", orb.blend())
-        zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
-    
-        Ppq = mints.ao_eri(orb, orb, aux, zero_bas)
-    
-        metric = mints.ao_eri(aux, zero_bas, aux, zero_bas)
-        metric.power(-0.5, 1.e-14)
-        p.nbfaux = metric.shape[1]
-    
-        Ppq = copy(np.squeeze(Ppq))
-        metric = copy(np.squeeze(metric))
-    
+        metric = metric^(-1/2)
+ 
         @tullio b_mnl[p,q,Q] := Ppq[p,q,P]*metric[P,Q]
+
+        p.nbfaux = size(b_mnl)[3]
     end
 
     if(p.gpu)

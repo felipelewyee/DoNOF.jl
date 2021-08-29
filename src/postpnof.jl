@@ -182,11 +182,23 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p)
     @printf("........It has %d/%d elements with Tol = %4.2e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-10)    
     #Tijab = solve_Tijab(A_CSR,B,Tijab,p)
 
-    Tijab = B/A
+    #Tijab = B/A
     println("Tijab found")
 
-    sR = build_R(Tijab,transpose(B),F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+    B = transpose(B)
+    Tijab = vec(Tijab)
+
+    sR = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
     println(sR)
+
+    res = optimize(Tijab->build_R(Tijab,B,F_MO,FI1,FI2,1,4,4,8,1,13),Tijab,LBFGS())
+    Tijab = Optim.minimizer(res)
+
+
+    sR = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+    println(sR)
+
+
 
     #res = root(build_R, Tijab, args=(B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf),method="krylov")
     #if(res.success):
@@ -354,7 +366,7 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
 
     R = B-Bp
 
-    return sum(R)
+    return norm(R)
 end
 
 

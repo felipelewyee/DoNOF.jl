@@ -9,6 +9,9 @@ using PyCall
 using CUDA, CUDAKernels, KernelAbstractions # Now defined with a GPU version:
 using Optim
 using SparseArrays
+#using Fermi
+using Lints
+
 
 include("param.jl")
 include("integrals.jl")
