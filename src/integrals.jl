@@ -20,16 +20,16 @@ function compute_integrals(mol,bas_name,p)
         try
             abas_name = bas_name*"-jkfit"
             @lints abas = Lints.BasisSet(bas_name*"-jkfit",mol)
-            println("Auxiliary Basis Set                                        = ",abas_name)
+            println("Auxiliary Basis Set                                  = ",abas_name)
         catch
             try
                 abas_name = bas*"-ri"
                 @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
-                println("Auxiliary Basis Set                                        = ",abas_name)
+                println("Auxiliary Basis Set                                  = ",abas_name)
             catch
-                abas_name = "cc-pvtz-jkfit"
+                abas_name = "cc-pvdz-jkfit"
                 @lints abas = Lints.BasisSet("cc-pvdz-jkfit",mol)
-                println("Auxiliary Basis Set                                        = ",abas_name)
+                println("Auxiliary Basis Set                                  = ",abas_name)
             end
         end
 
@@ -38,8 +38,6 @@ function compute_integrals(mol,bas_name,p)
     
         metric = Array(metric^(-1/2))
 
-        println(size(Pmn)) 
-        println(size(metric)) 
         @tullio b_mnl[m,n,Q] := Pmn[P,m,n]*metric[P,Q]
 
         p.nbfaux = size(b_mnl)[3]
