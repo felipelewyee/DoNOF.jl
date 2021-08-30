@@ -1,4 +1,4 @@
-function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
+function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
 
     println(" NOF-MP2")
     println("=========")
@@ -62,7 +62,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
 
     FI2[p.nalpha-p.no1+1:p.nbf5-p.no1] = abs.(1.0 .-2*occ[p.nalpha-p.no1+1:p.nbf5-p.no1]).^2
 
-    Tijab = CalTijab(iajb,F_MO,eig,FI1,FI2,p)
+    Tijab = CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
     ECd = 0
 
     for k in 1:p.nvir
@@ -166,48 +166,37 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p)
 
 end
 
-function CalTijab(iajb,F_MO,eig,FI1,FI2,p)
+function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
 
     println("Starting CalTijab")
 
     B = build_B(iajb,FI1,FI2,p.ndoc,p.ndns,p.nvir,p.ncwo)
     println("....B vector Computed")
 
-    Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
-    println("....Tijab Guess Computed")
+    if(nofmp2strategy=="numerical")
+        println("....Numerical Strategy for Tijab")
+        Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
+        println("........Tijab Guess Computed")
+        Tijab = vec(Tijab)
+        R_norm = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+        @printf("............norm of the residual vector of Tijab Guess %4.1e\n",R_norm)
+        res = optimize(Tijab->build_R(Tijab,B,F_MO,FI1,FI2,1,4,4,8,1,13),Tijab,LBFGS())
+        Tijab = Optim.minimizer(res)
+    elseif(nofmp2strategy=="analytical")
+        println("....Analytical Strategy for Tijab")
+        B = transpose(B)
+        A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+        println("........A matrix built")
+        @printf("............It has %d/%d elements with Tol = %4.1e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-10)
+        Tijab = B/A
+        B = transpose(B)
+    end
 
-    #A_CSR = csr_matrix(build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf))
-    A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
-    println("....A matrix built")
-    @printf("........It has %d/%d elements with Tol = %4.2e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-10)    
-    #Tijab = solve_Tijab(A_CSR,B,Tijab,p)
+    println("........Tijab found")
 
-    #Tijab = B/A
-    println("Tijab found")
-
-    B = transpose(B)
-    Tijab = vec(Tijab)
-
-    sR = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
-    println(sR)
-
-    res = optimize(Tijab->build_R(Tijab,B,F_MO,FI1,FI2,1,4,4,8,1,13),Tijab,LBFGS())
-    Tijab = Optim.minimizer(res)
-
-
-    sR = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
-    println(sR)
-
-
-
-    #res = root(build_R, Tijab, args=(B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf),method="krylov")
-    #if(res.success):
-    #    print("....Tijab found as a Root of R = B - A*Tijab in {} iterations".format(res.nit))
-    #else:
-    #    print("....WARNING! Tijab NOT FOUND as a Root of R = B - A*Tijab in {} iterations".format(res.nit))
-    #    print(res)
-    #Tijab = res.x
-    #print("")
+    R_norm = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+    @printf("............norm of the residual vector of Tijab solution %4.1e\n",R_norm)
+    println("")
 
     return Tijab
 
@@ -248,7 +237,7 @@ function build_B(iajb,FI1,FI2,ndoc,ndns,nvir,ncwo)
 	    end
 	end
     end
-    return transpose(B)
+    return B
 
 end
 

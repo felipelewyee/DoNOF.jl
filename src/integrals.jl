@@ -10,17 +10,37 @@ function compute_integrals(mol,bas_name,p)
     H = T + V
     I = []
     b_mnl = []
+    println("Basis Set                                            = ",bas_name)
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
         @lints I = Lints.make_ERI4(bas)
     else
-        @lints abas = Lints.BasisSet("cc-pvdz-jkfit",mol)
-        @lints Ppq = Lints.make_ERI3(bas,abas)
+        abas = ""
+        abas_name = ""
+        try
+            abas_name = bas_name*"-jkfit"
+            @lints abas = Lints.BasisSet(bas_name*"-jkfit",mol)
+            println("Auxiliary Basis Set                                        = ",abas_name)
+        catch
+            try
+                abas_name = bas*"-ri"
+                @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
+                println("Auxiliary Basis Set                                        = ",abas_name)
+            catch
+                abas_name = "cc-pvtz-jkfit"
+                @lints abas = Lints.BasisSet("cc-pvdz-jkfit",mol)
+                println("Auxiliary Basis Set                                        = ",abas_name)
+            end
+        end
+
+        @lints Pmn = Lints.make_ERI3(bas,abas)
         @lints metric = Lints.make_ERI2(abas)
     
-        metric = metric^(-1/2)
- 
-        @tullio b_mnl[p,q,Q] := Ppq[p,q,P]*metric[P,Q]
+        metric = Array(metric^(-1/2))
+
+        println(size(Pmn)) 
+        println(size(metric)) 
+        @tullio b_mnl[m,n,Q] := Pmn[P,m,n]*metric[P,Q]
 
         p.nbfaux = size(b_mnl)[3]
     end
