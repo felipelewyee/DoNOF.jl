@@ -1,10 +1,10 @@
 using DoNOF
-using Lints
 
-Z = [8,1,1]
-xyz = [[0.0,0.0,0.116],[0.0,0.749,-0.453],[0.0,-0.749,-0.453]]
-
-@lints mol = Lints.Molecule(Z,xyz)
+mol,xyz,Z = DoNOF.molecule("""
+O 0.0 0.0 0.116
+H 0.0 0.749 -0.453
+H 0.0 -0.749 -0.453
+""")
 
 p = DoNOF.Param(mol,"6-31G",Z,0,1)
 

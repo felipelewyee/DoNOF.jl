@@ -10,6 +10,9 @@ using Optim
 using SparseArrays
 using Lints
 
+ENV["LIBINT_DATA_PATH"] = pwd()*"/basis"
+
+include("io.jl")
 include("param.jl")
 include("integrals.jl")
 include("utils.jl")
