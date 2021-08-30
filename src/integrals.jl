@@ -27,8 +27,8 @@ function compute_integrals(mol,bas_name,p)
                 @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
                 println("Auxiliary Basis Set                                  = ",abas_name)
             catch
-                abas_name = "cc-pvdz-jkfit"
-                @lints abas = Lints.BasisSet("cc-pvdz-jkfit",mol)
+                abas_name = "def2-universal-jkfit"
+                @lints abas = Lints.BasisSet("def2-universal-jkfit",mol)
                 println("Auxiliary Basis Set                                  = ",abas_name)
             end
         end
