@@ -23,7 +23,7 @@ function compute_integrals(mol,bas_name,p)
             println("Auxiliary Basis Set                                  = ",abas_name)
         catch
             try
-                abas_name = bas*"-ri"
+                abas_name = bas_name*"-ri"
                 @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
                 println("Auxiliary Basis Set                                  = ",abas_name)
             catch
