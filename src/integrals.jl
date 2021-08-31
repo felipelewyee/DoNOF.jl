@@ -22,22 +22,32 @@ function compute_integrals(mol,bas_name,p)
             @lints abas = Lints.BasisSet(bas_name*"-jkfit",mol)
             println("Auxiliary Basis Set                                  = ",abas_name)
         catch
-            try
-                abas_name = bas_name*"-ri"
-                @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
-                println("Auxiliary Basis Set                                  = ",abas_name)
-            catch
+            #try
+            #    abas_name = bas_name*"-ri"
+            #    @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
+            #    println("Auxiliary Basis Set                                  = ",abas_name)
+            #catch
                 abas_name = "def2-universal-jkfit"
                 @lints abas = Lints.BasisSet("def2-universal-jkfit",mol)
                 println("Auxiliary Basis Set                                  = ",abas_name)
-            end
+            #end
         end
 
         @lints Pmn = Lints.make_ERI3(bas,abas)
         @lints metric = Lints.make_ERI2(abas)
     
-        metric = Array(metric^(-1/2))
+        eigvals,eigvecs = eigen(metric)    
 
+        for i in 1:size(eigvals)[1]
+            if(real(eigvals[i])>10^-12)
+                eigvals[i] = real(eigvals[i])^(-1/2)  
+            else
+                eigvals[i] = 0
+            end
+        end
+        @tullio metric[m,s] := eigvecs[m,n]*eigvals[n]*eigvecs[s,n] 
+        #metric = Array(metric^(-1/2))
+        
         @tullio b_mnl[m,n,Q] := Pmn[P,m,n]*metric[P,Q]
 
         p.nbfaux = size(b_mnl)[3]
