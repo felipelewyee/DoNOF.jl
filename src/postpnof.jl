@@ -48,7 +48,6 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
     #eig = np.einsum("ii->i",F_MO[:p.nbf-p.no1,:p.nbf-p.no1])
 
     iajb = iajb_Full_jit(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
-    println("texto")
     #iajb = compute_iajb(C,I,b_mnl,p)
     
     FI1 = ones(p.nbf-p.no1)

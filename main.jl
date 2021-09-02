@@ -23,5 +23,5 @@ p.threshe = 10^-6#6   # Convergencia de la energía
 E,C,gamma,fmiug0 = DoNOF.compute_energy(bas_name,p,do_hfidr=true)
 
 p.RI = false
-p.gpu = true
+p.gpu = false
 E,C,gamma,fmiug0 = DoNOF.compute_energy(bas_name,p,C=C,fmiug0=fmiug0,gamma=gamma,do_hfidr=false,do_nofmp2=true,nofmp2strategy="numerical")
