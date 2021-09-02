@@ -6,8 +6,6 @@ H 0.0 0.749 -0.453
 H 0.0 -0.749 -0.453
 """)
 
-DoNOF.molecule_from_file("h2o.xyz")
-
 bas_name = "cc-pvdz"
 p = DoNOF.Param(bas_name,0,1)
 
