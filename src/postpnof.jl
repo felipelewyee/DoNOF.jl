@@ -175,7 +175,7 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
         Tijab = vec(Tijab)
         R_norm = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
         @printf("............norm of the residual vector of Tijab Guess %4.1e\n",R_norm)
-        res = optimize(Tijab->build_R(Tijab,B,F_MO,FI1,FI2,1,4,4,8,1,13),Tijab,LBFGS())
+        res = optimize(Tijab->build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf),Tijab,LBFGS())
         Tijab = Optim.minimizer(res)
     elseif(nofmp2strategy=="analytical")
         println("....Analytical Strategy for Tijab")
@@ -262,8 +262,8 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
     end
 
     Bp = zeros(ndns^2*nvir^2)
-
     @Threads.threads for ib in 1:nvir
+    #for ib in 1:nvir
         for ia in 1:nvir
             for j in 1:ndns
                 for i in 1:ndns
