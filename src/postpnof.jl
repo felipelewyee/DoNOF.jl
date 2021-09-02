@@ -5,7 +5,6 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
 
     occ = view(n,p.no1+1:p.nbf5)
     vec = view(C,:,p.no1+1:p.nbf)
-
     D = computeD_HF(C,I,b_mnl,p)
     if p.MSpin==0
         if p.nsoc>0
@@ -13,7 +12,6 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
             D = D + 0.5*Dalpha
         end
         J,K = JK_HF_Full(D,I,p)
-        #J,K = computeJK_HF(D,I,b_mnl,p)
         F = H + 2*J - K
 	@tullio DH[i,j] := D[i,k]*H[k,j]
 	@tullio DF[i,j] := D[i,k]*F[k,j]
@@ -43,16 +41,14 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
         end
     end
 
-    #println(EHFL)
-
     @tullio F_MO[i,j] := vec[k,i]*F[k,l]*vec[l,j]
-    #F_MO = np.matmul(np.matmul(np.transpose(vec),F),vec)
 
     F_MO_act = view(F_MO,1:p.nbf-p.no1,1:p.nbf-p.no1)
     @tullio eig[i] := F_MO_act[i,i]
     #eig = np.einsum("ii->i",F_MO[:p.nbf-p.no1,:p.nbf-p.no1])
 
     iajb = iajb_Full_jit(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
+    println("texto")
     #iajb = compute_iajb(C,I,b_mnl,p)
     
     FI1 = ones(p.nbf-p.no1)
