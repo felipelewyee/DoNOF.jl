@@ -263,7 +263,6 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
 
     Bp = zeros(ndns^2*nvir^2)
     @Threads.threads for ib in 1:nvir
-    #for ib in 1:nvir
         for ia in 1:nvir
             for j in 1:ndns
                 for i in 1:ndns
