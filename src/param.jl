@@ -128,7 +128,7 @@ function Param(bas_name,charge,multiplicity)
     threshec = 10^-10 # Convergencia  de la energía en optimización orbital
     threshen = 10^-10 # Convergencia  de la energía en optimización de ocupaciones
     scaling = true     # Scaling for f
-    nzeros = 1
+    nzeros = 0
     nzerosm = 5
     nzerosr = 0
     itziter = 10        # Iteraciones para scaling constante

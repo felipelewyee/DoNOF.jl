@@ -24,9 +24,9 @@ function compute_integrals(bas_name,p)
 
     if(p.gpu)
         if (!p.RI)
-            I = cu(I)
+            I = CuArray(I)
         else
-            b_mnl = cu(b_mnl)
+            b_mnl = CuArray(b_mnl)
         end
     end
 
@@ -41,9 +41,9 @@ function computeJKj(C,I,b_mnl,p)
 
     if(p.gpu)
         if(p.RI)
-            J,K = JKj_RI(cu(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+            J,K = JKj_RI(CuArray(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
         else
-            J,K = JKj_Full(cu(C),I,p.nbf,p.nbf5)
+            J,K = JKj_Full(CuArray(C),I,p.nbf,p.nbf5)
         end
         return Array(J),Array(K)
     else
@@ -95,9 +95,9 @@ function computeJKH_MO(C,H,I,b_mnl,p)
 
     if(p.gpu)
         if(p.RI)
-            J_MO,K_MO,H_core = JKH_MO_RI(cu(C),cu(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+            J_MO,K_MO,H_core = JKH_MO_RI(CuArray(C),CuArray(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
         else
-            J_MO,K_MO,H_core = JKH_MO_Full(cu(C),cu(H),I,p.nbf,p.nbf5)
+            J_MO,K_MO,H_core = JKH_MO_Full(CuArray(C),CuArray(H),I,p.nbf,p.nbf5)
         end
         return Array(J_MO),Array(K_MO),Array(H_core)
      else
