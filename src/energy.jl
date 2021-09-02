@@ -1,6 +1,6 @@
-function compute_energy(mol,bas,Z,xyz,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical")
+function compute_energy(bas_name,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical")
 
-    S,T,V,H,I,b_mnl = compute_integrals(mol,bas,p)
+    S,T,V,H,I,b_mnl = compute_integrals(bas_name,p)
 
     if(printmode)
         println("Number of basis functions                   (NBF)    = ",p.nbf)
@@ -17,13 +17,15 @@ function compute_energy(mol,bas,Z,xyz,p;C=nothing,fmiug0=nothing,gamma=nothing,d
         println("")
     end
 
-    E_nuc = 0#bset.molecule.Vnuc
-    for iatom in 1:p.natoms
-        for jatom in iatom+1:p.natoms
-            E_nuc += Z[iatom]*Z[jatom]/norm(xyz[iatom]-xyz[jatom])
-        end
+    bset = Fermi.GaussianBasis.BasisSet()
+    println("Geometry")
+    println("========")
+    for i in 1:bset.natoms
+        @printf("%s %15.7f %15.7f %15.7f\n",bset.molecule.atoms[i].AtomicSymbol,bset.molecule.atoms[i].xyz[1],bset.molecule.atoms[i].xyz[2],bset.molecule.atoms[i].xyz[3])
     end
-    E_nuc = E_nuc/1.88973
+    println("")
+
+    E_nuc = bset.molecule.Vnuc
 
     Cguess = C
     if isnothing(C)

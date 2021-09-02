@@ -8,9 +8,7 @@ using LoopVectorization
 using CUDA, CUDAKernels, KernelAbstractions
 using Optim
 using SparseArrays
-using Lints
-
-ENV["LIBINT_DATA_PATH"] = pwd()*"/basis"
+using Fermi
 
 include("io.jl")
 include("param.jl")

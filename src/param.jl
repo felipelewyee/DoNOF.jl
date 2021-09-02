@@ -48,15 +48,16 @@ mutable struct Param
     
 end
 
-function Param(mol,bas_name,Z_list,charge,multiplicity)
+function Param(bas_name,charge,multiplicity)
 
-    @lints bas = Lints.BasisSet(bas_name,mol)
-    @lints S = Lints.make_S(bas)
+    Fermi.Options.set("basis", bas_name)
 
-    natoms = size(Z_list)[1]
-    nbf = size(S)[1]
-    nalpha = sum(Z_list)/2-charge
-    nbeta = sum(Z_list)/2
+    bset = Fermi.GaussianBasis.BasisSet()
+
+    natoms = bset.natoms
+    nbf = bset.nbas
+    nalpha = bset.molecule.Nα-charge
+    nbeta = bset.molecule.Nβ
     mul = multiplicity
    
     nbfaux = 0	
@@ -64,7 +65,7 @@ function Param(mol,bas_name,Z_list,charge,multiplicity)
     no1 = 0
 
     for i in 1:natoms
-	Z = Z_list[i]
+	Z = bset.molecule.atoms[i].Z
         if 1<=Z && Z<=  2
             no1 += 0           # H-He
         elseif 3<=Z && Z<= 10

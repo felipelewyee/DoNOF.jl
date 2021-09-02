@@ -1,54 +1,23 @@
-function compute_integrals(mol,bas_name,p)
+function compute_integrals(bas_name,p)
 
     # Integrador
-    @lints bas = Lints.BasisSet(bas_name,mol)
-    
+    helper = Fermi.Integrals.IntegralHelper(eri_type=Fermi.Integrals.Chonky())
+
     # Overlap, Kinetics, Potential
-    @lints S = Lints.make_S(bas)
-    @lints T = Lints.make_T(bas)
-    @lints V = Lints.make_V(bas)
+    S = Array(helper["S"])
+    T = Array(helper["T"])
+    V = Array(helper["V"])
     H = T + V
     I = []
     b_mnl = []
-    println("Basis Set                                            = ",bas_name)
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
-        @lints I = Lints.make_ERI4(bas)
+        I = Array(helper["ERI"])
     else
-        abas = ""
-        abas_name = ""
-        try
-            abas_name = bas_name*"-jkfit"
-            @lints abas = Lints.BasisSet(bas_name*"-jkfit",mol)
-            println("Auxiliary Basis Set                                  = ",abas_name)
-        catch
-            #try
-            #    abas_name = bas_name*"-ri"
-            #    @lints abas = Lints.BasisSet(bas_name*"-ri",mol)
-            #    println("Auxiliary Basis Set                                  = ",abas_name)
-            #catch
-                abas_name = "def2-universal-jkfit"
-                @lints abas = Lints.BasisSet("def2-universal-jkfit",mol)
-                println("Auxiliary Basis Set                                  = ",abas_name)
-            #end
-        end
-
-        @lints Pmn = Lints.make_ERI3(bas,abas)
-        @lints metric = Lints.make_ERI2(abas)
-    
-        eigvals,eigvecs = eigen(metric)    
-
-        for i in 1:size(eigvals)[1]
-            if(real(eigvals[i])>10^-12)
-                eigvals[i] = real(eigvals[i])^(-1/2)  
-            else
-                eigvals[i] = 0
-            end
-        end
-        @tullio metric[m,s] := eigvecs[m,n]*eigvals[n]*eigvecs[s,n] 
-        #metric = Array(metric^(-1/2))
-        
-        @tullio b_mnl[m,n,Q] := Pmn[P,m,n]*metric[P,Q]
+        Fermi.Options.set("df", true)
+        helper = Fermi.Integrals.IntegralHelper()
+        b_mnl = Array(helper["ERI"])
+        b_mnl = permutedims(b_mnl, [2, 3, 1])
 
         p.nbfaux = size(b_mnl)[3]
     end
