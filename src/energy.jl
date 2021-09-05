@@ -21,7 +21,7 @@ function compute_energy(bas_name,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfi
     println("Geometry")
     println("========")
     for i in 1:bset.natoms
-        @printf("%s %15.7f %15.7f %15.7f\n",bset.molecule.atoms[i].AtomicSymbol,bset.molecule.atoms[i].xyz[1],bset.molecule.atoms[i].xyz[2],bset.molecule.atoms[i].xyz[3])
+        @printf("%2s %15.7f %15.7f %15.7f\n",bset.molecule.atoms[i].AtomicSymbol,bset.molecule.atoms[i].xyz[1],bset.molecule.atoms[i].xyz[2],bset.molecule.atoms[i].xyz[3])
     end
     println("")
 

@@ -17,9 +17,9 @@ uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
 [[ArrayInterface]]
 deps = ["IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
-git-tree-sha1 = "b6dec2ed4f10840e2cf836508525656450d4d289"
+git-tree-sha1 = "019303a0f26d6012f35ecdfa4618551d145fb9f2"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "3.1.26"
+version = "3.1.31"
 
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -175,9 +175,9 @@ version = "0.3.0"
 
 [[FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "7c365bdef6380b29cfc5caaf99688cd7489f9b87"
+git-tree-sha1 = "a3b7b041753094f3b17ffa9d2e2e07d8cace09cd"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.12.2"
+version = "0.12.3"
 
 [[FiniteDiff]]
 deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
@@ -277,9 +277,9 @@ version = "1.3.0"
 
 [[LayoutPointers]]
 deps = ["ArrayInterface", "LinearAlgebra", "ManualMemory", "SIMDTypes", "Static"]
-git-tree-sha1 = "560d7dcaf8cf8e5b13f73d90b4c90288f8ad7d14"
+git-tree-sha1 = "d2bda6aa0b03ce6f141a2dc73d0bcb7070131adc"
 uuid = "10f19ff3-798f-405d-979b-55457f8fc047"
-version = "0.1.2"
+version = "0.1.3"
 
 [[LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
@@ -331,9 +331,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LoopVectorization]]
 deps = ["ArrayInterface", "DocStringExtensions", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "Polyester", "Requires", "SLEEFPirates", "Static", "StrideArraysCore", "ThreadingUtilities", "UnPack", "VectorizationBase"]
-git-tree-sha1 = "f9640bc4d614bc33574e20ed846c4c4b3bd1126e"
+git-tree-sha1 = "d3dc5928b0fb675ab4bbf3a825f887b9fbc60bcf"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
-version = "0.12.67"
+version = "0.12.70"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -427,9 +427,9 @@ uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[Polyester]]
 deps = ["ArrayInterface", "BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "ManualMemory", "Requires", "Static", "StrideArraysCore", "ThreadingUtilities"]
-git-tree-sha1 = "1a49c38dd28acaf883d755e6ab21b06e5f51595e"
+git-tree-sha1 = "114396b925753bb6ab11cf436c5ff854c72a59c2"
 uuid = "f517fe37-dbe3-4b94-8317-1923a5111588"
-version = "0.4.1"
+version = "0.4.2"
 
 [[PositiveFactorizations]]
 deps = ["LinearAlgebra"]
@@ -526,9 +526,9 @@ version = "1.6.1"
 
 [[Static]]
 deps = ["IfElse"]
-git-tree-sha1 = "62701892d172a2fa41a1f829f66d2b0db94a9a63"
+git-tree-sha1 = "854b024a4a81b05c0792a4b45293b85db228bd27"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.3.0"
+version = "0.3.1"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
@@ -553,9 +553,9 @@ version = "0.33.10"
 
 [[StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "Requires", "SIMDTypes", "Static", "ThreadingUtilities"]
-git-tree-sha1 = "c9cc708f755b3f7b1a9982cb8a6e63f5c3c12fc6"
+git-tree-sha1 = "6abbf6ed8d2a0135a899619260fb7432e120654d"
 uuid = "7792a7ef-975c-4747-a70f-980b88e8d1da"
-version = "0.2.0"
+version = "0.2.1"
 
 [[Strided]]
 deps = ["LinearAlgebra", "TupleTools"]
@@ -641,9 +641,9 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[VectorizationBase]]
 deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "Hwloc", "IfElse", "LayoutPointers", "Libdl", "LinearAlgebra", "SIMDTypes", "Static"]
-git-tree-sha1 = "22fd0d5214b0423cb18b8cf40988f0606962c724"
+git-tree-sha1 = "e7ad67a528cf7de002cdc1113e4d08e80da689bd"
 uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
-version = "0.21.1"
+version = "0.21.3"
 
 [[ZipFile]]
 deps = ["Libdl", "Printf", "Zlib_jll"]

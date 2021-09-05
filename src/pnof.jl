@@ -211,11 +211,11 @@ function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
                         if jw==iw
                             dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
                         else
-			    dn_dgamma[ip][ndoc+(ncwo-1)*(i-1)+iw] *= np.cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
+			    dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
                         end
-                    if ip-ll<ncwo-1
-                        dn_dgamma[ip][ndoc+(ncwo-1)*(i+1)+iw] *= np.sin(gamma[ndoc+(ncwo-1)*(i+1)+(ip-ll)])^2
                     end
+                    if ip-ll+1<=ncwo-1
+                        dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+(ip-ll+1)])^2
                     end
                 end
             end
@@ -351,6 +351,12 @@ function calce(gamma,J_MO,K_MO,H_core,p)
 	@tullio E += n_alpha[i]*K_MO_alpha_alpha[i,i]
 #        E = E - np.einsum('i,ji->',n[p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True) - np.einsum('i,ii->',n[p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True)
     end
+    #for i in 1:size(dn_dgamma)[1]
+    #    for j in 1:size(dn_dgamma)[2]
+    #        println(i," ",j," ",dn_dgamma[i,j])
+    #    end
+    #end 
+    #stop
     return E
 end
 

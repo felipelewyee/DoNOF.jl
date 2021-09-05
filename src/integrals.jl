@@ -1,3 +1,4 @@
+using NPZ
 function compute_integrals(bas_name,p)
 
     # Integrador
