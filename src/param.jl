@@ -12,6 +12,7 @@ mutable struct Param
     nsoc::Int64
     ndns::Int64
     nvir::Int64
+    closed::Bool
     nac::Int64
     nbf5::Int64
     no0::Int64
@@ -48,7 +49,7 @@ mutable struct Param
     
 end
 
-function Param(bas_name,charge,multiplicity)
+function Param(bas_name)
 
     Fermi.Options.set("basis", bas_name)
 
@@ -56,9 +57,9 @@ function Param(bas_name,charge,multiplicity)
 
     natoms = bset.natoms
     nbf = bset.nbas
-    nalpha = bset.molecule.Nα-charge
+    nalpha = bset.molecule.Nα
     nbeta = bset.molecule.Nβ
-    mul = multiplicity
+    mul = bset.molecule.multiplicity
    
     nbfaux = 0	
     ne = nalpha + nbeta
@@ -102,7 +103,7 @@ function Param(bas_name,charge,multiplicity)
         if ndoc>0
 	    if ncwo!=1
 	        if ncwo==1 && ncwo>nvir/ndoc
-		    ncwo = int(nvir/ndoc)
+		    ncwo = trunc(Int, nvir/ndoc)
                 end
 	    end
 	else
@@ -110,8 +111,9 @@ function Param(bas_name,charge,multiplicity)
         end
     end
 
+    closed = (nbeta == (ne+mul-1)/2 && nalpha == (ne-mul+1)/2)
+
     noptorb = nbf
-    #closed = nbeta ==
     nac = ndoc * (1+ncwo)
     nbf5 = no1 + nac + nsoc
     no0 = nbf - nbf5
@@ -159,6 +161,7 @@ function Param(bas_name,charge,multiplicity)
     nsoc,
     ndns,
     nvir,
+    closed,
     nac,
     nbf5,
     no0,

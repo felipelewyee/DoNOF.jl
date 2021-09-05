@@ -165,8 +165,8 @@ function computeF_RO_CPU(J,K,n,H,cj12,ck12,p)
     @tullio F_beta[i,m,n] += n_beta[i]*J_alpha[j,m,n]
     @tullio F_beta[i,m,n] += -0.5*n_beta[i]*K_alpha[j,m,n]
     #F[:p.nbeta,:,:] += np.einsum('i,jmn->imn',n[:p.nbeta],J[p.nbeta:p.nalpha,:,:]-0.5*K[p.nbeta:p.nalpha,:,:])
-    @tullio F_alpha[i,m,n] += 0.5*J_alpha[j,m,n]
-    @tullio F_alpha[i,m,n] += -0.5*K_alpha[j,m,n]
+    @tullio avx=false F_alpha[i,m,n] += 0.5*J_alpha[j,m,n]
+    @tullio avx=false F_alpha[i,m,n] += -0.5*K_alpha[j,m,n]
     #F[p.nbeta:p.nalpha,:,:] += 0.5*np.einsum('jmn->mn',J[p.nbeta:p.nalpha,:,:]-K[p.nbeta:p.nalpha,:,:])
     F[p.nbeta+1:p.nalpha,:,:] -= 0.5*(J[p.nbeta+1:p.nalpha,:,:]-K[p.nbeta+1:p.nalpha,:,:]) #Remove diag.
     @tullio F_nbf5[i,m,n] += n_nbf5[i]*J_alpha[j,m,n]
@@ -174,11 +174,11 @@ function computeF_RO_CPU(J,K,n,H,cj12,ck12,p)
     #F[p.nalpha:p.nbf5,:,:] += np.einsum('i,jmn->imn',n[p.nalpha:p.nbf5],J[p.nbeta:p.nalpha,:,:]-0.5*K[p.nbeta:p.nalpha,:,:])
 
     # PRODWROij
-    @tullio F_alpha[i,m,n] += n_beta[j]*J_beta[j,m,n]
-    @tullio F_alpha[i,m,n] += -0.5*n_beta[j]*K_beta[j,m,n]
+    @tullio avx=false F_alpha[i,m,n] += n_beta[j]*J_beta[j,m,n]
+    @tullio avx=false F_alpha[i,m,n] += -0.5*n_beta[j]*K_beta[j,m,n]
     #F[p.nbeta:p.nalpha,:,:] += np.einsum('j,jmn->mn',n[:p.nbeta],J[:p.nbeta,:,:]) - 0.5*np.einsum('j,jmn->mn',n[:p.nbeta],K[:p.nbeta,:,:])
-    @tullio F_alpha[i,m,n] += n_nbf5[j]*J_nbf5[j,m,n]
-    @tullio F_alpha[i,m,n] += -0.5*n_nbf5[j]*K_nbf5[j,m,n]
+    @tullio avx=false F_alpha[i,m,n] += n_nbf5[j]*J_nbf5[j,m,n]
+    @tullio avx=false F_alpha[i,m,n] += -0.5*n_nbf5[j]*K_nbf5[j,m,n]
     #F[p.nbeta:p.nalpha,:,:] += np.einsum('j,jmn->mn',n[p.nalpha:p.nbf5],J[p.nalpha:p.nbf5,:,:]) - 0.5*np.einsum('j,jmn->mn',n[p.nalpha:p.nbf5],K[p.nalpha:p.nbf5,:,:])
     return F
 end

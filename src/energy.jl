@@ -85,7 +85,7 @@ function compute_energy(bas_name,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfi
             @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
         end
         for i in p.nbeta+1:p.nalpha
-	    if p.MSpin==0
+	    if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
 	    else
                 @printf(" %3i    %9.7f  %10.8f\n",i,n[i],elag[i,i])
