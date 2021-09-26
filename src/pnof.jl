@@ -3,6 +3,8 @@ function PNOFi_selector(n,p)
     #    cj12,ck12 = CJCKD5(n,p)
     if p.ipnof==7
         cj12,ck12 = CJCKD7(n,p.ista,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
+    elseif p.ipnof==8
+        cj12,ck12 = CJCKD8(n,p.ista,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin,p.lamb)
     end
 
     return cj12,ck12
@@ -33,8 +35,6 @@ function CJCKD7(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 
     @tullio cj12[i,j] := 2*n[i]*n[j]
     @tullio ck12[i,j] := n[i]*n[j] + fi[i]*fi[j]
-    #cj12 = 2*np.outer(n,n)
-    #ck12 = np.outer(n,n) + np.outer(fi,fi)
 
     # Intrapair Electron Correlation
 
@@ -42,7 +42,6 @@ function CJCKD7(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 	n_beta_alpha = view(n,nbeta+1:nalpha)
 	ck12_beta_alpha = view(ck12,nbeta+1:nalpha,nbeta+1:nalpha)
 	@tullio ck12_beta_alpha[i,j] = 2*n_beta_alpha[i]*n_beta_alpha[j]
-        #ck12[nbeta:nalpha,nbeta:nalpha] = 2*np.outer(n[nbeta:nalpha],n[nbeta:nalpha])
     end
 
     for l in 1:ndoc
@@ -62,7 +61,6 @@ function CJCKD7(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 	ck12_ww = view(ck12,ll:ul,ll:ul)
 	n_ww = view(n,ll:ul)
 	@tullio ck12_ww[i,j] = -sqrt(n_ww[i]*n_ww[j])
-        #ck12[ll:ul,ll:ul] = -sqrt.(outer(n[ll:ul],n[ll:ul]))
     end
 
     return cj12,ck12
@@ -93,15 +91,8 @@ function der_CJCKD7(n,ista,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
 
     # Interpair Electron correlation #
 
-    #Dcj12r = np.zeros((nbf5,nbf5,nv))
-    #Dck12r = np.zeros((nbf5,nbf5,nv))
     @tullio Dcj12r[i,j,k] := 2*dn_dgamma[i,k]*n[j]
     @tullio Dck12r[i,j,k] := dn_dgamma[i,k]*n[j] + dfi_dgamma[i,k]*fi[j]
-    #for k in 1:nv
-    #    Dcj12r[:,:,k] = 2*np.outer(dn_dgamma[:,k],n)
-    #    Dck12r[:,:,k] = np.outer(dn_dgamma[:,k],n) + np.outer(dfi_dgamma[:,k],fi)
-    #Dcj12r = 2*np.einsum('ik,j->ijk',dn_dgamma,n)    
-    #Dck12r = np.einsum('ik,j->ijk',dn_dgamma,n) + np.einsum('ik,j->ijk',dfi_dgamma,fi)    
 
     # Intrapair Electron Correlation
 
@@ -131,22 +122,123 @@ function der_CJCKD7(n,ista,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
 	@tullio Dck12r_occ_cwo[i,j] = 1/2 * 1/sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
 	@tullio Dck12r_cwo_occ[i,j] = 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,j] * sqrt(n_occ)
 	@tullio Dck12r_cwo_cwo[i,j,k] = - 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,k] * sqrt(n_cwo[j])
-        #for k in 1:nv
-        #    Dck12r[ldx,ll:ul,k] = 1/2 * 1/sqrt(a) * dn_dgamma[ldx,k] * sqrt.(n[ll:ul])
-	#    Dck12r[ll:ul,ldx,k] = 1/2 * 1.0 ./sqrt.(b) .* dn_dgamma[ll:ul,k]' * sqrt(n[ldx])
-	    #Dck12r[ll:ul,ll:ul,k] = - 1/2 * 1/sqrt.(b) .* (dn_dgamma[ll:ul,k]).*(sqrt.(n[ll:ul]))'
-        #end	
-        #Dck12r[ldx,ll:ul,:nv] = 1/2 * 1/np.sqrt(a) * np.einsum('j,i->ij',dn_dgamma[ldx,:nv],np.sqrt(n[ll:ul]))
-        #Dck12r[ll:ul,ldx,:nv] = 1/2 * np.einsum('i,ij->ij', 1/np.sqrt(b),dn_dgamma[ll:ul,:nv])*np.sqrt(n[ldx])
 
-        #for k in range(nv):
-        #    Dck12r[ll:ul,ll:ul,k] = - 1/2 * np.einsum('i,i,j->ij',1/np.sqrt(b),dn_dgamma[ll:ul,k],np.sqrt(n[ll:ul]))
     end
     return Dcj12r,Dck12r
 
 end
 
+function CJCKD8(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin,lamb)
 
+    nbf5 = size(n)[1]
+    delta = zeros(nbf5,nbf5)
+    for i in 1:nbf5
+        for j in 1:nbf5
+            delta[i,j] = lamb*min(n[i]*n[j],(1-n[i])*(1-n[j]))
+        end
+    end
+    ppi = zeros(nbf5,nbf5)
+    for i in 1:nbf5
+        for j in 1:nbf5
+            ppi[i,j] = sqrt((n[i]*(1-n[j])+delta[i,j]) * (n[j]*(1-n[i])+delta[j,i]))
+        end
+    end
+
+    # Interpair Electron correlation #
+
+    @tullio cj12[i,j] := 2*n[i]*n[j] - 2*delta[i,j]
+    @tullio ck12[i,j] := n[i]*n[j] - delta[i,j] + ppi[i,j]
+
+    # Intrapair Electron Correlation
+
+    if MSpin==0 && nsoc>1
+        n_beta_alpha = view(n,nbeta+1:nalpha)
+        ck12_beta_alpha = view(ck12,nbeta+1:nalpha,nbeta+1:nalpha)
+        @tullio ck12_beta_alpha[i,j] = 2*n_beta_alpha[i]*n_beta_alpha[j]
+    end
+
+    for l in 1:ndoc
+        ldx = no1 + l
+        # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+        ll = no1 + ndns + ncwo*(ndoc - l) + 1
+        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+
+        cj12[ldx,ll:ul] .= 0
+        cj12[ll:ul,ldx] .= 0
+
+        cj12[ll:ul,ll:ul] .= 0
+
+        ck12[ldx,ll:ul] .= sqrt.(n[ldx]*n[ll:ul])
+        ck12[ll:ul,ldx] .= sqrt.(n[ldx]*n[ll:ul])
+
+        ck12_ww = view(ck12,ll:ul,ll:ul)
+        n_ww = view(n,ll:ul)
+        @tullio ck12_ww[i,j] = -sqrt(n_ww[i]*n_ww[j])
+    end
+
+    return cj12,ck12
+
+end
+
+function der_CJCKD8(n,ista,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
+
+    nbf5 = size(n)[1]
+    delta = zeros(nbf5,nbf5)
+    for i in 1:nbf5
+        for j in 1:nbf5
+            delta[i,j] = lamb*min(n[i]*n[j],(1-n[i])*(1-n[j]))
+        end
+    end
+    ppi = zeros(nbf5,nbf5)
+    for i in 1:nbf5
+        for j in 1:nbf5
+            ppi[i,j] = sqrt((n[i]*(1-n[j])+delta[i,j]) * (n[j]*(1-n[i])+delta[j,i]))
+        end
+    end
+
+    # Interpair Electron correlation #
+
+    @tullio cj12[i,j] := 2*n[i]*n[j] - delta[i,j]
+    @tullio ck12[i,j] := n[i]*n[j] - delta[i,j] + ppi[i,j]
+
+    # Interpair Electron correlation #
+
+    @tullio Dcj12r[i,j,k] := 2*dn_dgamma[i,k]*n[j]
+    @tullio Dck12r[i,j,k] := dn_dgamma[i,k]*n[j] + dfi_dgamma[i,k]*fi[j]
+
+    # Intrapair Electron Correlation
+
+    for l in 1:ndoc
+        ldx = no1 + l
+
+        # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+        ll = no1 + ndns + ncwo*(ndoc - l) + 1
+        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+
+        Dcj12r[ldx,ll:ul,1:nv] .= 0
+        Dcj12r[ll:ul,ldx,1:nv] .= 0
+
+        Dcj12r[ll:ul,ll:ul,1:nv] .= 0
+
+        a = max(n[ldx],10^-15)
+        b = n[ll:ul]
+        b[b.<10^-15] .= 10^-15
+
+        Dck12r_occ_cwo = view(Dck12r,ldx,ll:ul,1:nv)
+        Dck12r_cwo_occ = view(Dck12r,ll:ul,ldx,1:nv)
+        Dck12r_cwo_cwo = view(Dck12r,ll:ul,ll:ul,1:nv)
+        n_cwo = view(n,ll:ul)
+        n_occ = n[ldx]
+        dn_dgamma_occ = view(dn_dgamma,ldx,1:nv)
+        dn_dgamma_cwo = view(dn_dgamma,ll:ul,1:nv)
+        @tullio Dck12r_occ_cwo[i,j] = 1/2 * 1/sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
+        @tullio Dck12r_cwo_occ[i,j] = 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,j] * sqrt(n_occ)
+        @tullio Dck12r_cwo_cwo[i,j,k] = - 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,k] * sqrt(n_cwo[j])
+
+    end
+    return Dcj12r,Dck12r
+
+end
 
 function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 

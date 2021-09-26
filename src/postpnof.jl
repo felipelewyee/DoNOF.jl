@@ -11,7 +11,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
             Dalpha = computeDalpha_HF(C,I,b_mnl,p)
             D = D + 0.5*Dalpha
         end
-        J,K = JK_HF_Full(D,I,p)
+        J,K = computeJK_HF(D,I,p)
         F = H + 2*J - K
 	@tullio DH[i,j] := D[i,k]*H[k,j]
 	@tullio DF[i,j] := D[i,k]*F[k,j]
@@ -47,7 +47,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
     @tullio eig[i] := F_MO_act[i,i]
     #eig = np.einsum("ii->i",F_MO[:p.nbf-p.no1,:p.nbf-p.no1])
 
-    iajb = iajb_Full_jit(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
+    iajb = compute_iajb(C,I,p)
     #iajb = compute_iajb(C,I,b_mnl,p)
     
     FI1 = ones(p.nbf-p.no1)
@@ -118,7 +118,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
     ECndl = 0
     if (p.MSpin==0)
         if p.nbeta != p.nalpha
-            CK12nd_alpha_beta = view(CK12nd_alpha_beta,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
+            CK12nd_alpha_beta = view(CK12nd,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
             K_MO_alpha_beta = view(K_MO,p.nbeta:p.nalpha,p.nbeta:p.nalpha)
             @tullio avx=false ECndHF += -CK12nd_alpha_beta[i,j]*K_MO_alpha_beta[j,i]
         end
@@ -170,7 +170,16 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
 
     if(nofmp2strategy=="numerical")
         println("....Numerical Strategy for Tijab")
-        Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
+        #Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
+
+        println("........Performing analytical guess for Tijab")
+        B = transpose(B)
+        A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf,tol=1e-5)
+        println("........A matrix built")
+        @printf("............It has %d/%d elements with Tol = %4.1e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-5)
+        Tijab = B/A
+        B = transpose(B)
+
         println("........Tijab Guess Computed")
         Tijab = vec(Tijab)
         R_norm = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
@@ -349,12 +358,12 @@ function build_R(T,B,F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
 
     R = B-Bp
 
-    return norm(R)
+    return norm(R)^2
 end
 
 
 
-function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
+function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf;tol = 1e-10)
     npair = zeros(nvir)
     for i in 1:ndoc
         ll = ncwo*(ndoc - i) + 1
@@ -362,100 +371,76 @@ function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf)
         npair[ll:ul] .= i
     end
     A = spzeros(ndns^2*nvir^2,ndns^2*nvir^2)
-    #IROW = np.empty((2*ndns**2*nvir**2*(nbf-no1)),dtype=np.int32)
-    #ICOL = np.empty((2*ndns**2*nvir**2*(nbf-no1)),dtype=np.int32)
 
-    #nnz = -1
-    for ib in 1:nvir
+    l = Threads.SpinLock()
+    @Threads.threads for ib in 1:nvir
         for ia in 1:nvir
             for j in 1:ndns
                 for i in 1:ndns
-                    #print(nnz)
                     jab =     (j-1)*ndns + (ia-1)*ndns*ndns + (ib-1)*ndns*ndns*nvir
                     iab = i              + (ia-1)*ndns*ndns + (ib-1)*ndns*ndns*nvir
                     ijb = i + (j-1)*ndns                    + (ib-1)*ndns*ndns*nvir
                     ija = i + (j-1)*ndns + (ia-1)*ndns*ndns
                     ijab= i + (j-1)*ndns + (ia-1)*ndns*ndns + (ib-1)*ndns*ndns*nvir
 
-                    #nnz = nnz + 1
+		    Threads.lock(l)
                     A[ijab,i + jab] = (F_MO[ia+ndns,ia+ndns] + F_MO[ib+ndns,ib+ndns] - F_MO[i,i] - F_MO[j,j])
-                    #IROW[nnz] = (ijab)
-                    #ICOL[nnz] = (i + jab)
+		    Threads.unlock(l)
 
                     for k in 1:i-1
-                        if abs(F_MO[i,k])>1e-10
+                        if abs(F_MO[i,k])>tol
                             Cki = FI2[k]*FI2[i]
-                            #nnz += 1
+		            Threads.lock(l)
                             A[ijab,k + jab]=(- Cki*F_MO[i,k])
-                            #IROW[nnz]=(ijab)
-                            #ICOL[nnz]=(k + jab)
-                            #nnz += 1
                             A[k+jab,ijab]=(- Cki*F_MO[i,k])
-                            #ICOL[nnz]=(ijab)
-                            #IROW[nnz]=(k + jab)
+		            Threads.unlock(l)
 			end
 		    end
                     for k in 1:j-1
-                        if abs(F_MO[j,k])>1e-10
+                        if abs(F_MO[j,k])>tol
                             Ckj = FI2[k]*FI2[j]
-                            #nnz += 1
+		            Threads.lock(l)
 			    A[ijab,(k-1)*ndns+iab]=(- Ckj*F_MO[j,k])
-                            #IROW[nnz]=(ijab)
-                            #ICOL[nnz]=(k*ndns + iab)
-                            #nnz += 1
-                            #A[nnz]=(- Ckj*F_MO[j,k])
 			    A[(k-1)*ndns+iab,ijab]=(- Ckj*F_MO[j,k])
-                            #ICOL[nnz]=(ijab)
-                            #IROW[nnz]=(k*ndns + iab)
+		            Threads.unlock(l)
 			end
 		    end
 
                     for k in 1:ia-1
-                        if abs(F_MO[ia+ndns,k+ndns])>1e-10
+                        if abs(F_MO[ia+ndns,k+ndns])>tol
                             if npair[k]==npair[ia]
                                 Ckia = FI1[k+ndns]*FI1[ia+ndns]
                             else
                                 Ckia = FI2[k+ndns]*FI2[ia+ndns]
 			    end
-                            #nnz += 1
+		            Threads.lock(l)
 			    A[ijab,(k-1)*ndns*ndns + ijb]=(Ckia*F_MO[ia+ndns,k+ndns])
-                            #IROW[nnz]=(ijab)
-                            #ICOL[nnz]=(k*ndns*ndns + ijb)
-                            #nnz += 1
 			    A[(k-1)*ndns*ndns + ijb,ijab]=(Ckia*F_MO[ia+ndns,k+ndns])
-                            #ICOL[nnz]=(ijab)
-                            #IROW[nnz]=(k*ndns*ndns + ijb)
+		            Threads.unlock(l)
 			end
 		    end
 
                     for k in 1:ib-1
-                        if abs(F_MO[ib+ndns,k+ndns])>1e-10
+                        if abs(F_MO[ib+ndns,k+ndns])>tol
                             if npair[k]==npair[ib]
                                 Ckib = FI1[k+ndns]*FI1[ib+ndns]
                             else
                                 Ckib = FI2[k+ndns]*FI2[ib+ndns]
 			    end
-                            #nnz += 1
+		            Threads.lock(l)
 			    A[ijab,(k-1)*ndns*ndns*nvir + ija]=(Ckib*F_MO[ib+ndns,k+ndns])
-                            #IROW[nnz]=(ijab)
-                            #ICOL[nnz]=(k*ndns*ndns*nvir + ija)
-                            #nnz += 1
-                            #A[nnz]=(Ckib*F_MO[ib+ndns,k+ndns])
+		            Threads.unlock(l)
+		            Threads.lock(l)
 			    A[(k-1)*ndns*ndns*nvir + ija,ijab]=(Ckib*F_MO[ib+ndns,k+ndns])
-                            #ICOL[nnz]=(ijab)
-                            #IROW[nnz]=(k*ndns*ndns*nvir + ija)
+		            Threads.unlock(l)
 			end
 		    end
 
-    #A = A[:nnz+1]
-    #IROW = IROW[:nnz+1]
-    #ICOL = ICOL[:nnz+1]
-
-end
-end
-end
-end
-    return A#,(IROW,ICOL)
+                end
+            end
+        end
+    end
+    return A
 end
 
 

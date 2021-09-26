@@ -46,6 +46,7 @@ mutable struct Param
     RI::Bool
     HighSpin::Bool
     MSpin::Int64
+    lamb::Float64
     
 end
 
@@ -148,7 +149,8 @@ function Param(bas_name)
 
     HighSpin = false
     MSpin = 0
-    
+
+    lamb = 0.0
 
     return Param(natoms,
     nbf,
@@ -194,7 +196,8 @@ function Param(bas_name)
     gpu,
     RI,
     HighSpin,
-    MSpin)
+    MSpin,
+    lamb)
 end
 
 function set_ncwo(p,ncwo)

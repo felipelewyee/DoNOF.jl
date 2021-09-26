@@ -176,6 +176,19 @@ function computeDalpha_HF(C,I,b_mnl,p)
     return D
 end
 
+function computeJK_HF(D,I,p)
+
+    if(p.gpu)
+	J,K = JK_HF_Full(cu(D),I,p)
+	return Array(J),Array(K)
+    else
+        J,K = JK_HF_Full(D,I,p)
+        return J,K
+    end
+
+
+end
+
 function JK_HF_Full(D,I,p)
 
     #denmatj
@@ -184,14 +197,26 @@ function JK_HF_Full(D,I,p)
 
     return J,K
 
+end
+
+function compute_iajb(C,I,p)
+
+    if(p.gpu)
+        iajb = iajb_Full(cu(C),I,p.no1,p.nalpha,p.nbf,p.nbf5)
+	return Array(iajb)
+    else
+        iajb = iajb_Full(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
+        return iajb
     end
 
-function iajb_Full_jit(C,I,no1,nalpha,nbf,nbf5)
+end
+
+function iajb_Full(C,I,no1,nalpha,nbf,nbf5)
 
     Cocc = view(C,:,no1+1:nalpha)
     Ccwo = view(C,:,nalpha+1:nbf)
 
-    @tullio iajb[i,a,j,b] := Cocc[m,i]*Ccwo[n,a]*I[m,n,s,l]*Cocc[s,j]*Ccwo[l,b]
+    @tullio iajb[i,a,j,b] := ((Ccwo[n,a]*((Cocc[m,i]*I[m,n,s,l])*Cocc[s,j]))*Ccwo[l,b])
 
     return iajb
 
