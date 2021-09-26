@@ -1,4 +1,4 @@
-function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
+function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy,tol)
 
     println(" NOF-MP2")
     println("=========")
@@ -57,7 +57,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
 
     FI2[p.nalpha-p.no1+1:p.nbf5-p.no1] = abs.(1.0 .-2*occ[p.nalpha-p.no1+1:p.nbf5-p.no1]).^2
 
-    Tijab = CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
+    Tijab = CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy,tol)
     ECd = 0
 
     for k in 1:p.nvir
@@ -161,7 +161,7 @@ function nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
 
 end
 
-function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
+function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy,tol)
 
     println("Starting CalTijab")
 
@@ -170,16 +170,7 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
 
     if(nofmp2strategy=="numerical")
         println("....Numerical Strategy for Tijab")
-        #Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
-
-        println("........Performing analytical guess for Tijab")
-        B = transpose(B)
-        A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf,tol=1e-5)
-        println("........A matrix built")
-        @printf("............It has %d/%d elements with Tol = %4.1e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-5)
-        Tijab = B/A
-        B = transpose(B)
-
+        Tijab = Tijab_guess(iajb,eig,p.ndoc,p.ndns,p.nvir)
         println("........Tijab Guess Computed")
         Tijab = vec(Tijab)
         R_norm = build_R(Tijab,B,F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
@@ -189,7 +180,7 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy)
     elseif(nofmp2strategy=="analytical")
         println("....Analytical Strategy for Tijab")
         B = transpose(B)
-        A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf)
+        A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf,tol)
         println("........A matrix built")
         @printf("............It has %d/%d elements with Tol = %4.1e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-10)
         Tijab = B/A
@@ -208,7 +199,7 @@ end
 
 function build_B(iajb,FI1,FI2,ndoc,ndns,nvir,ncwo)
     B = zeros(ndns^2*nvir^2)
-    for i in 1:ndns
+    @Threads.threads  for i in 1:ndns
         lmin_i = ndns+ncwo*(ndns-i)+1
         lmax_i = ndns+ncwo*(ndns-i)+ncwo
         for j in 1:ndns
@@ -247,7 +238,7 @@ end
 
 function Tijab_guess(iajb,eig,ndoc,ndns,nvir)
     Tijab = zeros(nvir^2*ndns^2)
-    for ia in 1:nvir
+    @Threads.threads for ia in 1:nvir
         for i in 1:ndns
             for ib in 1:nvir
                 for j in 1:ndns
@@ -363,7 +354,7 @@ end
 
 
 
-function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf;tol = 1e-10)
+function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf,tol)
     npair = zeros(nvir)
     for i in 1:ndoc
         ll = ncwo*(ndoc - i) + 1

@@ -1,4 +1,4 @@
-function compute_energy(bas_name,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical")
+function compute_energy(bas_name,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-8)
 
     S,T,V,H,I,b_mnl = compute_integrals(bas_name,p)
 
@@ -112,7 +112,7 @@ function compute_energy(bas_name,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfi
     end
 
     if do_nofmp2
-        nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy)
+        nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy,tolnofmp2)
     end
 
     return E_nuc + E_old,C,gamma,fmiug0
