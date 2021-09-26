@@ -179,7 +179,7 @@ end
 function computeJK_HF(D,I,p)
 
     if(p.gpu)
-	J,K = JK_HF_Full(cu(D),I,p)
+	J,K = JK_HF_Full(CuArray(D),I,p)
 	return Array(J),Array(K)
     else
         J,K = JK_HF_Full(D,I,p)
@@ -202,7 +202,7 @@ end
 function compute_iajb(C,I,p)
 
     if(p.gpu)
-        iajb = iajb_Full(cu(C),I,p.no1,p.nalpha,p.nbf,p.nbf5)
+        iajb = iajb_Full(CuArray(C),I,p.no1,p.nalpha,p.nbf,p.nbf5)
 	return Array(iajb)
     else
         iajb = iajb_Full(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
