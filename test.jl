@@ -16,5 +16,5 @@ E,C,gamma,fmiug0 = DoNOF.compute_energy(bas_name,p,do_hfidr=true)
 
 p.RI = false
 p.gpu = true
-E,C,gamma,fmiug0 = DoNOF.compute_energy(bas_name,p,C=C,fmiug0=fmiug0,gamma=gamma,do_hfidr=false,do_nofmp2=true,nofmp2strategy="numerical")
+E,C,gamma,fmiug0 = DoNOF.compute_energy(bas_name,p,C=C,fmiug0=fmiug0,gamma=gamma,do_hfidr=false,do_nofmp2=true,nofmp2strategy="analytical",tolnofmp2=1e-4)
 

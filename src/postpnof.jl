@@ -182,7 +182,7 @@ function CalTijab(iajb,F_MO,eig,FI1,FI2,p,nofmp2strategy,tol)
         B = transpose(B)
         A = build_A(F_MO,FI1,FI2,p.no1,p.ndoc,p.ndns,p.nvir,p.ncwo,p.nbf,tol)
         println("........A matrix built")
-        @printf("............It has %d/%d elements with Tol = %4.1e\n",nnz(A),p.nvir^4*p.ndoc^4,1e-10)
+        @printf("............It has %d/%d elements with Tol = %4.1e\n",nnz(A),p.nvir^4*p.ndoc^4,tol)
         Tijab = B/A
         B = transpose(B)
     end
