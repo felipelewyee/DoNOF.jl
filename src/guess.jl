@@ -20,7 +20,7 @@ end
 
 function read_gamma(;title = "donof")
 
-    gamma = np.load(title*"jld")["gamma"]
+    gamma = load(title*"jld")["gamma"]
     return gamma
 
 end
