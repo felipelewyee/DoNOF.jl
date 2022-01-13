@@ -20,7 +20,8 @@ function read_xyz_from_file(filename)
 
 end
 
-function molecule(mol)
+
+function molecule(mol,basis)
 
     content = split(mol,"\n")
     firstline = content[1]
@@ -32,17 +33,17 @@ function molecule(mol)
                 mol = mol*"\n"
             end
         end
-        charge,mul = split(firstline) 
-        Fermi.Options.set("multiplicity", parse(Int64, mul))
-        Fermi.Options.set("charge", parse(Int64, charge))
+        charge,mul = split(firstline)
+        mul = parse(Int64, mul)
+        charge = parse(Int64, charge)
+    else
+	mul = 1
+	charge = 0
     end
+    
+    bset = BasisSet(basis,mol)
+    p = Param(bset,mul,charge)
 
-    Fermi.Options.set("molstring", mol)
+    return bset,p
+
 end
-
-function molecule_from_file(filename)
-    mol = DoNOF.read_xyz_from_file(filename)
-
-    Fermi.Options.set("molstring", mol)
-end
-

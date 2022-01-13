@@ -1,24 +1,31 @@
-using NPZ
-function compute_integrals(bas_name,p)
-
-    # Integrador
-    helper = Fermi.Integrals.IntegralHelper(eri_type=Fermi.Integrals.Chonky())
+function compute_integrals(bset,p)
 
     # Overlap, Kinetics, Potential
-    S = Array(helper["S"])
-    T = Array(helper["T"])
-    V = Array(helper["V"])
+    S = overlap(bset)
+    T = kinetic(bset)
+    V = nuclear(bset)
     H = T + V
     I = []
     b_mnl = []
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
-        I = Array(helper["ERI"])
+	I = ERI_2e4c(bset)
     else
-        Fermi.Options.set("df", true)
-        helper = Fermi.Integrals.IntegralHelper()
-        b_mnl = Array(helper["ERI"])
-        b_mnl = permutedims(b_mnl, [2, 3, 1])
+	aux = BasisSet(bset.name*"-jkfit",bset.atoms)
+        I = ERI_2e3c(bset,aux)
+        G = ERI_2e2c(aux)
+
+        evals,evecs = eigen(G)
+        sqrtinv = []
+        for i in 1:size(evals)[1]
+            if (evals[i]<0.0)
+                append!(sqrtinv,0.0)
+            else
+                append!(sqrtinv,1/sqrt(evals[i]))
+            end
+        end
+        Gmsqrt = evecs*Diagonal(sqrtinv)*evecs'
+        @tullio b_mnl[m,n,l] := I[m,n,k]*Gmsqrt[k,l]
 
         p.nbfaux = size(b_mnl)[3]
     end

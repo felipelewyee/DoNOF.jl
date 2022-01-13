@@ -10,3 +10,34 @@ function compute_gamma(p)
     end
     return gamma
 end
+
+function read_C(;title = "nof")
+
+    C = load(title*".jld")["C"]
+    return C
+
+end
+
+function read_gamma(;title = "nof")
+
+    gamma = np.load(title*"jld")["gamma"]
+    return gamma
+
+end
+
+function read_fmiug0(;title = "nof")
+   
+    fmiug0 = load(title*"jld")["fmiug0"]
+    return fmiug0
+
+end
+
+function read_all(;title = "nof")
+    C = read_C(title=title)
+    gamma = read_gamma(title=title)
+    fmiug0 = read_fmiug0(title=title)
+
+    return C,gamma,fmiug0
+
+end
+

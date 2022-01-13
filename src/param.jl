@@ -50,24 +50,25 @@ mutable struct Param
     
 end
 
-function Param(bas_name)
-
-    Fermi.Options.set("basis", bas_name)
-
-    bset = Fermi.GaussianBasis.BasisSet()
+function Param(bset,mul,charge)
 
     natoms = bset.natoms
     nbf = bset.nbas
-    nalpha = bset.molecule.Nα
-    nbeta = bset.molecule.Nβ
-    mul = bset.molecule.multiplicity
+
+    ne = 0
+    for i in 1:natoms
+      ne += bset.atoms[i].Z
+    end
+    ne -= charge
+
+    nalpha = (ne - charge + (mul-1))/2
+    nbeta = (ne - charge + (mul-1))/2
    
     nbfaux = 0	
-    ne = nalpha + nbeta
     no1 = 0
 
     for i in 1:natoms
-	Z = bset.molecule.atoms[i].Z
+	Z = bset.atoms[i].Z
         if 1<=Z && Z<=  2
             no1 += 0           # H-He
         elseif 3<=Z && Z<= 10
@@ -119,7 +120,7 @@ function Param(bas_name)
     nbf5 = no1 + nac + nsoc
     no0 = nbf - nbf5
 
-    title = "pydonof"
+    title = "nof"
     maxit = 10000  # Número máximo de iteraciones de Occ-SCF
     thresheid = 10^-6#8 # Convergencia de la energía total
     maxitid = 300  # Número máximo de iteraciones externas en HF

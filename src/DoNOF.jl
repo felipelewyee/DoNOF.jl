@@ -8,7 +8,8 @@ using LoopVectorization
 using CUDA, CUDAKernels, KernelAbstractions
 using Optim
 using SparseArrays
-using Fermi
+using GaussianBasis
+using JLD
 
 include("io.jl")
 include("param.jl")

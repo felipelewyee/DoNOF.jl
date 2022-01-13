@@ -434,4 +434,123 @@ function build_A(F_MO,FI1,FI2,no1,ndoc,ndns,nvir,ncwo,nbf,tol)
     return A
 end
 
+function ext_koopmans(p,elag,n)
 
+    elag_small = view(elag,1:p.nbf5,1:p.nbf5)
+    n_sqrt = 1 ./ sqrt.(n)
+    @tullio nu[q,p] := -elag_small[q,p]*n_sqrt[q]*n_sqrt[p]
+
+    println("")
+    println("---------------------------")
+    println(" Extended Koopmans Theorem ")
+    println("   Ionization Potentials   ")
+    println("---------------------------")
+
+    eigval, eigvec = eigen(nu)
+    println(" OM        (eV)")
+    println("---------------------------")
+    for (i,val) in enumerate(reverse(eigval))
+        @printf(" %3i       %7.3f\n",i,val*27.2114)
+    end
+
+    println("")
+    @printf("EKT IP: %7.3f eV",eigval[1]*27.2114)
+    println("")
+end
+
+function mulliken_pop(bset,p,n,C,S)
+
+    C_nbf5 = view(C,1:p.nbf,1:p.nbf5)
+
+    @tullio nPS[m] := 2*n[i]*C_nbf5[m,i]*C_nbf5[l,i]*S[l,m]
+
+    pop = zeros(p.natoms)
+
+    ifun = 1
+    for iatom in 1:p.natoms
+        for ibasis in 1:size(bset.basis[iatom])[1]
+            nfun = 2*bset.basis[iatom][ibasis].l + 1
+            pop[iatom] += sum(nPS[ifun:ifun+nfun-1])
+            ifun += nfun
+        end
+    end
+
+    println("")
+    println("---------------------------------")
+    println("  Mulliken Population Analysis   ")
+    println("---------------------------------")
+    println(" Idx  Atom   Population   Charge ")
+    println("---------------------------------")
+    for iatom in 1:p.natoms
+	symbol = Z_to_symbol(bset.atoms[iatom].Z)
+        @printf("%3i    %2s    %5.2f      %5.2f\n",iatom, symbol, pop[iatom], bset.atoms[iatom].Z-pop[iatom])
+    end
+
+end
+
+function lowdin_pop(bset,p,n,C,S)
+
+    evals,evecs = eigen(S)
+    for i in 1:size(evals)[1]
+        if (evals[i]<0.0)
+	    evals[i] = 0.0
+        else
+	    evals[i] = sqrt(evals[i])
+        end
+    end
+    S_12 = evecs*Diagonal(evals)*evecs'
+
+    C_nbf5 = view(C,1:p.nbf,1:p.nbf5)
+    @tullio tmp[s,l] := 2*S_12[s,m]*n[i]*C_nbf5[m,i]*C_nbf5[l,i]#*Sp_12[l,s]
+    @tullio S_12nPS_12[s] := tmp[s,l]*S_12[l,s]
+
+    pop = zeros(p.natoms)
+
+    ifun = 1
+    for iatom in 1:p.natoms
+	for ibasis in 1:size(bset.basis[iatom])[1]
+	    nfun = 2*bset.basis[iatom][ibasis].l + 1
+	    pop[iatom] += sum(S_12nPS_12[ifun:ifun+nfun-1])
+	    ifun += nfun
+        end
+    end
+
+    println("")
+    println("---------------------------------")
+    println("   Lowdin Population Analysis    ")
+    println("---------------------------------")
+    println(" Idx  Atom   Population   Charge ")
+    println("---------------------------------")
+    for iatom in 1:p.natoms
+	symbol = Z_to_symbol(bset.atoms[iatom].Z)
+        @printf("%3i    %2s    %5.2f      %5.2f\n",iatom, symbol, pop[iatom], bset.atoms[iatom].Z-pop[iatom])
+    end
+end
+
+
+function M_diagnostic(p,n)
+
+    m_vals = 2*n
+    if(p.HighSpin)
+        m_vals[p.nbeta:p.nalpha] = n[p.nbeta:p.nalpha]
+    end
+
+    m_diagnostic = 0
+
+    m_vals[p.no1:p.nbeta] = 2.0 .- m_vals[p.no1:p.nbeta]
+    m_diagnostic += maximum(m_vals[p.no1:p.nbeta])
+
+    #if(p.nsoc!=0): #This is always zero
+    #    m_vals[p.nbeta:p.nalpha] = 1.0 - m_vals[p.nbeta:p.nalpha]
+    #    m_diagnostic += max(m_vals[p.nbeta:p.nalpha]) 
+
+    m_vals[p.nalpha:p.nbf5] = m_vals[p.nalpha:p.nbf5] .- 0.0
+    m_diagnostic += maximum(m_vals[p.nalpha:p.nbf5])
+
+    println("")
+    println("---------------------------------")
+    @printf("   M Diagnostic: %4.2f\n",m_diagnostic)
+    println("---------------------------------")
+    println("")
+
+end
