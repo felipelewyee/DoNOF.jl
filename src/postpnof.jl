@@ -450,7 +450,7 @@ function ext_koopmans(p,elag,n)
     println(" OM        (eV)")
     println("---------------------------")
     for (i,val) in enumerate(reverse(eigval))
-        @printf(" %3i       %7.3f\n",i,val*27.2114)
+        @printf(" %3i       %7.3f\n",i,real(val)*27.2114)
     end
 
     println("")
