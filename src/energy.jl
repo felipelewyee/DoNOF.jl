@@ -148,9 +148,7 @@ function brute_force_energy(bset,p;intents=5,C=nothing,gamma=nothing,fmiug0=noth
     fmiug0_min = fmiug0
 
     for i in 1:intents
-        p.nzeros = 0
-        p.nzerosm = 5
-        p.nzerosr = 0
+        autozeros(p)
 
         E,C,gamma,fmiug0 = energy(bset,p,C=C,gamma=gamma,fmiug0=nothing,do_hfidr=false)
         if(E<E_min)

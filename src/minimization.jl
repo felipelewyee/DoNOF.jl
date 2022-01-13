@@ -103,7 +103,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
     if maxdiff<p.threshl && abs(E_diff)<p.threshe
         convgdelag = true
         if printmode
-	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,0,E,E+E_nuc,E_diff,maxdiff)
+	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f %1i\n",i_ext,0,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
 	end
         return convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag
     end
@@ -157,7 +157,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
             E_diff = E-E_old
             E_old = E
             if printmode
-		@printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff)
+		@printf("%6i %6i %14.8f %14.8f %14.8f %14.8f %1i\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
 	    end
             break
         end

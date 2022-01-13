@@ -11,28 +11,28 @@ function compute_gamma(p)
     return gamma
 end
 
-function read_C(;title = "nof")
+function read_C(;title = "donof")
 
     C = load(title*".jld")["C"]
     return C
 
 end
 
-function read_gamma(;title = "nof")
+function read_gamma(;title = "donof")
 
     gamma = np.load(title*"jld")["gamma"]
     return gamma
 
 end
 
-function read_fmiug0(;title = "nof")
+function read_fmiug0(;title = "donof")
    
     fmiug0 = load(title*"jld")["fmiug0"]
     return fmiug0
 
 end
 
-function read_all(;title = "nof")
+function read_all(;title = "donof")
     C = read_C(title=title)
     gamma = read_gamma(title=title)
     fmiug0 = read_fmiug0(title=title)

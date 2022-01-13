@@ -120,7 +120,7 @@ function Param(bset,mul,charge)
     nbf5 = no1 + nac + nsoc
     no0 = nbf - nbf5
 
-    title = "nof"
+    title = "donof"
     maxit = 10000  # Número máximo de iteraciones de Occ-SCF
     thresheid = 10^-6#8 # Convergencia de la energía total
     maxitid = 300  # Número máximo de iteraciones externas en HF
@@ -199,6 +199,22 @@ function Param(bset,mul,charge)
     HighSpin,
     MSpin,
     lamb)
+end
+
+function autozeros(p;restart=False)
+    if(restart)
+        p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
+        p.nzerosr = self.nzeros
+        #self.nzerosm = abs(int(np.log10(self.threshl))) + 2         
+        #if(self.nzeros<3):
+        #    self.nzeros = 2
+        #    self.nzerosr = 2
+        #    self.nzerosm = 5
+    else
+        p.nzeros = 0
+        p.nzerosr = 0
+        #self.nzerosm = abs(int(np.log10(self.threshl))) + 2
+    end
 end
 
 function set_ncwo(p,ncwo)
