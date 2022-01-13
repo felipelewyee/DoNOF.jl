@@ -20,14 +20,14 @@ end
 
 function read_gamma(;title = "donof")
 
-    gamma = load(title*"jld")["gamma"]
+    gamma = load(title*".jld")["gamma"]
     return gamma
 
 end
 
 function read_fmiug0(;title = "donof")
    
-    fmiug0 = load(title*"jld")["fmiug0"]
+    fmiug0 = load(title*".jld")["fmiug0"]
     return fmiug0
 
 end
