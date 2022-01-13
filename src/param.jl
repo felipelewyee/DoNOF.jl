@@ -61,8 +61,8 @@ function Param(bset,mul,charge)
     end
     ne -= charge
 
-    nalpha = (ne - mul + 1)/2
-    nbeta = (ne + mul - 1)/2
+    nalpha = (ne + mul - 1)/2
+    nbeta = (ne - mul + 1)/2
    
     nbfaux = 0	
     no1 = 0
