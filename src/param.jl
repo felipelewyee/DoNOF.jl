@@ -61,8 +61,8 @@ function Param(bset,mul,charge)
     end
     ne -= charge
 
-    nalpha = (ne - charge - mul + 1)/2
-    nbeta = (ne - charge + mul - 1)/2
+    nalpha = (ne - mul + 1)/2
+    nbeta = (ne + mul - 1)/2
    
     nbfaux = 0	
     no1 = 0
@@ -201,7 +201,7 @@ function Param(bset,mul,charge)
     lamb)
 end
 
-function autozeros(p;restart=False)
+function autozeros(p;restart=false)
     if(restart)
         p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
         p.nzerosr = self.nzeros
