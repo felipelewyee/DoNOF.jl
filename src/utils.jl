@@ -266,3 +266,68 @@ function Z_to_symbol(Z)
 
     return dict[Z]
 end
+
+function check_ortho(C,S,p)
+
+    # Revisa ortonormalidad
+    orthonormality = true
+    CTSC = C'*S*C
+    ortho_deviation = abs.(CTSC - I)
+    if (maximum(ortho_deviation) > 10^-6)
+        orthonormality = false
+    end
+    if !orthonormality
+        @printf("Orthonormality violations %i, Maximum Violation %f\n",sum(ortho_deviation .> 10^-6),maximum(ortho_deviation))
+        println("Trying to orthonormalize")
+        C = orthonormalize(C,S,p)
+        C = check_ortho(C,S,p)
+    else
+        println("No violations of the orthonormality")
+    end
+    for j in 1:p.nbf
+        #Obtiene el índice del coeficiente con mayor valor absoluto del MO
+        idxmaxabsval = 1
+        for i in 1:p.nbf
+	    if(abs(C[i,j])>abs(C[idxmaxabsval,j]))
+                 idxmaxabsval = i
+            end
+        end
+        # Ajusta el signo del MO
+        C[1:p.nbf,j] = sign(C[idxmaxabsval,j])*C[1:p.nbf,j]
+    end
+        
+    return C
+
+end
+
+function orthonormalize(C,S,p)
+
+    evals,evecs = eigen(S)
+    for i in 1:size(evals)[1]
+        if (evals[i]<0.0)
+            evals[i] = 0.0
+        else
+            evals[i] = 1/sqrt(evals[i])
+        end
+    end
+
+    @tullio S_12[i,j] := evecs[i,j]*evals[j]
+
+    @tullio Cnew[i,j] := S[i,k]*C[k,j] #np.einsum('ik,kj->ij',S,C,optimize=True)
+
+    @tullio Cnew2[i,j] := S_12[k,i]*Cnew[k,j]  #np.einsum('ki,kj->ij',S_12,Cnew)
+
+    for i in 1:size(Cnew2)[2]
+	Cnew2[1:p.nbf,i] = Cnew2[1:p.nbf,i]/norm(Cnew2[1:p.nbf,i])
+	for j in i+1:size(Cnew2)[1]
+	    val = -sum(Cnew2[1:p.nbf,i].*Cnew2[1:p.nbf,j])
+            Cnew2[1:p.nbf,j] = Cnew2[1:p.nbf,j] + val*Cnew2[1:p.nbf,i]
+        end
+    end
+
+    @tullio C[i,j] = S_12[i,k]*Cnew2[k,j]
+
+    return C
+
+end
+

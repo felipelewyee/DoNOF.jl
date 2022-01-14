@@ -32,6 +32,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     if isnothing(C)
         Ei,Cguess = eigen(H, S)
     end
+    Cguess = check_ortho(Cguess,S,p)
 
     if do_hfidr
         EHF,Cguess,fmiug0guess = hfidr(Cguess,H,I,b_mnl,E_nuc,p)
@@ -40,6 +41,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     if isnothing(C)
         C = Cguess
     end
+    Cguess = check_ortho(C,S,p)
 
     if isnothing(gamma)
         gamma = compute_gamma(p)
