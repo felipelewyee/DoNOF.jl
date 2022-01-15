@@ -446,6 +446,7 @@ function ext_koopmans(p,elag,n)
     println("   Ionization Potentials   ")
     println("---------------------------")
 
+    println(nu)
     eigval, eigvec = eigen(nu)
     println(" OM        (eV)")
     println("---------------------------")
@@ -454,7 +455,7 @@ function ext_koopmans(p,elag,n)
     end
 
     println("")
-    @printf("EKT IP: %7.3f eV",eigval[1]*27.2114)
+    @printf("EKT IP: %7.3f eV",real(eigval[1])*27.2114)
     println("")
 end
 
