@@ -446,7 +446,6 @@ function ext_koopmans(p,elag,n)
     println("   Ionization Potentials   ")
     println("---------------------------")
 
-    println(nu)
     eigval, eigvec = eigen(nu)
     println(" OM        (eV)")
     println("---------------------------")
