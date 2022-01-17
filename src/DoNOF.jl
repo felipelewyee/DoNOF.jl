@@ -1,11 +1,12 @@
 module DoNOF
 
+using LoopVectorization
+using CUDA, CUDAKernels, KernelAbstractions
+using Tullio
+
 using LinearAlgebra
 using Printf
 
-using Tullio
-using LoopVectorization
-using CUDA, CUDAKernels, KernelAbstractions
 using Optim
 using SparseArrays
 using GaussianBasis

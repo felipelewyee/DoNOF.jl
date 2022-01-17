@@ -16,7 +16,7 @@ function compute_integrals(bset,p)
         G = ERI_2e2c(aux)
 
         evals,evecs = eigen(G)
-        sqrtinv = []
+        sqrtinv = Float64[]
         for i in 1:size(evals)[1]
             if (evals[i]<0.0)
                 append!(sqrtinv,0.0)
