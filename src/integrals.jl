@@ -5,14 +5,14 @@ function compute_integrals(bset,p)
     T = kinetic(bset)
     V = nuclear(bset)
     H = T + V
-    I = []
-    b_mnl = []
+    I = Float64[]
+    b_mnl = Float64[]
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
 	I = ERI_2e4c(bset)
     else
 	aux = BasisSet(bset.name*"-jkfit",bset.atoms)
-        I = ERI_2e3c(bset,aux)
+        Iaux = ERI_2e3c(bset,aux)
         G = ERI_2e2c(aux)
 
         evals,evecs = eigen(G)
@@ -25,7 +25,7 @@ function compute_integrals(bset,p)
             end
         end
         Gmsqrt = evecs*Diagonal(sqrtinv)*evecs'
-        @tullio b_mnl[m,n,l] := I[m,n,k]*Gmsqrt[k,l]
+        @tullio b_mnl[m,n,l] := Iaux[m,n,k]*Gmsqrt[k,l]
 
         p.nbfaux = size(b_mnl)[3]
     end
