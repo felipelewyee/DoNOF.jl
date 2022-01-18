@@ -527,7 +527,6 @@ function lowdin_pop(bset,p,n,C,S)
     end
 end
 
-
 function M_diagnostic(p,n)
 
     m_vals = 2*n
@@ -537,15 +536,15 @@ function M_diagnostic(p,n)
 
     m_diagnostic = 0
 
-    m_vals[p.no1:p.nbeta] = 2.0 .- m_vals[p.no1:p.nbeta]
-    m_diagnostic += maximum(m_vals[p.no1:p.nbeta])
+    m_vals[p.no1+1:p.nbeta] = 2.0 .- m_vals[p.no1+1:p.nbeta]
+    m_diagnostic += maximum(m_vals[p.no1+1:p.nbeta])
 
     #if(p.nsoc!=0): #This is always zero
-    #    m_vals[p.nbeta:p.nalpha] = 1.0 - m_vals[p.nbeta:p.nalpha]
-    #    m_diagnostic += max(m_vals[p.nbeta:p.nalpha]) 
+    #    m_vals[p.nbeta+1:p.nalpha] = 1.0 - m_vals[p.nbeta+1:p.nalpha]
+    #    m_diagnostic += max(m_vals[p.nbeta+1:p.nalpha])
 
-    m_vals[p.nalpha:p.nbf5] = m_vals[p.nalpha:p.nbf5] .- 0.0
-    m_diagnostic += maximum(m_vals[p.nalpha:p.nbf5])
+    m_vals[p.nalpha+1:p.nbf5] = m_vals[p.nalpha+1:p.nbf5] .- 0.0
+    m_diagnostic += maximum(m_vals[p.nalpha+1:p.nbf5])
 
     println("")
     println("---------------------------------")
