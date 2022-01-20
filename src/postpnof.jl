@@ -546,6 +546,8 @@ function M_diagnostic(p,n)
     m_vals[p.nalpha+1:p.nbf5] = m_vals[p.nalpha+1:p.nbf5] .- 0.0
     m_diagnostic += maximum(m_vals[p.nalpha+1:p.nbf5])
 
+    m_diagnostic = 0.5 * m_diagnostic
+
     println("")
     println("---------------------------------")
     @printf("   M Diagnostic: %4.2f\n",m_diagnostic)
