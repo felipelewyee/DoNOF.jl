@@ -596,3 +596,128 @@ function calcg(gamma,J_MO,K_MO,H_core,p)
     end
     return grad
 end
+
+function calcorbe(y,gamma,C,H,I,b_mnl,p)
+
+    Cnew = rotate_orbital(y,C,p)
+
+    J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
+    E = calce(gamma,J_MO,K_MO,H_core,p)
+
+    return E
+
+end
+
+function calcorbg(y,gamma,C,H,I,b_mnl,pa)
+
+    Cnew = rotate_orbital(y,C,pa)
+
+    if(pa.gpu)
+        Cnew = CuArray(Cnew)
+        H = CuArray(H)
+    end
+
+    n,dn_dgamma = ocupacion(gamma,pa.no1,pa.ndoc,pa.nalpha,pa.nv,pa.nbf5,pa.ndns,pa.ncwo,pa.HighSpin)
+    cj12,ck12 = PNOFi_selector(n,pa)
+
+    @tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnew[nn,j]
+    if pa.RI
+        @tullio b_MO[p,q,l] := Cnew[m,p]*Cnew[nn,q]*b_mnl[m,nn,l]
+    else
+    	@tullio I_MO[p,q,r,t] := Cnew[m,p]*Cnew[nn,q]*I[m,nn,s,l]*Cnew[s,r]*Cnew[l,t]
+    end
+
+    grad = zeros(pa.nbf,pa.nbf)
+
+    cj12[diagind(cj12)] .= 0
+    ck12[diagind(ck12)] .= 0
+
+    if pa.gpu
+        grad = CuArray(grad)
+        cj12 = CuArray(cj12)
+        ck12 = CuArray(ck12)
+        n = CuArray(n)
+    end 
+
+    n_beta =        view(n,1:pa.nbeta)
+    n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
+    Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
+    Hmat_nbf5t =     view(H_mat,1:pa.nbf5,1:pa.nbf)
+    grad_nbf5 =      view(grad,1:pa.nbf,1:pa.nbf5)
+    grad_nbf5t =     view(grad,1:pa.nbf5,1:pa.nbf)
+    grad_nbeta =     view(grad,1:pa.nbf,1:pa.nbeta)
+    grad_nbetat =    view(grad,1:pa.nbeta,1:pa.nbf)
+    grad_nalpha =    view(grad,1:pa.nbf,pa.nalpha+1:pa.nbf5)
+    grad_nalphat =   view(grad,pa.nalpha+1:pa.nbf5,1:pa.nbf)
+    if pa.RI
+    b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
+    b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
+    b_nbeta_beta =   view(b_MO,1:pa.nbeta,1:pa.nbeta,1:pa.nbfaux)
+    b_nalpha_alpha = view(b_MO,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
+    b_nbf_nbf5 =     view(b_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbfaux)
+    b_nbf5_nbf5 =    view(b_MO,1:pa.nbf5,1:pa.nbf5,1:pa.nbfaux)
+    else
+    I_nb_nb_nb =    view(I_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbeta,1:pa.nbeta)
+    I_na_na_na =    view(I_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5)
+    I_nbf5_nbf5_nbf5 =    view(I_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbf5,1:pa.nbf5)
+    end
+
+    if pa.RI
+        if(pa.MSpin==0)
+            # 2ndH/dy_ab
+            @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
+            @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
+
+            # dJ_pp/dy_ab
+            @tullio grad_nbeta[a,b] += +4*n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
+            @tullio grad_nalpha[a,b] += +4*n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
+	    @tullio grad_nbetat[a,b] += -4*n_beta[a]*b_nbf_beta[b,a,k]*b_nbeta_beta[a,a,k]
+            @tullio grad_nalphat[a,b] += -4*n_alpha[a]*b_nbf_alpha[b,a,k]*b_nalpha_alpha[a,a,k]
+
+            # C^J_pq dJ_pq/dy_ab 
+            @tullio grad_nbf5[a,b] += +4*cj12[b,q]*b_nbf_nbf5[a,b,k]*b_nbf5_nbf5[q,q,k]
+            @tullio grad_nbf5t[a,b] += -4*cj12[a,q]*b_nbf_nbf5[b,a,k]*b_nbf5_nbf5[q,q,k]
+
+            # -C^K_pq dK_pq/dy_ab 
+            @tullio grad_nbf5[a,b] += -4*ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
+            @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*b_nbf_nbf5[b,q,k]*b_nbf5_nbf5[a,q,k]
+        end
+        else
+            if(pa.MSpin==0)
+                # 2ndH/dy_ab
+                @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
+                @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
+
+                # dJ_pp/dy_ab
+		@tullio grad_nbeta[a,b] += +4*n_beta[b]*I_nb_nb_nb[a,b,b,b]
+                @tullio grad_nalpha[a,b] += +4*n_alpha[b]*I_na_na_na[a,b,b,b]
+                @tullio grad_nbetat[a,b] += -4*n_beta[a]*I_nb_nb_nb[b,a,a,a]
+                @tullio grad_nalphat[a,b] += -4*n_alpha[a]*I_na_na_na[b,a,a,a]
+
+                # C^J_pq dJ_pq/dy_ab 
+		@tullio grad_nbf5[a,b] += +4*cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
+		@tullio grad_nbf5t[a,b] += -4*cj12[a,q]*I_nbf5_nbf5_nbf5[b,a,q,q]
+
+                # -C^K_pq dK_pq/dy_ab 
+		@tullio grad_nbf5[a,b] += -4*ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
+                @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*I_nbf5_nbf5_nbf5[b,q,a,q]
+        end
+    end
+
+    grad = Array(grad)
+    grads = zeros(pa.nvar)
+    n = 1
+    for i in 1:pa.nbf5
+        for j in i+1:pa.nbf
+            grads[n] = grad[i,j]
+            n += 1
+        end
+    end
+    grad = grads
+
+
+    return grad
+
+end
+
+

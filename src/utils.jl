@@ -331,3 +331,23 @@ function orthonormalize(C,S,p)
 
 end
 
+function rotate_orbital(y,C,p)
+
+    ynew = zeros(p.nbf,p.nbf)
+
+    n = 1
+    for i in 1:p.nbf5
+        for j in i+1:p.nbf
+            ynew[i,j] =  y[n]
+            ynew[j,i] = -y[n]
+            n += 1
+	end
+    end
+
+    U = exp(ynew)
+    U = real.(U)
+    @tullio Cnew[m,p] := C[m,r]*U[r,p]
+
+    return Cnew
+
+end

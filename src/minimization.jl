@@ -71,11 +71,11 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
 
 end
 
-function occoptr(gamma,firstcall,convgdelag,C,H,I,b_mnl,p)
+function occoptr(gamma,C,H,I,b_mnl,p)
 
     J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
 
-    if !convgdelag && p.ndoc>0
+    if p.ndoc>0
         if p.gradient=="analytical"
             res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma->calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
         elseif p.gradient=="numerical"
@@ -163,4 +163,20 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
         end
     end
     return convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag
+end
+
+function orbopt_rotations(gamma,C,H,I,b_mnl,p)
+
+    y = zeros(p.nvar)
+
+    res = optimize(y->calcorbe(y,gamma,C,H,I,b_mnl,p),y->calcorbg(y,gamma,C,H,I,b_mnl,p),y,ConjugateGradient(), Optim.Options(iterations = 30),inplace=false)
+
+    E = res.minimum
+    y = res.minimizer
+
+    C = rotate_orbital(y,C,p)
+    nit = res.iterations
+    success = res.g_converged
+
+    return E,C,nit,success
 end

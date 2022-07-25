@@ -46,6 +46,8 @@ mutable struct Param
     RI::Bool
     HighSpin::Bool
     MSpin::Int64
+    method::String
+    nvar::Int64
     lamb::Float64
     
 end
@@ -104,7 +106,7 @@ function Param(bset,mul,charge)
     if ndns!=0
         if ndoc>0
 	    if ncwo!=1
-	        if ncwo==1 && ncwo>nvir/ndoc
+                if ncwo==-1 || ncwo > p.nvir/p.ndoc
 		    ncwo = trunc(Int, nvir/ndoc)
                 end
 	    end
@@ -127,8 +129,8 @@ function Param(bset,mul,charge)
     maxloop = 30  # Iteraciones internas en optimización orbital
     ipnof = 7     # PNOFi a calcular
     ista = 0     # PNOFi a calcular
-    threshl = 10^-5#4   # Convergencia de los multiplicadores de Lagrange
-    threshe = 10^-6#6   # Convergencia de la energía
+    threshl = 10^-4   # Convergencia de los multiplicadores de Lagrange
+    threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-10 # Convergencia  de la energía en optimización orbital
     threshen = 10^-10 # Convergencia  de la energía en optimización de ocupaciones
     scaling = true     # Scaling for f
@@ -150,6 +152,9 @@ function Param(bset,mul,charge)
 
     HighSpin = false
     MSpin = 0
+
+    method = "ID"
+    nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
     lamb = 0.0
 
@@ -198,6 +203,8 @@ function Param(bset,mul,charge)
     RI,
     HighSpin,
     MSpin,
+    method,
+    nvar,
     lamb)
 end
 
