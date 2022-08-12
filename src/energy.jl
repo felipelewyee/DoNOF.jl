@@ -1,7 +1,7 @@
 function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false)
-
+    print("inicio")
     S,T,V,H,I,b_mnl = compute_integrals(bset,p)
-
+    print("ya está S,T,V...")
     if(printmode)
         println("Number of basis functions                   (NBF)    = ",p.nbf)
         if(p.RI)
@@ -44,7 +44,11 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     Cguess = check_ortho(C,S,p)
 
     if isnothing(gamma)
-        gamma = compute_gamma(p)
+        if(p.muller)
+            gamma = rand(p.nv)
+        else
+            gamma = compute_gamma(p)
+        end
     end
 
     C = Cguess
@@ -58,11 +62,20 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     sumdiff_old = 0
 
     if printmode 
-        println(" ")
-        @printf("PNOF%i Calculation\n",p.ipnof)
-        println("==================")
-        println(" ")
-        @printf("  %6s  %6s %8s %13s %15s %16s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
+        if(p.muller)
+            println(" ")
+            println("Muller Functional Calculation\n")
+            println("==================")
+            println(" ")
+            @printf("  %6s  %6s %8s %13s %15s %16s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
+
+        else
+            println(" ")
+            @printf("PNOF%i Calculation\n",p.ipnof)
+            println("==================")
+            println(" ")
+            @printf("  %6s  %6s %8s %13s %15s %16s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
+        end
     end
 
     if p.method == "ID"
@@ -79,17 +92,17 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         end
     end
 
-    if p.method == "Rotations"
-
+    if p.method== "Rotations"
 	E_old = 0
-        for i_ext in 1:p.maxit
+        print("E_old definido")
+        for i_ext in 1:p.maxit 
             E,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
-
+            print("E calculado con orbopt_rotations")
             gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,p)
+            print("gamma calculada con occoptr")
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
-
-	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f\n",i_ext,nit_orb,E,E+E_nuc,E-E_old,maxdiff)
-
+            print("Etmp calculado")
+            @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f\n",i_ext,nit_orb,E,E+E_nuc,E-E_old,maxdiff)
 	    if(abs(E-E_old) < 1e-4)
 	        break
 	    end
@@ -103,39 +116,49 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
 
     if printmode
-        println(" ")
-        println("RESULTS OF THE OCCUPATION OPTIMIZATION")
-        println("========================================")
-        for i in 1:p.nbeta
-            @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
-        end
-        for i in p.nbeta+1:p.nalpha
-	    if !p.HighSpin
-                @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
-	    else
+        if(p.muller)
+            println(" ")
+            println("RESULTS OF THE OCCUPATION OPTIMIZATION")
+            println("========================================")
+            print(n)
+            print(sum(n))
+            for i in 1:p.nbf
                 @printf(" %3i    %9.7f  %10.8f\n",i,n[i],elag[i,i])
+            end          
+        else 
+            println(" ")
+            println("RESULTS OF THE OCCUPATION OPTIMIZATION")
+            println("========================================")
+            for i in 1:p.nbeta
+                @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
+            end
+            for i in p.nbeta+1:p.nalpha
+	        if !p.HighSpin
+                    @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
+	        else
+                    @printf(" %3i    %9.7f  %10.8f\n",i,n[i],elag[i,i])
+	        end
+            end
+            for i in p.nalpha+1:p.nbf5
+                @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
+            end
+
+            println(" ")
+            println("----------------")
+            println(" Final Energies ")
+            println("----------------")
+
+            if do_hfidr
+                @printf("       HF Total Energy = %15.7f\n",E_nuc + EHF)
 	    end
+            @printf("Final NOF Total Energy = %15.7f\n",E_nuc + E_old)
+            if do_hfidr
+                @printf("    Correlation Energy = %15.7f\n",E_old-EHF)
+	    end
+            println(" ")
+            println(" ")
         end
-        for i in p.nalpha+1:p.nbf5
-            @printf(" %3i    %9.7f  %10.8f\n",i,2*n[i],elag[i,i])
-        end
-
-        println(" ")
-        println("----------------")
-        println(" Final Energies ")
-        println("----------------")
-
-        if do_hfidr
-            @printf("       HF Total Energy = %15.7f\n",E_nuc + EHF)
-	end
-        @printf("Final NOF Total Energy = %15.7f\n",E_nuc + E_old)
-        if do_hfidr
-            @printf("    Correlation Energy = %15.7f\n",E_old-EHF)
-	end
-        println(" ")
-        println(" ")
     end
-
     if do_nofmp2
         nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy,tolnofmp2)
     end

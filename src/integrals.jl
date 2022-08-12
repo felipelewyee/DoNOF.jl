@@ -42,7 +42,6 @@ function compute_integrals(bset,p)
 
 end
 
-
 ######################################### J_mn^(j) K_mn^(j) #########################################
 
 function computeJKj(C,I,b_mnl,p)

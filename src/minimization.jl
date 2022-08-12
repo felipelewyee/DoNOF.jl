@@ -71,24 +71,50 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
 
 end
 
+function sum_n(gamma,nalpha)
+
+    Ntmp = 0
+    n = cos.(gamma).^2
+    for ni in n
+        Ntmp += ni
+    end
+    return Ntmp-nalpha
+
+end
+
+
 function occoptr(gamma,C,H,I,b_mnl,p)
 
     J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
 
     if p.ndoc>0
         if p.gradient=="analytical"
-            res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma->calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
+            if(p.muller)
+                res = optimize(gamma->calce_muller(gamma,J_MO,K_MO,H_core,p.nv,p.nbf,p.no1,p.nalpha,p),gamma)
+            else
+                res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma->calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
+            end
         elseif p.gradient=="numerical"
-	   res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
-	end
+            if(p.muller)
+                res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma->calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
+            else
+                res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
+            end
+        end
         gamma = Optim.minimizer(res)
     end
-    n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
-    cj12,ck12 = PNOFi_selector(n,p)
+    if(p.muller)
+        n,dR = ocupacion_muller(p.nv,p.nbf,p.no1,p.nalpha,gamma,p)
+        cj12,ck12 = CJCKD_muller(n)
+    else
+        n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+        cj12,ck12 = PNOFi_selector(n,p)
+    end
 
     return gamma,n,cj12,ck12
 
 end
+
 
 function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode=true)
 
@@ -168,9 +194,10 @@ end
 function orbopt_rotations(gamma,C,H,I,b_mnl,p)
 
     y = zeros(p.nvar)
+    print("y definida")
 
     res = optimize(y->calcorbe(y,gamma,C,H,I,b_mnl,p),y->calcorbg(y,gamma,C,H,I,b_mnl,p),y,ConjugateGradient(), Optim.Options(iterations = 30),inplace=false)
-
+    print("ya se calculó res")
     E = res.minimum
     y = res.minimizer
 

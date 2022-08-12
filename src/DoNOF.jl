@@ -12,6 +12,8 @@ using SparseArrays
 using GaussianBasis
 using JLD
 
+using SpecialFunctions
+
 include("io.jl")
 include("param.jl")
 include("integrals.jl")

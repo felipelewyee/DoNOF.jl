@@ -1,3 +1,16 @@
+function CJCKD_muller(n)
+    @tullio cj12[i,j] := 2*n[i]*n[j]
+    @tullio ck12[i,j] := sqrt(n[i]*n[j]) #revisar sintaxis!!!
+    return cj12,ck12
+end
+
+function der_CJCKD_muller(n,dn_dgamma)
+    Dcj12r[i,j,k] = dn_dgamma[i,k]*n[j]
+    Dck12r[i,j,k] = dn_dgamma[i,k]*sqrt.(n[j])
+
+    return Dcj12r,Dck12r
+end
+
 function PNOFi_selector(n,p)
     #if(p.ipnof==5):
     #    cj12,ck12 = CJCKD5(n,p)
@@ -240,6 +253,52 @@ function der_CJCKD8(n,ista,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
 
 end
 
+function f(mu,gamma,nalpha,no1)
+
+    N=0.0
+    for gi in gamma
+        N += (erf(gi+mu[1]) + 1)/2
+    end
+
+    return (nalpha-N-no1)^2
+
+end
+
+function compute_mu(gamma,nalpha,no1)
+    mu = [0.0]
+    res = optimize(mu->f(mu,gamma,nalpha,no1),mu)
+    #mu = res.x
+    mu = Optim.minimizer(res)
+
+   return mu[1]
+
+end
+
+
+function ocupacion_muller(nv,nbf,no1,nalpha,gamma,p)
+    n = zeros(nbf)
+    n[1:no1] .= 1
+    if(p.EBI)
+        mu = compute_mu(gamma,nalpha,no1)
+
+        n[no1+1:no1+nv] = (erf.(gamma .+ mu) .+ 1)./2
+        dn_dgamma = zeros(nbf,nv)
+        dn_dgamma = zeros(nbf,nv)
+    else
+        dni_dgammai = zeros(nbf)
+
+        n[no1+1:no1+nv] = cos.(gamma[1:nv]).^2
+        dni_dgammai = - sin.(2*gamma)
+
+        dn_dgamma = zeros.(nbf,nv)
+
+        dn_dgamma = Diagonal(dni_dgammai)
+    end
+    return n,dn_dgamma
+
+end
+
+
 function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 
     n = zeros(nbf5)
@@ -331,6 +390,22 @@ function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 
 
 end
+
+
+function calce_muller(gamma,J_MO,K_MO,H_core,nv,nbf,no1,nalpha,p)
+    n,dn_dgamma = ocupacion_muller(nv,nbf,no1,nalpha,gamma,p)
+    cj12,ck12 = CJCKD_muller(n)
+    E = 0
+    #nH
+    @tullio E += n[i]*2*H_core[i]
+    #C^J JMO
+    @tullio E += cj12[i,j]*J_MO[j,l]
+    #C^K KMO
+    @tullio E += ck12[i,j]*K_MO[j,l]
+
+    return E
+end
+
 
 function calce(gamma,J_MO,K_MO,H_core,p)
 
@@ -451,6 +526,24 @@ function calce(gamma,J_MO,K_MO,H_core,p)
     #stop
     return E
 end
+
+
+function calcg_muller(gamma,J_MO,K_MO,H_core,nv,nbf,no1)
+    grad = zeros(nv)
+    n,dn_dgamma = ocupacion_muller(nv,nbf,no1,nalpha,gamma,p)
+    Dcj12r,Dck12r = der_CJCKD_muller(n,dn_dgamma)
+
+
+    #nH
+    grad[k] += dn_dgamma[i,k]*2*H_core[i]
+    #C^J JMO
+    grad[k] += Dcj12r[i,j,k]*J_MO[j,i]
+    #C^K KMO
+    grad[k] += Dck12r[i,j,k]*K_MO[j,i]
+
+   return grad
+end
+
 
 function calcg(gamma,J_MO,K_MO,H_core,p)
 
@@ -600,10 +693,15 @@ end
 function calcorbe(y,gamma,C,H,I,b_mnl,p)
 
     Cnew = rotate_orbital(y,C,p)
-
+    print("Cnew calculado")
     J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
-    E = calce(gamma,J_MO,K_MO,H_core,p)
-
+    print("integrales MO calculadas")
+    if(p.muller)
+	E = calce_muller(gamma,J_MO,K_MO,H_core,nv,nbf,no1,nalpha,p)
+    else
+        E = calce(gamma,J_MO,K_MO,H_core,p)
+    print("Energía calculada")
+    end
     return E
 
 end
@@ -611,32 +709,48 @@ end
 function calcorbg(y,gamma,C,H,I,b_mnl,pa)
 
     Cnew = rotate_orbital(y,C,pa)
-
+    print("Cnew calculado")
     if(pa.gpu)
         Cnew = CuArray(Cnew)
+	print("CNew con CUDA definido")
         H = CuArray(H)
+	print("H con CUDA definido")
     end
-
-    n,dn_dgamma = ocupacion(gamma,pa.no1,pa.ndoc,pa.nalpha,pa.nv,pa.nbf5,pa.ndns,pa.ncwo,pa.HighSpin)
-    cj12,ck12 = PNOFi_selector(n,pa)
+    if(pa.muller)
+	n,dn_dgamma = ocupacion_muller(pa.nv,pa.nbf,pa.no1,pa.nalpha,gamma,pa) 
+	print("n, dngamma calculados")
+	cj12,ck12 = CJCKD_muller(n)
+	print("matrices cj12 y ck12 calculadas")
+    else
+        n,dn_dgamma = ocupacion(gamma,pa.no1,pa.ndoc,pa.nalpha,pa.nv,pa.nbf5,pa.ndns,pa.ncwo,pa.HighSpin)
+        cj12,ck12 = PNOFi_selector(n,pa)
+    end
 
     @tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnew[nn,j]
+    print("H_mar calculada")
     if pa.RI
         @tullio b_MO[p,q,l] := Cnew[m,p]*Cnew[nn,q]*b_mnl[m,nn,l]
+        print("si se imprime esto algo salió mal") 
     else
     	@tullio I_MO[p,q,r,t] := Cnew[m,p]*Cnew[nn,q]*I[m,nn,s,l]*Cnew[s,r]*Cnew[l,t]
+	print("I_MO calculada")
     end
-
+   
     grad = zeros(pa.nbf,pa.nbf)
-
-    cj12[diagind(cj12)] .= 0
-    ck12[diagind(ck12)] .= 0
+    print("se definió grad") 
+    #if(!pa.muller)
+    #	print("entró a pa.muller")
+    #    cj12[diagind(cj12)] .= 0
+    #    ck12[diagind(ck12)] .= 0
+    #	print("si sale esto es porque algo salió mal")
+    #end 
 
     if pa.gpu
         grad = CuArray(grad)
         cj12 = CuArray(cj12)
         ck12 = CuArray(ck12)
         n = CuArray(n)
+    print("grad,cj12,ck12 calculados para gpu")
     end 
 
     n_beta =        view(n,1:pa.nbeta)
@@ -661,63 +775,93 @@ function calcorbg(y,gamma,C,H,I,b_mnl,pa)
     I_na_na_na =    view(I_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5)
     I_nbf5_nbf5_nbf5 =    view(I_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbf5,1:pa.nbf5)
     end
-
+    print("definiciones para lo que no es Muller calculadas")
     if pa.RI
         if(pa.MSpin==0)
-            # 2ndH/dy_ab
-            @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
-            @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
+	    if(pa.muller)
+		# 2ndH/dy_ab
+	        @tullio grad[a,b] += +4*n[b]*H_mat[a,b]
+                @tullio grad[a,b] += -4*n[a]*H_mat[a,b]
+		# C^J_pq dJ_pq/dy_ab 
+                @tullio grad += +4*cj12[b,q]*b_MO[a,b,k]*b_MO[q,q,k]
+                @tullio grad += -4*cj12[a,q]*b_MO[b,a,k]*b_MO[q,q,k]
 
-            # dJ_pp/dy_ab
-            @tullio grad_nbeta[a,b] += +4*n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
-            @tullio grad_nalpha[a,b] += +4*n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
-	    @tullio grad_nbetat[a,b] += -4*n_beta[a]*b_nbf_beta[b,a,k]*b_nbeta_beta[a,a,k]
-            @tullio grad_nalphat[a,b] += -4*n_alpha[a]*b_nbf_alpha[b,a,k]*b_nalpha_alpha[a,a,k]
+                # -C^K_pq dK_pq/dy_ab 
+                @tullio grad += -4*ck12[b,q]*b_MO[a,q,k]*b_MO[b,q,k]
+                @tullio grad += +4*ck12[a,q]*b_MO[b,q,k]*b_MO[a,q,k]
 
-            # C^J_pq dJ_pq/dy_ab 
-            @tullio grad_nbf5[a,b] += +4*cj12[b,q]*b_nbf_nbf5[a,b,k]*b_nbf5_nbf5[q,q,k]
-            @tullio grad_nbf5t[a,b] += -4*cj12[a,q]*b_nbf_nbf5[b,a,k]*b_nbf5_nbf5[q,q,k]
-
-            # -C^K_pq dK_pq/dy_ab 
-            @tullio grad_nbf5[a,b] += -4*ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
-            @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*b_nbf_nbf5[b,q,k]*b_nbf5_nbf5[a,q,k]
-        end
-        else
-            if(pa.MSpin==0)
+	    else
                 # 2ndH/dy_ab
                 @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
                 @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
 
                 # dJ_pp/dy_ab
-		@tullio grad_nbeta[a,b] += +4*n_beta[b]*I_nb_nb_nb[a,b,b,b]
+                @tullio grad_nbeta[a,b] += +4*n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
+                @tullio grad_nalpha[a,b] += +4*n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
+	        @tullio grad_nbetat[a,b] += -4*n_beta[a]*b_nbf_beta[b,a,k]*b_nbeta_beta[a,a,k]
+                @tullio grad_nalphat[a,b] += -4*n_alpha[a]*b_nbf_alpha[b,a,k]*b_nalpha_alpha[a,a,k]
+
+                # C^J_pq dJ_pq/dy_ab 
+                @tullio grad_nbf5[a,b] += +4*cj12[b,q]*b_nbf_nbf5[a,b,k]*b_nbf5_nbf5[q,q,k]
+                @tullio grad_nbf5t[a,b] += -4*cj12[a,q]*b_nbf_nbf5[b,a,k]*b_nbf5_nbf5[q,q,k]
+
+                # -C^K_pq dK_pq/dy_ab 
+                @tullio grad_nbf5[a,b] += -4*ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
+                @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*b_nbf_nbf5[b,q,k]*b_nbf5_nbf5[a,q,k]
+            end
+	end
+    else
+        if(pa.MSpin==0)
+            if(pa.muller)
+	        # 2ndH/dy_ab
+                @tullio grad[a,b]  += +4*n[b]*Hmat_nbf5[a,b]
+                @tullio grad[a,b] += -4*n[a]*Hmat_nbf5t[a,b]
+		print("2ndH/dy_ab calculadas")
+
+                # C^J_pq dJ_pq/dy_ab 
+                @tullio grad[a,b] += +4*cj12[b,q]*I_MO[a,b,q,q]
+                @tullio grad[a,b] += -4*cj12[a,q]*I_MO[b,a,q,q]
+                print("Relacionadas con J calculadas")
+                # -C^K_pq dK_pq/dy_ab 
+                @tullio grad[a,b] += -4*ck12[b,q]*I_MO[a,q,b,q]
+                @tullio grad[a,b] += +4*ck12[a,q]*I_MO[b,q,a,q]
+                print("Relacionadas con K calculadas")
+	    else
+                # 2ndH/dy_ab
+                @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
+                @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
+
+                # dJ_pp/dy_ab
+	        @tullio grad_nbeta[a,b] += +4*n_beta[b]*I_nb_nb_nb[a,b,b,b]
                 @tullio grad_nalpha[a,b] += +4*n_alpha[b]*I_na_na_na[a,b,b,b]
                 @tullio grad_nbetat[a,b] += -4*n_beta[a]*I_nb_nb_nb[b,a,a,a]
                 @tullio grad_nalphat[a,b] += -4*n_alpha[a]*I_na_na_na[b,a,a,a]
 
-                # C^J_pq dJ_pq/dy_ab 
-		@tullio grad_nbf5[a,b] += +4*cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
-		@tullio grad_nbf5t[a,b] += -4*cj12[a,q]*I_nbf5_nbf5_nbf5[b,a,q,q]
+                # C^J_pq dJ_pq/dy_ab
+	        @tullio grad_nbf5[a,b] += +4*cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
+	        @tullio grad_nbf5t[a,b] += -4*cj12[a,q]*I_nbf5_nbf5_nbf5[b,a,q,q]
 
                 # -C^K_pq dK_pq/dy_ab 
-		@tullio grad_nbf5[a,b] += -4*ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
+       	        @tullio grad_nbf5[a,b] += -4*ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
                 @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*I_nbf5_nbf5_nbf5[b,q,a,q]
+		print("si aparece esto es porque algo va mal")
+            end
         end
     end
 
     grad = Array(grad)
     grads = zeros(pa.nvar)
     n = 1
+
     for i in 1:pa.nbf5
         for j in i+1:pa.nbf
             grads[n] = grad[i,j]
             n += 1
-        end
+         end
     end
+    
     grad = grads
-
-
+    print("grad calculada")
     return grad
 
 end
-
-

@@ -49,6 +49,8 @@ mutable struct Param
     method::String
     nvar::Int64
     lamb::Float64
+    muller::Bool
+    EBI::Bool
     
 end
 
@@ -158,6 +160,8 @@ function Param(bset,mul,charge)
 
     lamb = 0.0
 
+    muller = false
+    EBI = false
     return Param(natoms,
     nbf,
     nbfaux,
@@ -205,7 +209,9 @@ function Param(bset,mul,charge)
     MSpin,
     method,
     nvar,
-    lamb)
+    lamb,
+    muller, 
+    EBI)
 end
 
 function autozeros(p;restart=false)
@@ -247,4 +253,12 @@ function set_ncwo(p,ncwo)
     p.no0 = p.nbf - p.nbf5
     p.nv = p.ncwo*p.ndoc
 
+end
+
+function set_muller(p,muller)
+    p.muller = true
+    p.nv = p.nbf - p.no1
+    p.nbf5 = p.nbf
+    p.nvar = round(Int,p.nbf*(p.nbf-1)/2)
+    ncwo = 0
 end
