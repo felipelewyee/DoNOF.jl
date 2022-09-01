@@ -69,40 +69,37 @@ function Param(bset,mul,charge)
     nbfaux = 0	
     no1 = 0
 
-    for i in 1:natoms
-	Z = bset.atoms[i].Z
-        if 1<=Z && Z<=  2
-            no1 += 0           # H-He
-        elseif 3<=Z && Z<= 10
-            no1 +=  1          # Li-Ne
-        elseif 11<=Z && Z<= 18
-            no1 +=  5          # Na-Ar
-        elseif 19<=Z && Z<= 36
-            no1 +=  9          # K-Kr
-        elseif 37<=Z && Z<= 49
-            no1 += 18          # Rb-In
-        elseif 50<=Z && Z<= 54
-            no1 += 23          # Sn-Xe
-        elseif 55<=Z && Z<= 71
-            no1 += 27          # Cs-Lu
-        elseif 72<=Z && Z<= 81
-            no1 += 30          # Hf-Tl
-        elseif 82<=Z && Z<= 86
-            no1 += 39          # Pb-Rn
-        elseif 87<=Z && Z<=109
-            no1 += 43          # Fr-Mt
-        end
-    end
+    #for i in 1:natoms
+    #    Z = bset.atoms[i].Z
+    #    if 1<=Z && Z<=  2
+    #        no1 += 0           # H-He
+    #    elseif 3<=Z && Z<= 10
+    #        no1 +=  1          # Li-Ne
+    #    elseif 11<=Z && Z<= 18
+    #        no1 +=  5          # Na-Ar
+    #    elseif 19<=Z && Z<= 36
+    #        no1 +=  9          # K-Kr
+    #    elseif 37<=Z && Z<= 49
+    #        no1 += 18          # Rb-In
+    #    elseif 50<=Z && Z<= 54
+    #        no1 += 23          # Sn-Xe
+    #    elseif 55<=Z && Z<= 71
+    #        no1 += 27          # Cs-Lu
+    #    elseif 72<=Z && Z<= 81
+    #        no1 += 30          # Hf-Tl
+    #    elseif 82<=Z && Z<= 86
+    #        no1 += 39          # Pb-Rn
+    #    elseif 87<=Z && Z<=109
+    #        no1 += 43          # Fr-Mt
+    #    end
+    #end
 
     ndoc = nbeta - no1
     nsoc = nalpha - nbeta
     ndns = ndoc + nsoc
     nvir = nbf - nalpha
 
-    ncwo = 1
-    if ne == 2
-        ncwo = -1
-    end
+    ncwo = -1
     if ndns!=0
         if ndoc>0
 	    if ncwo!=1
