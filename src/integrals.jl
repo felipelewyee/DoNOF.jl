@@ -11,7 +11,7 @@ function compute_integrals(bset,p)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
 	I = ERI_2e4c(bset)
     else
-	aux = BasisSet(bset.name*"-jkfit",bset.atoms)
+	aux = BasisSet(bset.name*"-jkfit",bset.atoms,spherical=false,lib=:acsint)
         Iaux = ERI_2e3c(bset,aux)
         G = ERI_2e2c(aux)
 
