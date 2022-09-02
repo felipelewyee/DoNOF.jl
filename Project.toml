@@ -4,7 +4,6 @@ authors = ["Juan Felipe Huan Lew Yee <felipe.lew.yee@quimica.unam.mx>", "Jorge M
 version = "0.1.0"
 
 [deps]
-AutoGrad = "6710c13c-97f1-543f-91c5-74e8f7d95b35"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 CUDAKernels = "72cfdca4-0801-4ab0-bf6a-d52aa10adc57"
 GaussianBasis = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"
@@ -12,7 +11,6 @@ JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
-NPZ = "15e1cf62-19b3-5cfa-8e77-841668bca605"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
