@@ -76,6 +76,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
                 break
     	    end
             #print(t2-t1,t3-t2)
+            save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
         end
     end
 
@@ -94,11 +95,10 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	        break
 	    end
             E_old = E
-
+            save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
         end
 
     end
-
 
     save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
 

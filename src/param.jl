@@ -120,7 +120,7 @@ function Param(bset,mul,charge)
     no0 = nbf - nbf5
 
     title = "donof"
-    maxit = 10000  # Número máximo de iteraciones de Occ-SCF
+    maxit = 1000  # Número máximo de iteraciones de Occ-SCF
     thresheid = 10^-6#8 # Convergencia de la energía total
     maxitid = 300  # Número máximo de iteraciones externas en HF
     maxloop = 30  # Iteraciones internas en optimización orbital
@@ -244,4 +244,48 @@ function set_ncwo(p,ncwo)
     p.no0 = p.nbf - p.nbf5
     p.nv = p.ncwo*p.ndoc
 
+end
+
+function set_no1(p,bset;no1=-1) 
+
+    if(no1==-1)
+
+        for i in 1:p.natoms
+            Z = bset.atoms[i].Z
+            if 1<=Z && Z<=  2
+                no1 += 0           # H-He
+            elseif 3<=Z && Z<= 10
+                no1 +=  1          # Li-Ne
+            elseif 11<=Z && Z<= 18
+                no1 +=  5          # Na-Ar
+            elseif 19<=Z && Z<= 36
+                no1 +=  9          # K-Kr
+            elseif 37<=Z && Z<= 49
+                no1 += 18          # Rb-In
+            elseif 50<=Z && Z<= 54
+                no1 += 23          # Sn-Xe
+            elseif 55<=Z && Z<= 71
+                no1 += 27          # Cs-Lu
+            elseif 72<=Z && Z<= 81
+                no1 += 30          # Hf-Tl
+            elseif 82<=Z && Z<= 86
+                no1 += 39          # Pb-Rn
+            elseif 87<=Z && Z<=109
+                no1 += 43          # Fr-Mt
+            end
+        end
+    end
+
+    p.no1 = no1
+
+    p.ndoc = p.nbeta - p.no1
+    p.nsoc = p.nalpha - p.nbeta
+    p.ndns = p.ndoc + p.nsoc
+    p.nvir = p.nbf - p.nalpha
+
+    p.nac = p.ndoc * (1+p.ncwo)
+    p.nbf5 = p.no1 + p.nac + p.nsoc
+    p.no0 = p.nbf - p.nbf5
+
+    p.nvar = round(Int,p.nbf*(p.nbf-1)/2 - p.no0*(p.no0-1)/2)
 end
