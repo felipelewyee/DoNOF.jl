@@ -96,6 +96,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    end
             E_old = E
             save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
+	    flush(stdout)
         end
 
     end
