@@ -1,4 +1,4 @@
-function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false)
+function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,freeze_occ=false)
 
     S,T,V,H,I,b_mnl = compute_integrals(bset,p)
 
@@ -49,7 +49,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
     C = Cguess
     elag = zeros(p.nbf,p.nbf)
-    gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,p)
+    gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
     iloop = 0
     itlim = 1
@@ -70,7 +70,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         for i_ext in 1:p.maxit
             convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
     
-            gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,p)
+            gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     
             if convgdelag
                 break
@@ -86,7 +86,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         for i_ext in 1:p.maxit
             E,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
 
-            gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,p)
+            gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
 	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f\n",i_ext,nit_orb,E,E+E_nuc,E-E_old,maxdiff)

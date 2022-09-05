@@ -71,11 +71,11 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
 
 end
 
-function occoptr(gamma,C,H,I,b_mnl,p)
+function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
-    J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
 
-    if p.ndoc>0
+    if p.ndoc>0 && !freeze_occ
+        J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
         if p.gradient=="analytical"
             res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma->calcg(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS(); inplace=false)
         elseif p.gradient=="numerical"
