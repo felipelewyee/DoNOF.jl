@@ -1,5 +1,7 @@
 function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,freeze_occ=false)
 
+    t1 = time()
+
     S,T,V,H,I,b_mnl = compute_integrals(bset,p)
 
     if(printmode)
@@ -68,14 +70,17 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     if p.method == "ID"
 
         for i_ext in 1:p.maxit
+	    ta1 = time()
             convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
+	    ta2 = time()
     
             gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
-    
+	    ta3 = time()
+            println("Orb: ", ta2-ta1, " Occ: ", ta3-ta2)
+
             if convgdelag
                 break
     	    end
-            #print(t2-t1,t3-t2)
             save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
         end
     end
@@ -157,6 +162,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     if(do_m_diagnostic)
         M_diagnostic(p,n)
     end
+
+    t2 = time()
+    println("Elapsed time", t2-t1)
 
     return E_nuc + E_old,C,gamma,fmiug0
 

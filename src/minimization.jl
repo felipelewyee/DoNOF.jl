@@ -81,6 +81,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
         elseif p.gradient=="numerical"
 	   res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
 	end
+	println(res)
         gamma = Optim.minimizer(res)
     end
     n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
