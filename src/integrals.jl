@@ -84,11 +84,11 @@ function JKj_RI(C,b_mnl,nbf,nbf5,nbfaux)
     Cnbf5 = view(C,:,1:nbf5)
     
     #b_transform
-    @tensor b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
+    @tullio b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
     @tullio b_qql[q,l] := Cnbf5[n,q]*b_qnl[q,n,l]
 
     #hstarj
-    @tensor J[q,m,n] := b_qql[q,l]*b_mnl[m,n,l]
+    @tullio J[q,m,n] := b_qql[q,l]*b_mnl[m,n,l]
 
     #hstark
     @tullio K[q,m,n] := b_qnl[q,m,l]*b_qnl[q,n,l]
