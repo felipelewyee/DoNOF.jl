@@ -48,7 +48,7 @@ mutable struct Param
     MSpin::Int64
     method::String
     nvar::Int64
-    lamb::Float64
+    spherical::Bool
     
 end
 
@@ -153,7 +153,7 @@ function Param(bset,mul,charge)
     method = "ID"
     nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
-    lamb = 0.0
+    spherical = false
 
     return Param(natoms,
     nbf,
@@ -202,7 +202,7 @@ function Param(bset,mul,charge)
     MSpin,
     method,
     nvar,
-    lamb)
+    spherical)
 end
 
 function autozeros(p;restart=false)

@@ -76,7 +76,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     
             gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	    ta3 = time()
-            println("Orb: ", ta2-ta1, " Occ: ", ta3-ta2)
+	    @printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
 
             if convgdelag
                 break

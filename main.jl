@@ -6,10 +6,9 @@ mol = """
   H    0.0000000   -0.3962400   -0.7727381
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvdz")
+bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=false)
 
-p.ipnof = 7
-p.ista = 1
+p.ipnof = 8
 
 p.RI = true
 p.gpu = true

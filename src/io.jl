@@ -21,7 +21,7 @@ function read_xyz_from_file(filename)
 end
 
 
-function molecule(mol,basis)
+function molecule(mol,basis;spherical=false)
 
     content = split(mol,"\n")
     firstline = content[1]
@@ -40,9 +40,14 @@ function molecule(mol,basis)
 	mul = 1
 	charge = 0
     end
-    
-    bset = BasisSet(basis, mol, spherical=false,lib=:acsint)
+
+    if spherical
+        bset = BasisSet(basis, mol)
+    else
+        bset = BasisSet(basis, mol, spherical=false,lib=:acsint)
+    end
     p = Param(bset,mul,charge)
+    p.spherical = spherical
 
     return bset,p
 
