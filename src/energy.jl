@@ -164,7 +164,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     end
 
     t2 = time()
-    println("Elapsed time", t2-t1)
+    println("Elapsed time: ", t2-t1)
 
     return E_nuc + E_old,C,gamma,fmiug0
 

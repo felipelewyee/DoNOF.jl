@@ -82,7 +82,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	   res = optimize(gamma->calce(gamma,J_MO,K_MO,H_core,p),gamma,LBFGS())
 	end
 	println("N occ iters: ",res.iterations)
-	gamma + res.minimizer
+	gamma = res.minimizer
     end
     n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
     cj12,ck12 = PNOFi_selector(n,p)

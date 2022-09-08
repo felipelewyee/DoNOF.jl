@@ -9,6 +9,7 @@ mol = """
 bset,p = DoNOF.molecule(mol,"cc-pvdz")
 
 p.ipnof = 7
+p.ista = 1
 
 p.RI = true
 p.gpu = true
