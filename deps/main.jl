@@ -11,7 +11,7 @@ bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=false)
 p.ipnof = 8
 
 p.RI = true
-p.gpu = false
+p.gpu = true
 
 p.method = "ID"
 
