@@ -173,7 +173,7 @@ function orbopt_rotations(gamma,C,H,I,b_mnl,p)
     n,dn = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
     cj12,ck12 = PNOFi_selector(n,p)
 
-    res = optimize(y->calcorbe(y,n,cj12,ck12,C,H,I,b_mnl,p),y->calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p),y,ConjugateGradient(), Optim.Options(iterations = 30),inplace=false)
+    res = optimize(y->calcorbe(y,n,cj12,ck12,C,H,I,b_mnl,p),y->calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p),y,LBFGS(), Optim.Options(iterations = 30),inplace=false)
 
     E = res.minimum
     y = res.minimizer
