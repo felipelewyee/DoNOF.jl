@@ -713,7 +713,8 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,pa)
     end
 
     Cnbf5 = view(Cnew,1:pa.nbf,1:pa.nbf5)
-    @tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnbf5[nn,j]
+    @tullio tmp[m,j] := H[m,nn] * Cnbf5[nn,j]
+    @tullio H_mat[i,j] := Cnew[m,i] * tmp[m,j]
     if pa.RI
         @tullio tmp[m,q,l] := Cnbf5[nn,q]*b_mnl[m,nn,l]
         @tullio b_MO[p,q,l] := Cnew[m,p]*tmp[m,q,l]
@@ -739,13 +740,9 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,pa)
     n_beta =        view(n,1:pa.nbeta)
     n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
     Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
-    Hmat_nbf5t =     view(H_mat,1:pa.nbf5,1:pa.nbf)
     grad_nbf5 =      view(grad_block,1:pa.nbf,1:pa.nbf5)
-    grad_nbf5t =     view(grad_block,1:pa.nbf5,1:pa.nbf)
     grad_nbeta =     view(grad_block,1:pa.nbf,1:pa.nbeta)
-    grad_nbetat =    view(grad_block,1:pa.nbeta,1:pa.nbf)
     grad_nalpha =    view(grad_block,1:pa.nbf,pa.nalpha+1:pa.nbf5)
-    grad_nalphat =   view(grad_block,pa.nalpha+1:pa.nbf5,1:pa.nbf)
     if pa.RI
         b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
         b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
