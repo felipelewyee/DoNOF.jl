@@ -101,7 +101,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f\n",i_ext,nit_orb,E,E+E_nuc,E-E_old,maxdiff)
 	    @printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
 
-	    if(abs(E-E_old) < 1e-4)
+	    if maxdiff<p.threshl && abs(E - E_old)<p.threshe
 	        break
 	    end
             E_old = E
