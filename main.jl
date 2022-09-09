@@ -11,8 +11,8 @@ bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=false)
 p.ipnof = 8
 
 p.RI = true
-p.gpu = false
+p.gpu = true
 
-p.method = "ID"
+p.method = "Rotations"
 
 E,C,gamma,fmiug0 = DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true)

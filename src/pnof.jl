@@ -426,10 +426,7 @@ function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 
 end
 
-function calce(gamma,J_MO,K_MO,H_core,p)
-
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
-    cj12,ck12 = PNOFi_selector(n,p)
+function calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
 
     E = 0
 
@@ -537,16 +534,21 @@ function calce(gamma,J_MO,K_MO,H_core,p)
 	@tullio E += n_alpha[i]*K_MO_alpha_alpha[i,i]
 #        E = E - np.einsum('i,ji->',n[p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True) - np.einsum('i,ii->',n[p.nbeta:p.nalpha],K_MO[p.nbeta:p.nalpha,p.nbeta:p.nalpha],optimize=True)
     end
-    #for i in 1:size(dn_dgamma)[1]
-    #    for j in 1:size(dn_dgamma)[2]
-    #        println(i," ",j," ",dn_dgamma[i,j])
-    #    end
-    #end 
-    #stop
+
     return E
 end
 
-function calcg(gamma,J_MO,K_MO,H_core,p)
+function calcocce(gamma,J_MO,K_MO,H_core,p)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    cj12,ck12 = PNOFi_selector(n,p)
+
+    E = calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
+
+    return E
+
+end
+
+function calcoccg(gamma,J_MO,K_MO,H_core,p)
 
     grad = zeros(p.nv)
 
@@ -691,18 +693,17 @@ function calcg(gamma,J_MO,K_MO,H_core,p)
     return grad
 end
 
-function calcorbe(y,gamma,C,H,I,b_mnl,p)
+function calcorbe(y,n,cj12,ck12,C,H,I,b_mnl,p)
 
     Cnew = rotate_orbital(y,C,p)
-
     J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
-    E = calce(gamma,J_MO,K_MO,H_core,p)
+    E = calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
 
     return E
 
 end
 
-function calcorbg(y,gamma,C,H,I,b_mnl,pa)
+function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,pa)
 
     Cnew = rotate_orbital(y,C,pa)
 
@@ -711,23 +712,20 @@ function calcorbg(y,gamma,C,H,I,b_mnl,pa)
         H = CuArray(H)
     end
 
-    n,dn_dgamma = ocupacion(gamma,pa.no1,pa.ndoc,pa.nalpha,pa.nv,pa.nbf5,pa.ndns,pa.ncwo,pa.HighSpin)
-    cj12,ck12 = PNOFi_selector(n,pa)
-
-    @tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnew[nn,j]
+    Cnbf5 = view(Cnew,1:pa.nbf,1:pa.nbf5)
+    @tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnbf5[nn,j]
     if pa.RI
-        @tullio b_MO[p,q,l] := Cnew[m,p]*Cnew[nn,q]*b_mnl[m,nn,l]
+        @tullio b_MO[p,q,l] := Cnew[m,p]*Cnbf5[nn,q]*b_mnl[m,nn,l]
     else
-    	@tullio I_MO[p,q,r,t] := Cnew[m,p]*Cnew[nn,q]*I[m,nn,s,l]*Cnew[s,r]*Cnew[l,t]
+    	@tullio I_MO[p,q,r,t] := Cnew[m,p]*Cnbf5[nn,q]*I[m,nn,s,l]*Cnbf5[s,r]*Cnbf5[l,t]
     end
 
-    grad = zeros(pa.nbf,pa.nbf)
-
+    grad_block = zeros(pa.nbf,pa.nbf)
     cj12[diagind(cj12)] .= 0
     ck12[diagind(ck12)] .= 0
 
     if pa.gpu
-        grad = CuArray(grad)
+        grad_block = CUDA.zeros(pa.nbf,pa.nbf)
         cj12 = CuArray(cj12)
         ck12 = CuArray(ck12)
         n = CuArray(n)
@@ -737,12 +735,12 @@ function calcorbg(y,gamma,C,H,I,b_mnl,pa)
     n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
     Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
     Hmat_nbf5t =     view(H_mat,1:pa.nbf5,1:pa.nbf)
-    grad_nbf5 =      view(grad,1:pa.nbf,1:pa.nbf5)
-    grad_nbf5t =     view(grad,1:pa.nbf5,1:pa.nbf)
-    grad_nbeta =     view(grad,1:pa.nbf,1:pa.nbeta)
-    grad_nbetat =    view(grad,1:pa.nbeta,1:pa.nbf)
-    grad_nalpha =    view(grad,1:pa.nbf,pa.nalpha+1:pa.nbf5)
-    grad_nalphat =   view(grad,pa.nalpha+1:pa.nbf5,1:pa.nbf)
+    grad_nbf5 =      view(grad_block,1:pa.nbf,1:pa.nbf5)
+    grad_nbf5t =     view(grad_block,1:pa.nbf5,1:pa.nbf)
+    grad_nbeta =     view(grad_block,1:pa.nbf,1:pa.nbeta)
+    grad_nbetat =    view(grad_block,1:pa.nbeta,1:pa.nbf)
+    grad_nalpha =    view(grad_block,1:pa.nbf,pa.nalpha+1:pa.nbf5)
+    grad_nalphat =   view(grad_block,pa.nalpha+1:pa.nbf5,1:pa.nbf)
     if pa.RI
     b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
     b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
@@ -760,45 +758,36 @@ function calcorbg(y,gamma,C,H,I,b_mnl,pa)
         if(pa.MSpin==0)
             # 2ndH/dy_ab
             @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
-            @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
 
             # dJ_pp/dy_ab
             @tullio grad_nbeta[a,b] += +4*n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
             @tullio grad_nalpha[a,b] += +4*n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
-	    @tullio grad_nbetat[a,b] += -4*n_beta[a]*b_nbf_beta[b,a,k]*b_nbeta_beta[a,a,k]
-            @tullio grad_nalphat[a,b] += -4*n_alpha[a]*b_nbf_alpha[b,a,k]*b_nalpha_alpha[a,a,k]
 
             # C^J_pq dJ_pq/dy_ab 
             @tullio grad_nbf5[a,b] += +4*cj12[b,q]*b_nbf_nbf5[a,b,k]*b_nbf5_nbf5[q,q,k]
-            @tullio grad_nbf5t[a,b] += -4*cj12[a,q]*b_nbf_nbf5[b,a,k]*b_nbf5_nbf5[q,q,k]
 
             # -C^K_pq dK_pq/dy_ab 
             @tullio grad_nbf5[a,b] += -4*ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
-            @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*b_nbf_nbf5[b,q,k]*b_nbf5_nbf5[a,q,k]
         end
         else
             if(pa.MSpin==0)
                 # 2ndH/dy_ab
                 @tullio grad_nbf5[a,b]  += +4*n[b]*Hmat_nbf5[a,b] 
-                @tullio grad_nbf5t[a,b] += -4*n[a]*Hmat_nbf5t[a,b] 
 
                 # dJ_pp/dy_ab
 		@tullio grad_nbeta[a,b] += +4*n_beta[b]*I_nb_nb_nb[a,b,b,b]
                 @tullio grad_nalpha[a,b] += +4*n_alpha[b]*I_na_na_na[a,b,b,b]
-                @tullio grad_nbetat[a,b] += -4*n_beta[a]*I_nb_nb_nb[b,a,a,a]
-                @tullio grad_nalphat[a,b] += -4*n_alpha[a]*I_na_na_na[b,a,a,a]
 
                 # C^J_pq dJ_pq/dy_ab 
 		@tullio grad_nbf5[a,b] += +4*cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
-		@tullio grad_nbf5t[a,b] += -4*cj12[a,q]*I_nbf5_nbf5_nbf5[b,a,q,q]
 
                 # -C^K_pq dK_pq/dy_ab 
 		@tullio grad_nbf5[a,b] += -4*ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
-                @tullio grad_nbf5t[a,b] += +4*ck12[a,q]*I_nbf5_nbf5_nbf5[b,q,a,q]
         end
     end
 
-    grad = Array(grad)
+    grad_block = Array(grad_block)
+    grad = grad_block - grad_block'
     grads = zeros(pa.nvar)
     n = 1
     for i in 1:pa.nbf5
@@ -808,7 +797,6 @@ function calcorbg(y,gamma,C,H,I,b_mnl,pa)
         end
     end
     grad = grads
-
 
     return grad
 
