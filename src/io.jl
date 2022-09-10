@@ -1,3 +1,5 @@
+export molecule
+
 function read_xyz_from_file(filename)
 
     f = open(filename,"r")
