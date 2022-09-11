@@ -351,77 +351,63 @@ function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
         n[no1+ndoc+1:no1+ndns] .= 1.0   # (no1+ndoc,no1+ndns]
     end
 
-    if(ncwo==1)
-        dn_dgamma = zeros(nbf5,nv)
+    dn_dgamma = zeros(nbf5,nv)
+    h = 1 .- n
 
-        for i in 1:ndoc
-            dn_dgamma[no1+i,i] = dni_dgammai[no1+i]
-            #cwo
-            icf = nalpha + ndoc - i + 1
-	    n[icf] = 1/2*(sin(gamma[i]))^2
-            dni_dgammai[icf]  = 1/2*sin(2*gamma[i])
-            dn_dgamma[icf,i] = dni_dgammai[icf]
+    for i in 1:ndoc
+        ll = no1 + ndns + ncwo*(ndoc - i) + 1
+        ul = no1 + ndns + ncwo*(ndoc - i + 1)
+        n[ll:ul] .= h[no1+i]
+        for iw in 1:ncwo-1
+            n[ll+iw-1] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
+            n[ll+iw:ul] .*= cos(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
         end
-    else
-        dn_dgamma = zeros(nbf5,nv)
-        h = 1 .- n
+    end
 
-        for i in 1:ndoc
-            ll = no1 + ndns + ncwo*(ndoc - i) + 1
-            ul = no1 + ndns + ncwo*(ndoc - i + 1)
-            n[ll:ul] .= h[no1+i]
-            for iw in 1:ncwo-1
-                n[ll+iw-1] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-	        n[ll+iw:ul] .*= cos(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-	    end
-	end
+    for i in 1:ndoc
+        # dn_g/dgamma_g
+        dn_dgamma[no1+i,i] = dni_dgammai[no1+i]
 
-        for i in 1:ndoc
-            # dn_g/dgamma_g
-            dn_dgamma[no1+i,i] = dni_dgammai[no1+i]
+        # dn_pi/dgamma_g
+        ll = no1 + ndns + ncwo*(ndoc - i) + 1
+        ul = no1 + ndns + ncwo*(ndoc - i + 1)
+        dn_dgamma[ll:ul,i] .= -dni_dgammai[no1+i]
+        for iw in 1:ncwo-1
+            dn_dgamma[ll+iw-1,i] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
+    	dn_dgamma[ll+iw:ul,i] .*= cos(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
+        end
 
-            # dn_pi/dgamma_g
-	    ll = no1 + ndns + ncwo*(ndoc - i) + 1
-            ul = no1 + ndns + ncwo*(ndoc - i + 1)
-            dn_dgamma[ll:ul,i] .= -dni_dgammai[no1+i]
-            for iw in 1:ncwo-1
-                dn_dgamma[ll+iw-1,i] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-		dn_dgamma[ll+iw:ul,i] .*= cos(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-            end
-
-            # dn_pi/dgamma_pj (j<i)
-            for iw in 1:ncwo-1
-		dn_dgamma[ll+iw:ul,ndoc+(ncwo-1)*(i-1)+iw] .= n[no1+i] - 1
-                for ip in ll+iw:ul
-                    for jw in 1:ip-ll
-                        if jw==iw
-                            dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
-                        else
-			    dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
-                        end
-                    end
-                    if ip-ll+1<=ncwo-1
-                        dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+(ip-ll+1)])^2
+        # dn_pi/dgamma_pj (j<i)
+        for iw in 1:ncwo-1
+    	dn_dgamma[ll+iw:ul,ndoc+(ncwo-1)*(i-1)+iw] .= n[no1+i] - 1
+            for ip in ll+iw:ul
+                for jw in 1:ip-ll
+                    if jw==iw
+                        dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
+                    else
+    		    dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
                     end
                 end
+                if ip-ll+1<=ncwo-1
+                    dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+(ip-ll+1)])^2
+                end
             end
-
-            # dn_pi/dgamma_i
-            for iw in 1:ncwo-1
-                dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] = 1 - n[no1+i]
-                for jw in 1:iw
-                    if jw==iw
-                        dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
-                    else
-                        dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
-		    end
-		end
-	    end
         end
 
-
+        # dn_pi/dgamma_i
+        for iw in 1:ncwo-1
+            dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] = 1 - n[no1+i]
+            for jw in 1:iw
+                if jw==iw
+                    dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
+                else
+                    dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
+    	    end
+    	end
         end
-    return n,dn_dgamma
+    end
+
+   return n,dn_dgamma
 
 
 end

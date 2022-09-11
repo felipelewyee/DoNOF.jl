@@ -249,7 +249,7 @@ end
 function set_no1(p,bset;no1=-1) 
 
     if(no1==-1)
-
+        no1 = 0
         for i in 1:p.natoms
             Z = bset.atoms[i].Z
             if 1<=Z && Z<=  2
