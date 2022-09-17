@@ -3,6 +3,7 @@ module DoNOF
 using LoopVectorization
 using CUDA, CUDAKernels, KernelAbstractions
 using Tullio
+using TensorOperations
 
 using LinearAlgebra
 using Printf

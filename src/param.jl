@@ -49,7 +49,7 @@ mutable struct Param
     method::String
     nvar::Int64
     spherical::Bool
-    
+    tensoroperations::Bool    
 end
 
 function Param(bset,mul,charge)
@@ -154,6 +154,7 @@ function Param(bset,mul,charge)
     nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
     spherical = false
+    tensoroperations = false
 
     return Param(natoms,
     nbf,
@@ -202,7 +203,8 @@ function Param(bset,mul,charge)
     MSpin,
     method,
     nvar,
-    spherical)
+    spherical,
+    tensoroperations)
 end
 
 function autozeros(p;restart=false)
