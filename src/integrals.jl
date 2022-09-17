@@ -111,8 +111,6 @@ end
 
 function JKj_RI(C,b_mnl::CuArray{Float32},nbf,nbf5,nbfaux)
 
-    println("method check")
-
     Cnbf5 = view(C,:,1:nbf5)
 
     #b_transform
