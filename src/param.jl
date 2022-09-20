@@ -215,7 +215,7 @@ function autozeros(p;restart=false)
             p.nzerosm = 5
 	else
 	    p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
-            p.nzerosr = self.nzeros
+            p.nzerosr = p.nzeros
             p.nzerosm = abs(int(np.log10(p.threshl))) + 2
 	end
     else
