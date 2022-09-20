@@ -216,12 +216,12 @@ function autozeros(p;restart=false)
 	else
 	    p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
             p.nzerosr = self.nzeros
-            p.nzerosm = abs(int(np.log10(self.threshl))) + 2
+            p.nzerosm = abs(int(np.log10(p.threshl))) + 2
 	end
     else
         p.nzeros = 1
         p.nzerosr = 2
-        p.nzerosm = abs(int(np.log10(self.threshl))) + 2
+        p.nzerosm = abs(int(np.log10(p.threshl))) + 2
     end
 end
 
