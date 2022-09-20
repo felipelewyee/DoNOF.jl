@@ -209,17 +209,19 @@ end
 
 function autozeros(p;restart=false)
     if(restart)
-        p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
-        p.nzerosr = self.nzeros
-        #self.nzerosm = abs(int(np.log10(self.threshl))) + 2         
-        #if(self.nzeros<3):
-        #    self.nzeros = 2
-        #    self.nzerosr = 2
-        #    self.nzerosm = 5
+	if(abs(trunc(Int,log10(p.threshl)))<=3)
+            p.nzeros = 2
+            p.nzerosr = 2
+            p.nzerosm = 5
+	else
+	    p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
+            p.nzerosr = self.nzeros
+            p.nzerosm = abs(int(np.log10(self.threshl))) + 2
+	end
     else
-        p.nzeros = 0
-        p.nzerosr = 0
-        #self.nzerosm = abs(int(np.log10(self.threshl))) + 2
+        p.nzeros = 1
+        p.nzerosr = 2
+        p.nzerosm = abs(int(np.log10(self.threshl))) + 2
     end
 end
 
