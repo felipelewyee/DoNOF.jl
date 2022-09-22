@@ -188,6 +188,29 @@ function JKH_MO_RI(C,H,b_mnl,nbf,nbf5,nbfaux)
     return J_MO,K_MO,H_core
 end
 
+function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
+
+    Cnbf5 = view(C,:,1:nbf5)
+
+    #denmatj
+    @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
+
+    #b transform
+    @tensor b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
+    @tensor b_pql[p,q,l] := Cnbf5[n,q] * b_pnl[p,n,l]
+
+    #QJMATm
+    @tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
+
+    #QKMATm
+    @tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
+
+    #QHMATm
+    @tensor H_core[i] := D[i,m,n]*H[m,n]
+
+    return J_MO,K_MO,H_core
+end
+
 function JKH_MO_Full(C,H,I,nbf,nbf5)
 
 
