@@ -49,7 +49,7 @@ mutable struct Param
     method::String
     nvar::Int64
     spherical::Bool
-    tensoroperations::Bool    
+    gpu_bits::Int64
 end
 
 function Param(bset,mul,charge)
@@ -154,7 +154,7 @@ function Param(bset,mul,charge)
     nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
     spherical = false
-    tensoroperations = false
+    gpu_bits = 64
 
     return Param(natoms,
     nbf,
@@ -204,7 +204,7 @@ function Param(bset,mul,charge)
     method,
     nvar,
     spherical,
-    tensoroperations)
+    gpu_bits)
 end
 
 function autozeros(p;restart=false)
