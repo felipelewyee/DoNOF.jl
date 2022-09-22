@@ -147,7 +147,11 @@ function computeJKH_MO(C,H,I,b_mnl,p)
 
     if(p.gpu)
         if(p.RI)
-            J_MO,K_MO,H_core = JKH_MO_RI(CuArray(C),CuArray(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+            if(p.gpu_bits == 64)
+                J_MO,K_MO,H_core = JKH_MO_RI(CuArray(C),CuArray(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+            else
+                J_MO,K_MO,H_core = JKH_MO_RI(cu(C),cu(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+            end
         else
             J_MO,K_MO,H_core = JKH_MO_Full(CuArray(C),CuArray(H),I,p.nbf,p.nbf5)
         end
