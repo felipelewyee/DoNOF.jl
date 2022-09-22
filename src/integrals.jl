@@ -117,7 +117,7 @@ function JKj_RI(C,b_mnl::CuArray,nbf,nbf5,nbfaux)
     @tensor b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
 
     b_qql = CUDA.zeros(typeof(b_mnl).parameters[1],nbf5,nbfaux)
-    Threads.@threads for i in 1:nbf5
+    for i in 1:nbf5
         b_q = b_qnl[i,1:nbf,1:nbfaux]
         C_q = Cnbf5[1:nbf,i]
         @tensor b_qqltmp[l] := C_q[n]*b_q[n,l]
@@ -130,7 +130,7 @@ function JKj_RI(C,b_mnl::CuArray,nbf,nbf5,nbfaux)
 
     #hstark
     K = CUDA.zeros(typeof(b_mnl).parameters[1],nbf5,nbf,nbf)
-    Threads.@threads for i in 1:nbf5
+    for i in 1:nbf5
     	b_q = b_qnl[i,1:nbf,1:nbfaux]
         @tensor Ktmp[m,n] := b_q[m,l]*b_q[n,l]
     	K[i,1:nbf,1:nbf] = Ktmp[1:nbf,1:nbf]
