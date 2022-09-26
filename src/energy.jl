@@ -92,6 +92,8 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     if p.method == "Rotations"
 
 	E_old = 0
+	last_iter = 0
+	Estored, Cstored, gammastored = 0, 0, 0
         for i_ext in 1:p.maxit
 	    ta1 = time()
             E,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
@@ -102,17 +104,72 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
-	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f\n",i_ext,nit_orb,E,E+E_nuc,E-E_old,maxdiff)
+            y = zeros(p.nvar)
+            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+            cj12,ck12 = PNOFi_selector(n,p)
+            grad_orb = calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p)
+            J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
+            grad_occ = calcoccg(gamma,J_MO,K_MO,H_core,p)
+
+	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f %4.2e %4.2e\n",i_ext,nit_orb,E,E+E_nuc,E-E_old,maxdiff,norm(grad_orb),norm(grad_occ))
 	    @printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
 
             E_old = E
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
 	    flush(stdout)
-	    if maxdiff<p.threshl && abs(E - E_old)<p.threshe
-	        break
-	    end
+
+	    if(norm(grad_orb) < 1e-3 && norm(grad_occ) < 1e-3 && (i_ext - last_iter > 10))
+	         if E-Estored < -1e-4
+		         last_iter = i_ext
+		         Estored, Cstored, gammastored = E, C, gamma
+		 else
+		     if(Estored < E)
+		         E, C, gamma = Estored, Cstored, gammastored
+		     end
+		     break
+		 end
+		 break
+            end
+
+	    #if maxdiff<p.threshl && abs(E - E_old)<p.threshe
+	    #    break
+	    #end
         end
 
+    end
+
+    if p.method == "Combined"
+
+        E_old = 0
+        last_iter = 0
+        Estored, Cstored, gammastored = 0, 0, 0
+        for i_ext in 1:p.maxit
+            ta1 = time()
+            E,C,gamma,n,nit,success = comb(gamma,C,H,I,b_mnl,p)
+            ta2 = time()
+
+            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+            cj12,ck12 = PNOFi_selector(n,p)
+            Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+
+            x = zeros(p.nvar+p.nv)
+	    x[p.nvar+1:end] = gamma
+            grad = calccombg(x,C,H,I,b_mnl,p)
+            grad_norm = norm(grad)
+	    grad_orb, grad_occ = grad[1:p.nvar], grad[p.nvar+1:end]
+
+	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f %4.2e %4.2e %4.2e\n",i_ext,nit,E,E+E_nuc,E-E_old,maxdiff,norm(grad),norm(grad_orb),norm(grad_occ))
+            @printf("Time: %6.2e\n", ta2-ta1)
+
+            E_old = E
+            save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
+            flush(stdout)
+
+	    if(grad_norm < 1e-4)
+		break
+	    end
+
+	end
     end
 
     save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)

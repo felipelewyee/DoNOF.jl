@@ -791,4 +791,41 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,pa)
 
 end
 
+function calccombe(x,C,H,I,b_mnl,p)
 
+    nvar = trunc(Int,p.nbf*(p.nbf-1)/2 - p.no0*(p.no0-1)/2)
+    y = x[1:nvar]
+    gamma = x[nvar+1:end]
+
+    Cnew = rotate_orbital(y,C,p)
+
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    cj12,ck12 = PNOFi_selector(n,p)
+
+    J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
+
+    E = calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
+
+    return E
+end
+
+function calccombg(x,C,H,I,b_mnl,p)
+
+    nvar = trunc(Int,p.nbf*(p.nbf-1)/2 - p.no0*(p.no0-1)/2)
+    y = x[1:nvar]
+    gamma = x[nvar+1:end]
+
+    Cnew = rotate_orbital(y,C,p)
+
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    cj12,ck12 = PNOFi_selector(n,p)
+
+    J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
+
+    grad = zeros(nvar + p.nv)
+
+    grad[1:nvar] = calcorbg(y,n,cj12,ck12,Cnew,H,I,b_mnl,p)
+    grad[nvar+1:end] = calcoccg(gamma,J_MO,K_MO,H_core,p)
+
+    return grad
+end
