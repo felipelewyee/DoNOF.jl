@@ -76,7 +76,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     if p.ndoc>0 && !freeze_occ
         J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
         if p.gradient=="analytical"
-		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, OACCEL(nlprecon=GradientDescent()), inplace=false)
+		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, BFGS(), inplace=false)
         elseif p.gradient=="numerical"
 	   res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
 	end
@@ -173,7 +173,7 @@ function orbopt_rotations(gamma,C,H,I,b_mnl,p)
     n,dn = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
     cj12,ck12 = PNOFi_selector(n,p)
 
-    res = optimize(y->calcorbe(y,n,cj12,ck12,C,H,I,b_mnl,p),y->calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p),y,OACCEL(nlprecon=GradientDescent()), Optim.Options(iterations = 90),inplace=false)
+    res = optimize(y->calcorbe(y,n,cj12,ck12,C,H,I,b_mnl,p),y->calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p),y,BFGS(), Optim.Options(iterations = 90),inplace=false)
 
     E = res.minimum
     y = res.minimizer
@@ -190,7 +190,7 @@ function comb(gamma,C,H,I,b_mnl,p)
     x = zeros(p.nvar+p.nv)
     x[p.nvar+1:end] = gamma
 
-    res = optimize(x->calccombe(x,C,H,I,b_mnl,p),x->calccombg(x,C,H,I,b_mnl,p),x,OACCEL(nlprecon=LBFGS(), wmax=5), Optim.Options(iterations = 30),inplace=false)
+    res = optimize(x->calccombe(x,C,H,I,b_mnl,p),x->calccombg(x,C,H,I,b_mnl,p),x,BFGS(), Optim.Options(iterations = 30),inplace=false)
 
     E = res.minimum
     x = res.minimizer
