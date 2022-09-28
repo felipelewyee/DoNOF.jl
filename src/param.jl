@@ -247,6 +247,7 @@ function set_ncwo(p,ncwo)
     p.nbf5 = p.no1 + p.nac + p.nsoc   #JFHLY warning: nbf must be >nbf5
     p.no0 = p.nbf - p.nbf5
     p.nv = p.ncwo*p.ndoc
+    p.nvar = round(Int,p.nbf*(p.nbf-1)/2 - p.no0*(p.no0-1)/2)
 
 end
 
