@@ -193,7 +193,7 @@ function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
     @tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
 
     #QKMATm
-    K_MO = sum(b_pql .* b_pql, dims=3)
+    K_MO = dropdims( sum(b_pql .* b_pql, dims=3), dims=3)
     #@tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
 
     #QHMATm
