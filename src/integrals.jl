@@ -116,25 +116,14 @@ function JKj_RI(C,b_mnl::CuArray,nbf,nbf5,nbfaux)
     #b_transform
     @tensor b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
 
-    b_qql = CUDA.zeros(typeof(b_mnl).parameters[1],nbf5,nbfaux)
-    for i in 1:nbf5
-        b_q = b_qnl[i,1:nbf,1:nbfaux]
-        C_q = Cnbf5[1:nbf,i]
-        @tensor b_qqltmp[l] := C_q[n]*b_q[n,l]
-        b_qql[i,1:nbfaux] = b_qqltmp[1:nbfaux]
-    end
+    b_qql = dropdims( sum(Cnbf5' .* b_qnl, dims=2), dims=2)
     #@tullio b_qql[q,l] := Cnbf5[n,q]*b_qnl[q,n,l]
 
     #hstarj
     @tensor J[q,m,n] := b_qql[q,l]*b_mnl[m,n,l]
 
     #hstark
-    K = CUDA.zeros(typeof(b_mnl).parameters[1],nbf5,nbf,nbf)
-    for i in 1:nbf5
-    	b_q = b_qnl[i,1:nbf,1:nbfaux]
-        @tensor Ktmp[m,n] := b_q[m,l]*b_q[n,l]
-    	K[i,1:nbf,1:nbf] = Ktmp[1:nbf,1:nbf]
-    end
+    K = permutedims(NNlibCUDA.batched_mul(permutedims(b_qnl,(2,3,1)), permutedims(b_qnl,(3,2,1))),(3,1,2))
     #@tullio K[q,m,n] := b_qnl[q,m,l]*b_qnl[q,n,l]
 
     return J,K
@@ -196,9 +185,6 @@ function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
 
     Cnbf5 = view(C,:,1:nbf5)
 
-    #denmatj
-    @tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
-
     #b transform
     @tensor b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
     @tensor b_pql[p,q,l] := Cnbf5[n,q] * b_pnl[p,n,l]
@@ -207,10 +193,14 @@ function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
     @tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
 
     #QKMATm
-    @tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
+    K_MO = sum(b_pql .* b_pql, dims=3)
+    #@tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
 
     #QHMATm
-    @tensor H_core[i] := D[i,m,n]*H[m,n]
+    tmp = H * Cnbf5 
+    H_core = Cnbf5' * tmp
+    #@tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
+    #@tensor H_core[i] := D[i,m,n]*H[m,n]
 
     return J_MO,K_MO,H_core
 end
