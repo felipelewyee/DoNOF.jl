@@ -76,19 +76,17 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     if p.ndoc>0 && !freeze_occ
         J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
         if p.gradient=="analytical"
-		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, LBFGS(), Optim.Options(g_abstol = 1e-4), inplace=false)
+		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, LBFGS(), Optim.Options(g_abstol = 1e-5), inplace=false)
         elseif p.gradient=="numerical"
 	   res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
 	end
-	println("N occ iters: ",res.iterations)
 	gamma = res.minimizer
     end
 
     n,dn = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
     cj12,ck12 = PNOFi_selector(n,p)
 
-    return gamma,n,cj12,ck12
-
+    return gamma,n,cj12,ck12,res.iterations
 end
 
 function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode=true)
@@ -158,7 +156,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
             E_diff = E-E_old
             E_old = E
             if printmode
-		@printf("%6i %6i %14.8f %14.8f %14.8f %14.8f %1i\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
+		@printf("%6i %6i %14.8f %14.8f %14.8f %10.6f %1i\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
 	    end
             break
         end

@@ -197,8 +197,7 @@ function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
     #@tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
 
     #QHMATm
-    tmp = H * Cnbf5 
-    H_core = Cnbf5' * tmp
+    H_core = dropdims( sum(Cnbf5 .* (H * Cnbf5), dims=1), dims=1)
     #@tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
     #@tensor H_core[i] := D[i,m,n]*H[m,n]
 
