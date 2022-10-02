@@ -114,7 +114,6 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
 	    @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_old,maxdiff,norm(grad_orb),norm(grad_occ))
 
-            E_old = E
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
 	    flush(stdout)
 
@@ -125,6 +124,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    #if maxdiff<p.threshl && abs(E - E_old)<p.threshe
 	    #    break
 	    #end
+            E_old = E
         end
 
     end
@@ -149,14 +149,13 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
 	    @printf("%6i %7i %10.1e %14.8f %14.8f %14.8f %10.6f   %3.1e   %3.1e   %3.1e\n",i_ext,nit,ta2-ta1,E,E+E_nuc,E-E_old,maxdiff,norm(grad),norm(grad_orb),norm(grad_occ))
 
-            E_old = E
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
             flush(stdout)
 
 	    if(E_old-E < p.threshe || grad_norm < 1e-3)
 		break
 	    end
-
+            E_old = E
 	end
     end
 
