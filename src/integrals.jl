@@ -57,11 +57,7 @@ function computeJKj(C,I,b_mnl,p)
 
     if(p.gpu)
         if(p.RI)
-	    if(p.gpu_bits == 64)
-                J,K = JKj_RI(CuArray(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
-	    else
-	        J,K = JKj_RI(cu(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
-            end
+	    J,K = JKj_RI(CuArray{typeof(b_mnl).parameters[1]}(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
         else
             J,K = JKj_Full(CuArray(C),I,p.nbf,p.nbf5)
         end
@@ -136,11 +132,7 @@ function computeJKH_MO(C,H,I,b_mnl,p)
 
     if(p.gpu)
         if(p.RI)
-            if(p.gpu_bits == 64)
-                J_MO,K_MO,H_core = JKH_MO_RI(CuArray(C),CuArray(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
-            else
-                J_MO,K_MO,H_core = JKH_MO_RI(cu(C),cu(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
-            end
+	    J_MO,K_MO,H_core = JKH_MO_RI(CuArray{typeof(b_mnl).parameters[1]}(C),CuArray{typeof(b_mnl).parameters[1]}(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
         else
             J_MO,K_MO,H_core = JKH_MO_Full(CuArray(C),CuArray(H),I,p.nbf,p.nbf5)
         end
@@ -183,14 +175,16 @@ end
 
 function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
 
-    Cnbf5 = view(C,:,1:nbf5)
+    Cnbf5 = C[1:nbf,1:nbf5]
 
     #b transform
     @tensor b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
     @tensor b_pql[p,q,l] := Cnbf5[n,q] * b_pnl[p,n,l]
 
     #QJMATm
-    @tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
+    @tullio tmp[p,l] := b_pql[p,p,l]
+    J_MO = tmp * tmp'
+    #@tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
 
     #QKMATm
     K_MO = dropdims( sum(b_pql .* b_pql, dims=3), dims=3)

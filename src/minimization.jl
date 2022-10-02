@@ -49,6 +49,7 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
             if(abs(E_diff)<p.thresheid)
                 if(printmode)
                     @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,maxlp,E,E+E_nuc,E_diff,maxdiff)
+                    flush(stdout)
 		end
 		fmiug0 = diag(elag)
                 ext = false
@@ -61,6 +62,7 @@ function hfidr(C,H,I,b_mnl,E_nuc,p;printmode=true)
 	end
         if printmode
             @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n",i_ext,maxlp,E,E+E_nuc,E_diff,maxdiff)
+            flush(stdout)
         end
 
     end

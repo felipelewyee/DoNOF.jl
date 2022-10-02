@@ -3,7 +3,11 @@ function ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
     J,K = computeJKj(C,I,b_mnl,p)
     
     if p.MSpin==0
-        F = computeF_RC(J,K,n,H,cj12,ck12,p)
+	if p.gpu
+	    F = computeF_RC(CuArray{typeof(b_mnl).parameters[1]}(J),CuArray{typeof(b_mnl).parameters[1]}(K),CuArray{typeof(b_mnl).parameters[1]}(n),CuArray{typeof(b_mnl).parameters[1]}(H),cj12,ck12,p)
+        else
+            F = computeF_RC(J,K,n,H,cj12,ck12,p)
+	end
     elseif p.MSpin!=0
         F = computeF_RO(J,K,n,H,cj12,ck12,p)
     end
@@ -36,7 +40,7 @@ function computeF_RC(J,K,n,H,cj12,ck12,p)
     F_ini_beta = view(F,ini+1:p.nbeta,:,:)
     n_ini_beta = view(n,ini+1:p.nbeta)
     J_ini_beta = view(J,ini+1:p.nbeta,:,:)
-    @tullio avx=false F_ini_beta[i,m,n] += n_ini_beta[i]*J_ini_beta[i,m,n]
+    @tullio F_ini_beta[i,m,n] += n_ini_beta[i]*J_ini_beta[i,m,n]
     F_alpha_nbf5 = view(F,p.nalpha+1:p.nbf5,:,:)
     n_alpha_nbf5 = view(n,p.nalpha+1:p.nbf5)
     J_alpha_nbf5 = view(J,p.nalpha+1:p.nbf5,:,:)
@@ -54,9 +58,50 @@ function computeF_RC(J,K,n,H,cj12,ck12,p)
 
     return F
 
+end
+
+function computeF_RC(J::CuArray,K,n,H,cj12,ck12,p)
+
+    # Matriz de Fock Generalizada
+    F = CUDA.zeros(typeof(J).parameters[1],p.nbf5,p.nbf,p.nbf)
+
+    ini = 0
+    if(p.no1>1)
+        ini = p.no1
     end
 
-    function computeLagrange(F,C,p)
+    # nH
+    @tullio F[i,m,s] += n[i]*H[m,s]
+
+    # nJ
+    #F_ini_beta = view(F,ini+1:p.nbeta,:,:)
+    n_ini_beta = view(n,ini+1:p.nbeta)
+    J_ini_beta = view(J,ini+1:p.nbeta,:,:)
+    #@tullio avx=false F_ini_beta[i,m,n] += n_ini_beta[i]*J_ini_beta[i,m,n]
+    F[ini+1:p.nbeta,1:p.nbf,1:p.nbf] += n_ini_beta .* J_ini_beta
+    #F_alpha_nbf5 = view(F,p.nalpha+1:p.nbf5,:,:)
+    n_alpha_nbf5 = view(n,p.nalpha+1:p.nbf5)
+    J_alpha_nbf5 = view(J,p.nalpha+1:p.nbf5,:,:)
+    #@tullio F_alpha_nbf5[i,m,n] += n_alpha_nbf5[i]*J_alpha_nbf5[i,m,n]
+    F[p.nalpha+1:p.nbf5,1:p.nbf,1:p.nbf] += n_alpha_nbf5 .* J_alpha_nbf5
+
+    # C^J J
+    cj12_ini_nbf5 = view(cj12,ini+1:p.nbf5,ini+1:p.nbf5)
+    cj12_ini_nbf5[diagind(cj12_ini_nbf5)] .= 0.0
+    cj12 = CuArray{typeof(J).parameters[1]}(cj12)
+    @tensor F[i,m,n] += cj12[i,j]*J[j,m,n]
+
+    # -C^K K
+    ck12_ini_nbf5 = view(ck12,ini+1:p.nbf5,ini+1:p.nbf5)
+    ck12_ini_nbf5[diagind(ck12_ini_nbf5)] .= 0.0
+    ck12 = CuArray{typeof(J).parameters[1]}(ck12)
+    @tensor F[i,m,n] += -ck12[i,j]*K[j,m,n]
+
+    return Array(F)
+
+end
+
+function computeLagrange(F,C,p)
 
     Cnbf5 = view(C,:,1:p.nbf5)
     Cnoptorb = view(C,:,1:p.noptorb)

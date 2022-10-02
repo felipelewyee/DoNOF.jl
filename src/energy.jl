@@ -4,8 +4,6 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
     t1 = time()
 
-    S,T,V,H,I,b_mnl = compute_integrals(bset,p)
-
     if(printmode)
         println("Number of basis functions                   (NBF)    = ",p.nbf)
         if(p.RI)
@@ -22,6 +20,11 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         println("Multiplicity                                         = ",p.mul)
         println("")
     end
+    flush(stdout)
+
+    S,T,V,H,I,b_mnl = compute_integrals(bset,p)
+
+    flush(stdout)
 
     println("Geometry")
     println("========")
@@ -32,9 +35,10 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
     E_nuc = compute_E_nuc(bset,p)
 
-    Cguess = C
     if isnothing(C)
         Ei,Cguess = eigen(H, S)
+    else
+        Cguess = C
     end
     Cguess = check_ortho(Cguess,S,p)
 
@@ -45,13 +49,12 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     if isnothing(C)
         C = Cguess
     end
-    Cguess = check_ortho(C,S,p)
+    C = check_ortho(C,S,p)
 
     if isnothing(gamma)
         gamma = compute_gamma(p)
     end
 
-    C = Cguess
     elag = zeros(p.nbf,p.nbf)
     gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
@@ -215,7 +218,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     end
 
     t2 = time()
-    @printf("Elapsed time: %7.2f\n Seconds", t2-t1)
+    @printf("Elapsed time: %7.2f Seconds\n", t2-t1)
 
     return E_nuc + E_old,C,gamma,fmiug0
 
