@@ -118,7 +118,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
 	    flush(stdout)
 
-	    if(E_old-E < threshe || (norm(grad_orb) < 1e-3 && norm(grad_occ) < 1e-3))
+	    if(E_old-E < p.threshe || (norm(grad_orb) < 1e-3 && norm(grad_occ) < 1e-3))
 		 break
             end
 
@@ -153,7 +153,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
             flush(stdout)
 
-	    if(E_old-E < threshe || grad_norm < 1e-3)
+	    if(E_old-E < p.threshe || grad_norm < 1e-3)
 		break
 	    end
 
