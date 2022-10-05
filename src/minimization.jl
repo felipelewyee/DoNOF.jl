@@ -78,7 +78,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     if p.ndoc>0 && !freeze_occ
         J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
         if p.gradient=="analytical"
-		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, LBFGS(), Optim.Options(g_abstol = 1e-5), inplace=false)
+		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, LBFGS(), Optim.Options(g_abstol = 1e-4), inplace=false)
         elseif p.gradient=="numerical"
 	   res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
 	end
