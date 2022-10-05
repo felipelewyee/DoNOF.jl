@@ -57,11 +57,11 @@ function computeJKj(C,I,b_mnl,p)
 
     if(p.gpu)
         if(p.RI)
-	    J,K = JKj_RI(CuArray{typeof(b_mnl).parameters[1]}(C),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+	    J,K = JKj_RI(C,b_mnl,p.nbf,p.nbf5,p.nbfaux)
         else
             J,K = JKj_Full(CuArray(C),I,p.nbf,p.nbf5)
         end
-        return Array(J),Array(K)
+        return J,K
     else
         if(p.RI)
             J,K = JKj_RI(C,b_mnl,p.nbf,p.nbf5,p.nbfaux)
@@ -107,20 +107,29 @@ end
 
 function JKj_RI(C,b_mnl::CuArray,nbf,nbf5,nbfaux)
 
-    Cnbf5 = view(C,:,1:nbf5)
+    Cnbf5 = C[1:nbf,1:nbf5]
+    Cnbf5 = CuArray{typeof(b_mnl).parameters[1]}(Cnbf5)
 
     #b_transform
     @tensor b_qnl[q,n,l] := Cnbf5[m,q]*b_mnl[m,n,l]
 
-    b_qql = dropdims( sum(Cnbf5' .* b_qnl, dims=2), dims=2)
-    #@tullio b_qql[q,l] := Cnbf5[n,q]*b_qnl[q,n,l]
+    #hstark
+    #@tullio K[q,m,n] := b_qnl[q,m,l]*b_qnl[q,n,l]
+    K = CUDA.zeros(typeof(b_mnl).parameters[1],nbf5,nbf,nbf)
+    for q in 1:nbf5
+        b_q = b_qnl[q,1:nbf,1:nbfaux]
+	K[q,1:nbf,1:nbf] = b_q * b_q'
+        CUDA.unsafe_free!(b_q)
+    end
+
+    #b_qql = dropdims( sum(Cnbf5' .* b_qnl, dims=2), dims=2)
+    @tullio b_qql[q,l] := Cnbf5[n,q]*b_qnl[q,n,l]
+    CUDA.unsafe_free!(b_qnl)
+    CUDA.unsafe_free!(Cnbf5)
 
     #hstarj
     @tensor J[q,m,n] := b_qql[q,l]*b_mnl[m,n,l]
-
-    #hstark
-    K = permutedims(NNlibCUDA.batched_mul(permutedims(b_qnl,(2,3,1)), permutedims(b_qnl,(3,2,1))),(3,1,2))
-    #@tullio K[q,m,n] := b_qnl[q,m,l]*b_qnl[q,n,l]
+    CUDA.unsafe_free!(b_qql)
 
     return J,K
 
@@ -180,15 +189,18 @@ function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
     #b transform
     @tensor b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
     @tensor b_pql[p,q,l] := Cnbf5[n,q] * b_pnl[p,n,l]
+    CUDA.unsafe_free!(b_pnl)
 
     #QJMATm
     @tullio tmp[p,l] := b_pql[p,p,l]
     J_MO = tmp * tmp'
+    CUDA.unsafe_free!(tmp)
     #@tullio J_MO[p,q] := b_pql[p,p,l]*b_pql[q,q,l]
 
     #QKMATm
-    K_MO = dropdims( sum(b_pql .* b_pql, dims=3), dims=3)
-    #@tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
+    @tullio K_MO[p,q] := b_pql[p,q,l]*b_pql[p,q,l]
+    #K_MO = dropdims( sum(b_pql .* b_pql, dims=3), dims=3)
+    CUDA.unsafe_free!(b_pql)
 
     #QHMATm
     H_core = dropdims( sum(Cnbf5 .* (H * Cnbf5), dims=1), dims=1)
