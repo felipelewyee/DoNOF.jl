@@ -9,7 +9,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     S,T,V,H,I,b_mnl = compute_integrals(bset,p)
 
     t1 = time()
-    @printf("Elapsed time: %7.2f Seconds\n", t1-t0)
+    @printf("Elapsed time: %7.2f Seconds\n\n", t1-t0)
     flush(stdout)
 
     if(printmode)
