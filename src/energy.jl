@@ -2,7 +2,15 @@ export energy
 
 function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,freeze_occ=false)
 
+    t0 = time()
+    println("Computing Integrals")
+    flush(stdout)
+
+    S,T,V,H,I,b_mnl = compute_integrals(bset,p)
+
     t1 = time()
+    @printf("Elapsed time: %7.2f Seconds\n", t1-t0)
+    flush(stdout)
 
     if(printmode)
         println("Number of basis functions                   (NBF)    = ",p.nbf)
