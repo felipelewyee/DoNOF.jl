@@ -780,6 +780,7 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl::CuArray,pa)
     if pa.RI
         @tensor tmp[m,q,l] := Cnbf5[nn,q]*b_mnl[m,nn,l]
         @tensor b_MO[p,q,l] := Cnew[m,p]*tmp[m,q,l]
+	CUDA.unsafe_free!(tmp)
     else
         @tullio tmp[m,q,s,l] := Cnbf5[nn,q]*I[m,nn,s,l]
         @tullio tmp2[m,q,r,l] := Cnbf5[s,r]*tmp[m,q,s,l]
@@ -826,22 +827,29 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl::CuArray,pa)
                 # dJ_pp/dy_ab
                 @tullio tmp[b,k] := b_nbeta_beta[b,b,k]
                 tmp2 = n_beta .* tmp
+	        CUDA.unsafe_free!(tmp)
 		grad_block[1:pa.nbf,1:pa.nbeta] += permutedims(dropdims(sum(tmp2 .* permutedims(b_nbf_beta,(2,3,1)), dims=2), dims=2),(2,1))
+	        CUDA.unsafe_free!(tmp2)
                 #@tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
                 @tullio tmp[b,k] := b_nalpha_alpha[b,b,k]
                 tmp2 = n_alpha .* tmp
+	        CUDA.unsafe_free!(tmp)
 		grad_block[1:pa.nbf,pa.nalpha+1:pa.nbf5] += permutedims(dropdims(sum(tmp2 .* permutedims(b_nbf_alpha,(2,3,1)), dims=2), dims=2),(2,1))
+	        CUDA.unsafe_free!(tmp2)
                 #@tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
 
                 # C^J_pq dJ_pq/dy_ab
                 @tullio tmp[q,k] := b_nbf5_nbf5[q,q,k]
                 @tensor tmp2[b,k] := cj12[b,q]*tmp[q,k]
+	        CUDA.unsafe_free!(tmp)
 		grad_block[1:pa.nbf,1:pa.nbf5] += permutedims(dropdims(sum(tmp2 .* permutedims(b_nbf_nbf5,(2,3,1)), dims=2), dims=2),(2,1))
+	        CUDA.unsafe_free!(tmp2)
                 #@tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*cj12[b,q]*b_nbf5_nbf5[q,q,k]
 
                 # -C^K_pq dK_pq/dy_ab
 		tmp = ck12 .* b_nbf5_nbf5
 		grad_block[1:pa.nbf,1:pa.nbf5] += -dropdims(sum(NNlibCUDA.batched_mul(b_nbf_nbf5,permutedims(tmp,(2,1,3))), dims=3), dims=3)
+	        CUDA.unsafe_free!(tmp)
 		#@tullio grad_nbf5[a,b] += -ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
             end
         else
