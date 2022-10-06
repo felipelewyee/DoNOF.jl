@@ -74,3 +74,61 @@ function increment_gamma(old_gamma,old_ncwo,p)
     
     return gamma
 end
+
+function order_subspaces(old_C,old_gamma,elag,H,I,b_mnl,p)
+
+    C = zeros(p.nbf,p.nbf)
+    
+    #Sort no1 orbitals
+    elag_diag = diag(elag)[1:p.no1]
+    sort_idx = sortperm(elag_diag)
+    for i in 1:p.no1
+	i_old  = sort_idx[i]
+        C[1:p.nbf,i] = old_C[1:p.nbf,i_old] 
+    end
+
+    #Sort ndoc subspaces
+    elag_diag = diag(elag)[p.no1+1:p.ndoc]
+    sort_idx = sortperm(elag_diag)
+    C[1:p.nbf,1:p.no1] = old_C[1:p.nbf,1:p.no1]
+    for i in 1:p.ndoc
+	i_old  = sort_idx[i]
+        ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
+        ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
+        ll_old = p.no1 + p.ndns + p.ncwo*(p.ndoc - i_old) + 1
+        ul_old = p.no1 + p.ndns + p.ncwo*(p.ndoc - i_old + 1)
+
+        C[1:p.nbf,p.no1+i] = old_C[1:p.nbf,p.no1+i_old]
+        C[1:p.nbf,ll:ul] = old_C[1:p.nbf,ll_old:ul_old]
+    end
+
+    gamma = zeros(p.nv)
+    for i in 1:p.ndoc
+	i_old  = sort_idx[i]
+        ll = p.ndoc + (p.ncwo-1)*(i-1) + 1
+        ul = p.ndoc + (p.ncwo-1)*i
+        ll_old = p.ndoc + (p.ncwo-1)*(i_old-1) + 1
+        ul_old = p.ndoc + (p.ncwo-1)*i_old
+
+	gamma[i] = old_gamma[i_old]
+	gamma[ll:ul] = old_gamma[ll_old:ul_old]
+    end
+
+    #Sort nsoc orbitals
+    elag_diag = diag(elag)[p.no1+p.ndoc+1:p.no1+p.ndns]
+    sort_idx = sortperm(elag_diag)
+    for i in 1:p.nsoc
+	i_old  = sort_idx[i]
+        C[1:p.nbf,p.no1+p.ndoc+i] = old_C[1:p.nbf,p.no1+p.ndoc+i_old] 
+    end
+
+    C[1:p.nbf,p.nbf5+1:p.nbf] = old_C[1:p.nbf,p.nbf5+1:p.nbf]
+
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+
+    cj12,ck12 = PNOFi_selector(n,p)
+    Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+
+    return C,gamma,n,elag
+
+end

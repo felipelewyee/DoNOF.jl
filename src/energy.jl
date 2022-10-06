@@ -167,6 +167,8 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	end
     end
 
+    C,gamma,n,elag = order_subspaces(C,gamma,elag,H,I,b_mnl,p)
+
     save(p.title*".jld","C", C,"gamma",gamma,"fmiug0",fmiug0)
 
     if printmode
