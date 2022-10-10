@@ -1,17 +1,19 @@
 using DoNOF
 
 mol = """
-  O   -0.0000000   -0.0155252    0.0000000
-  H    0.0000000    0.4944556   -0.7830366
-  H   -0.0000000    0.4944556    0.7830366
+0 1
+  O  0.0000   0.000   0.116
+  H  0.0000   0.749  -0.453
+  H  0.0000  -0.749  -0.453
 """
 
 bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 
-p.ipnof = 8
+p.ipnof = 7
+p.ista = 1
 
-p.RI = true
-p.gpu = true
+p.RI = false
+p.gpu = false
 
 p.method = "ID"
 

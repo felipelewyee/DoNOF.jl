@@ -126,8 +126,8 @@ function Param(bset,mul,charge)
     maxloop = 30  # Iteraciones internas en optimización orbital
     ipnof = 7     # PNOFi a calcular
     ista = 0     # PNOFi a calcular
-    threshl = 10^-3   # Convergencia de los multiplicadores de Lagrange
-    threshe = 10^-4   # Convergencia de la energía
+    threshl = 10^-4   # Convergencia de los multiplicadores de Lagrange
+    threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
     threshen = 10^-10 # Convergencia  de la energía en optimización de ocupaciones
     scaling = true     # Scaling for f
