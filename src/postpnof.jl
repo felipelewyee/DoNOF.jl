@@ -674,7 +674,7 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
 #    print(" Ec(GW@GM+SOSEX@GM)   = {: f}".format(EcGoWoSOS))
 #
     if p.RI
-        EcMP2 = mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,p.no1,p.ndoc,p.nsoc,p.ndns,p.ncwo,p.nbf5,p.nbeta,p.nalpha,p.nbf)
+        EcMP2 = mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,p.no1,p.ndoc,p.nsoc,p.ndns,p.ncwo,p.nbf5,p.nbeta,p.nalpha,p.nbf,p.nbfaux)
     else
         EcMP2 = mp2_eq(eig,pqrt,pqrt_at,p.nbeta,p.nalpha,p.nbf)
     end
@@ -832,16 +832,9 @@ function ERIS_RI_attenuated(pql,Cintra,Cinter,no1,ndoc,nsoc,ndns,ncwo,nbf5,nbf,n
     end
     subspaces[nbf5+1:end] .= -1
 
-    pql_at_intra = zeros(nbf,nbf,nbfaux)
-    pql_at_inter = zeros(nbf,nbf,nbfaux)
-    for p in 1:nbf
-        for q in 1:nbf
-            for l in 1:nbfaux
-                pql_at_intra[p,q,l] = pql[p,q,l] * Cintra[p]*Cintra[q]
-                pql_at_inter[p,q,l] = pql[p,q,l] * Cinter[p]*Cinter[q]
-            end
-        end
-    end
+    @tullio pql_at_intra[p,q,l] := pql[p,q,l] * Cintra[p]*Cintra[q]
+    @tullio pql_at_inter[p,q,l] := pql[p,q,l] * Cinter[p]*Cinter[q]
+
     return pql_at_intra, pql_at_inter
 end
 
@@ -872,8 +865,25 @@ function mp2_eq(eig,pqrt,pqrt_at,nbeta,nalpha,nbf)
     return EcMP2
 end
 
-function mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,no1,ndoc,nsoc,ndns,ncwo,nbf5,nbeta,nalpha,nbf)
+function build_I_at(subspaces,i,j,ial_at_intra,jbl_at_intra,ial_at_inter,jbl_at_inter,nalpha,nbf,nbfaux)
+    I_at = zeros(nbf-nalpha,nbf-nalpha)
+    Threads.@threads for a in nalpha+1:nbf
+        for b in nalpha+1:nbf
+            if(subspaces[i]==subspaces[a] && subspaces[i]==subspaces[b] && subspaces[i]==subspaces[j] && subspaces[i]!=-1)
+                ial_tmp = view(ial_at_intra,a,1:nbfaux)
+                jbl_tmp = view(jbl_at_intra,b,1:nbfaux)
+            else
+                ial_tmp = view(ial_at_inter,a,1:nbfaux)
+                jbl_tmp = view(jbl_at_inter,b,1:nbfaux)
+            end
+            @tullio tmp := ial_tmp[l] * jbl_tmp[l]
+            I_at[a-nalpha,b-nalpha] = tmp
+        end
+    end
+    return I_at
+end
 
+function mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,no1,ndoc,nsoc,ndns,ncwo,nbf5,nbeta,nalpha,nbf,nbfaux)
 
     subspaces = zeros(nbf)
     for i in 1:no1
@@ -892,113 +902,61 @@ function mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,no1,ndoc,nsoc,ndns,ncwo,nbf
 
     EcMP2 = 0
     for i in 1:nbeta
-	ial = pql[i,nalpha+1:nbf,1:end]
-	ial_at_intra = pql_at_intra[i,1:nbf,1:end]
-	ial_at_inter = pql_at_inter[i,1:nbf,1:end]
+        ial = view(pql,i,nalpha+1:nbf,1:nbfaux)
+        ial_at_intra = view(pql_at_intra,i,1:nbf,1:nbfaux)
+        ial_at_inter = view(pql_at_inter,i,1:nbf,1:nbfaux)
 	ei = eig[i]
         for j in 1:nbeta
-	    jbl = pql[j,nalpha+1:nbf,1:end]
-	    jbl_at_intra = pql_at_intra[j,1:nbf,1:end]
-	    jbl_at_inter = pql_at_inter[j,1:nbf,1:end]
+	    jbl = view(pql,j,nalpha+1:nbf,1:nbfaux)
+	    jbl_at_intra = view(pql_at_intra,j,1:nbf,1:nbfaux)
+	    jbl_at_inter = view(pql_at_inter,j,1:nbf,1:nbfaux)
 	    ej = eig[j]
 
 	    @tullio I[a,b] := ial[a,l] * jbl[b,l]
-	    e = eig[nalpha+1:nbf]
-            I_at = zeros(nbf-nalpha,nbf-nalpha)
-	    for a in nalpha+1:nbf
-	        for b in nalpha+1:nbf
-		    if(subspaces[i]==subspaces[a] && subspaces[i]==subspaces[b] && subspaces[i]==subspaces[j] && subspaces[i]!=-1)
-			ial_tmp = ial_at_intra[a,1:end]
-			jbl_tmp = jbl_at_intra[b,1:end]
-		    else
-			ial_tmp = ial_at_inter[a,1:end]
-			jbl_tmp = jbl_at_inter[b,1:end]
-	            end
-		    @tullio tmp = ial_tmp[l] * jbl_tmp[l]
-		    I_at[a-nalpha,b-nalpha] = tmp
-	        end
-	    end
+	    e = view(eig,nalpha+1:nbf)
+	    I_at = build_I_at(subspaces,i,j,ial_at_intra,jbl_at_intra,ial_at_inter,jbl_at_inter,nalpha,nbf,nbfaux)
 	    @tullio EcMP2 += I[a,b]*(2*I_at[a,b] - I_at[b,a])/(ei+ej-e[a]-e[b])
 #            EcMP2 += pqrt[i,a,j,b]*(2*pqrt_at[i,a,j,b]-pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
         for j in nbeta+1:nalpha
-            jbl = pql[j,nalpha+1:nbf,1:end]
-            jbl_at_intra = pql_at_intra[j,1:nbf,1:end]
-            jbl_at_inter = pql_at_inter[j,1:nbf,1:end]
+            jbl = view(pql,j,nalpha+1:nbf,1:nbfaux)
+	    jbl_at_intra = view(pql_at_intra,j,1:nbf,1:nbfaux)
+	    jbl_at_inter = view(pql_at_inter,j,1:nbf,1:nbfaux)
             ej = eig[j]
 
             @tullio I[a,b] := ial[a,l] * jbl[b,l]
             e = eig[nalpha+1:nbf]
-            I_at = zeros(nbf-nalpha,nbf-nalpha)
-            for a in nalpha+1:nbf
-                for b in nalpha+1:nbf
-                    if(subspaces[i]==subspaces[a] && subspaces[i]==subspaces[b] && subspaces[i]==subspaces[j] && subspaces[i]!=-1)
-                        ial_tmp = ial_at_intra[a,1:end]
-                        jbl_tmp = jbl_at_intra[b,1:end]
-                    else
-                        ial_tmp = ial_at_inter[a,1:end]
-                        jbl_tmp = jbl_at_inter[b,1:end]
-                    end
-		    @tullio tmp = ial_tmp[l] * jbl_tmp[l]
-		    I_at[a-nalpha,b-nalpha] = tmp
-                end
-            end
+	    I_at = build_I_at(subspaces,i,j,ial_at_intra,jbl_at_intra,ial_at_inter,jbl_at_inter,nalpha,nbf,nbfaux)
 	    @tullio EcMP2 += I[a,b]*(I_at[a,b] - 0.5*I_at[b,a])/(ei+ej-e[a]-e[b])
 #            EcMP2 += pqrt[i,a,j,b]*(pqrt_at[i,a,j,b]-0.5*pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
     end
     for i in nbeta+1:nalpha
-	ial = pql[i,nalpha+1:nbf,1:end]
-	ial_at_intra = pql_at_intra[i,1:nbf,1:end]
-	ial_at_inter = pql_at_inter[i,1:nbf,1:end]
+        ial = view(pql,i,nalpha+1:nbf,1:nbfaux)
+	ial_at_intra = view(pql_at_intra,i,1:nbf,1:nbfaux)
+	ial_at_inter = view(pql_at_inter,i,1:nbf,1:nbfaux)
 	ei = eig[i]
         for j in 1:nbeta
-            jbl = pql[j,nalpha+1:nbf,1:end]
-            jbl_at_intra = pql_at_intra[j,1:nbf,1:end]
-            jbl_at_inter = pql_at_inter[j,1:nbf,1:end]
+	    jbl = view(pql,j,nalpha+1:nbf,1:nbfaux)
+	    jbl_at_intra = view(pql_at_intra,j,1:nbf,1:nbfaux)
+            jbl_at_inter = view(pql_at_inter,j,1:nbf,1:nbfaux)
             ej = eig[j]
 
             @tullio I[a,b] := ial[a,l] * jbl[b,l]
             e = eig[nalpha+1:nbf]
-            I_at = zeros(nbf-nalpha,nbf-nalpha)
-            for a in nalpha+1:nbf
-                for b in nalpha+1:nbf
-                    if(subspaces[i]==subspaces[a] && subspaces[i]==subspaces[b] && subspaces[i]==subspaces[j] && subspaces[i]!=-1)
-                        ial_tmp = ial_at_intra[a,1:end]
-                        jbl_tmp = jbl_at_intra[b,1:end]
-                    else
-                        ial_tmp = ial_at_inter[a,1:end]
-                        jbl_tmp = jbl_at_inter[b,1:end]
-                    end
-		    @tullio tmp = ial_tmp[l] * jbl_tmp[l]
-		    I_at[a-nalpha,b-nalpha] = tmp
-                end
-            end
+	    I_at = build_I_at(subspaces,i,j,ial_at_intra,jbl_at_intra,ial_at_inter,jbl_at_inter,nalpha,nbf,nbfaux)
 	    @tullio EcMP2 += I[a,b]*(I_at[a,b] - 0.5*I_at[b,a])/(ei+ej-e[a]-e[b])
 #            EcMP2 += pqrt[i,a,j,b]*(pqrt_at[i,a,j,b]-0.5*pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
         for j in nbeta+1:nalpha
-            jbl = pql[j,nalpha+1:nbf,1:end]
-            jbl_at_intra = pql_at_intra[j,1:nbf,1:end]
-            jbl_at_inter = pql_at_inter[j,1:nbf,1:end]
+            jbl = view(pql,j,nalpha+1:nbf,1:nbfaux)
+	    jbl_at_intra = view(pql_at_intra,j,1:nbf,1:nbfaux)
+	    jbl_at_inter = view(pql_at_inter,j,1:nbf,1:nbfaux)
             ej = eig[j]
 
             @tullio I[a,b] := ial[a,l] * jbl[b,l]
             e = eig[nalpha+1:nbf]
-            I_at = zeros(nbf-nalpha,nbf-nalpha)
-            for a in nalpha+1:nbf
-                for b in nalpha+1:nbf
-                    if(subspaces[i]==subspaces[a] && subspaces[i]==subspaces[b] && subspaces[i]==subspaces[j] && subspaces[i]!=-1)
-                        ial_tmp = ial_at_intra[a,1:end]
-                        jbl_tmp = jbl_at_intra[b,1:end]
-                    else
-                        ial_tmp = ial_at_inter[a,1:end]
-                        jbl_tmp = jbl_at_inter[b,1:end]
-                    end
-		    @tullio tmp = ial_tmp[l] * jbl_tmp[l]
-		    I_at[a-nalpha,b-nalpha] = tmp
-                end
-            end
+	    I_at = build_I_at(subspaces,i,j,ial_at_intra,jbl_at_intra,ial_at_inter,jbl_at_inter,nalpha,nbf,nbfaux)
             @tullio EcMP2 += 0.5*I[a,b]*(I_at[a,b] - 0.5*I_at[b,a])/(ei+ej-e[a]-e[b])		
 #            EcMP2 += 0.5*pqrt[i,a,j,b]*(pqrt_at[i,a,j,b]-0.5*pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
