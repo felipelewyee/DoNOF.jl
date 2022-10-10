@@ -572,18 +572,23 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
     @printf("Number of virtual orbs.     (NVIR) = %d\n",p.nvir)
     @printf("Size of A+B and A-B (NAB=NOCxNVIR) = %d\n",nab)
     println("")
+    flush(stdout)
+
 
     occ = zeros(p.nbf)
     occ[1:p.nbf5] = n
 
     println(" ....Building F_MO")
+    flush(stdout)
     EHFL, F_MO = build_F_MO(C,H,I,b_mnl,p)
 
     println(" ....Transforming ERIs mnsl->pqrt")
+    flush(stdout)
 
     if p.RI
         @tullio tmp[p,n,l] := C[m,p] * b_mnl[m,n,l]
         @tullio pql[p,q,l] := C[n,q] * tmp[p,n,l]
+	tmp = nothing
     else
         @tullio tmp[p,n,s,l] := C[m,p] * I[m,n,s,l]
         @tullio tmp2[p,q,s,l] := C[n,q] * tmp[p,n,s,l]
@@ -598,10 +603,12 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
 
     # Eq. (19) Canonicalization of NOs Step 1
     println(" ....Attenuating F_MO")
+    flush(stdout)
     F_MO_at = F_MO_attenuated(F_MO,Cintra,Cinter,p.no1,p.nalpha,p.ndoc,p.nsoc,p.ndns,p.ncwo,p.nbf5,p.nbf)
     
     # Eq. (20)
     println(" ....Attenuating pqrt")
+    flush(stdout)
     if p.RI
         pql_at_intra, pql_at_inter = ERIS_RI_attenuated(pql,Cintra,Cinter,p.no1,p.ndoc,p.nsoc,p.ndns,p.ncwo,p.nbf5,p.nbf,p.nbfaux)
     else
@@ -614,11 +621,14 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
     if(p.RI)
         @tullio tmp[p,n,l] := C_can[m,p] * pql[m,n,l]
         @tullio pql[p,q,l] := C_can[n,q] * tmp[p,n,l]
+	tmp = nothing
 
         @tullio tmp[p,n,l] := C_can[m,p] * pql_at_intra[m,n,l]
         @tullio pql_at_intra[p,q,l] := C_can[n,q] * tmp[p,n,l]
+	tmp = nothing
         @tullio tmp[p,n,l] := C_can[m,p] * pql_at_inter[m,n,l]
         @tullio pql_at_inter[p,q,l] := C_can[n,q] * tmp[p,n,l]
+	tmp = nothing
     else
         @tullio tmp[p,n,s,l] := C_can[m,p] * pqrt[m,n,s,l]
         @tullio tmp2[p,q,s,l] := C_can[n,q] * tmp[p,n,s,l]
@@ -633,6 +643,7 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
 
     println("List of qp-orbital energies (a.u.) and occ numbers used")
     println()
+    flush(stdout)
     mu = (eig[p.nalpha] + eig[p.nalpha+1])/2
     eig = eig .- mu
     for i in 1:p.nbf
@@ -640,12 +651,7 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
     end
     @printf("Chemical potential used for qp-orbital energies: %6.4f\n",mu)
     println("")
-
-    if p.RI
-        EcMP2 = mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,p.no1,p.ndoc,p.nsoc,p.ndns,p.ncwo,p.nbf5,p.nbeta,p.nalpha,p.nbf)
-    else
-        EcMP2 = mp2_eq(eig,pqrt,pqrt_at,p.nbeta,p.nalpha,p.nbf)
-    end
+    flush(stdout)
 
     ECndHF,ECndl = ECorrNonDyn(n,C,H,I,b_mnl,p)
 
@@ -658,6 +664,7 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
     @printf(" E(PNOFi)             = %f\n",EPNOF)
     @printf("\n")
     @printf(" Ec(ND)               = %f\n",ECndl)
+    flush(stdout)
 #    print(" Ec(RPA-FURCHE)       = {: f}".format(EcRPA))
 #    print(" Ec(RPA)              = {: f}".format(iEcRPA))
 #    print(" Ec(AC-SOSEX)         = {: f}".format(iEcSOSEX))
@@ -665,6 +672,13 @@ function mbpt(n,C,H,I,b_mnl,E_nuc,E_elec,p)
 #    print(" Ec(GW@GM)            = {: f}".format	(EcGoWo))
 #    print(" Ec(SOSEX@GM)         = {: f}".format(EcGMSOS))
 #    print(" Ec(GW@GM+SOSEX@GM)   = {: f}".format(EcGoWoSOS))
+#
+    if p.RI
+        EcMP2 = mp2_RI_eq(eig,pql,pql_at_intra,pql_at_inter,p.no1,p.ndoc,p.nsoc,p.ndns,p.ncwo,p.nbf5,p.nbeta,p.nalpha,p.nbf)
+    else
+        EcMP2 = mp2_eq(eig,pqrt,pqrt_at,p.nbeta,p.nalpha,p.nbf)
+    end
+
     @printf(" Ec(MP2)              = %f\n",EcMP2)
 #    print(" Ec(CCSD)             = {: f}".format(EcCCSD))
 #    print("")
@@ -711,6 +725,7 @@ function build_F_MO(C,H,I,b_mnl,p)
                 @tullio J[m,n] := b_mnl[m,n,l] * X[l]
 		@tullio tmp[m,s,l] := b_mnl[m,n,l] * D[s,n]
 		@tullio K[m,s] := b_mnl[m,n,l] * tmp[s,n,l]
+	        tmp = nothing
 	    else
                 @tullio J[m,n] := D[l,s] * I[m,n,s,l]
                 @tullio K[m,s] := D[n,l] * I[m,n,s,l]
