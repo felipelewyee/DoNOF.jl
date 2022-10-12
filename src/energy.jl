@@ -30,10 +30,6 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     end
     flush(stdout)
 
-    S,T,V,H,I,b_mnl = compute_integrals(bset,p)
-
-    flush(stdout)
-
     println("Geometry")
     println("========")
     for i in 1:bset.natoms
