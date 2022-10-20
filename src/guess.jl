@@ -135,6 +135,36 @@ end
 
 function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
 
+    Cnew = nzeros(p.nbf,p.nbf)
+
+    i = 1
+    for basis in bset.basis
+        l = basis.l
+        ori = trunc(Int,round((l+1)*(l+2)/2))
+        if l==2
+            Cnew[i+1,1:end] = C[i+1,1:end]
+            Cnew[i+4,1:end] = C[i+2,1:end]
+            Cnew[i+5,1:end] = C[i+3,1:end]
+            Cnew[i+2,1:end] = C[i+4,1:end]
+            Cnew[i+6,1:end] = C[i+5,1:end]
+            Cnew[i+3,1:end] = C[i+6,1:end]
+        else if l==3
+            Cnew[i+1,1:end] = C[i+1,1:end]
+            Cnew[i+4,1:end] = C[i+2,1:end]
+            Cnew[i+5,1:end] = C[i+3,1:end]
+            Cnew[i+6,1:end] = C[i+4,1:end]
+            Cnew[i+10,1:end] = C[i+5,1:end]
+            Cnew[i+8,1:end] = C[i+6,1:end]
+            Cnew[i+2,1:end] = C[i+7,1:end]
+            Cnew[i+7,1:end] = C[i+8,1:end]
+            Cnew[i+9,1:end] = C[i+9,1:end]
+            Cnew[i+2,1:end] = C[i+10,1:end]
+        else
+            Cnew[i:i+ori,1:end] = C[i:i+ori,1:end]
+        end
+	i += ori
+    end
+
     f = open(p.title*".gcf","w")
     for i in 1:p.nbf5
         @printf(f,"%6d %30.16f\n",i,n[i])
@@ -149,7 +179,7 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
     @printf(f,"%30.16f\n",sumsl)
     for i in 1:p.nbf
         for j in 1:p.nbf
-            @printf(f,"%6d %30.16f\n",j,C[j,i])
+            @printf(f,"%6d %30.16f\n",j,Cnew[j,i])
         end
     end
     for i in 1:p.nbf
