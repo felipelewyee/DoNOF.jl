@@ -135,7 +135,7 @@ end
 
 function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
 
-    Cnew = nzeros(p.nbf,p.nbf)
+    Cnew = zeros(p.nbf,p.nbf)
 
     i = 1
     for basis in bset.basis
