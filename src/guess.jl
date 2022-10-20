@@ -137,7 +137,7 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
 
     Cnew = zeros(p.nbf,p.nbf)
 
-    i = 1
+    i = 0
     for basis in bset.basis
         l = basis.l
         ori = trunc(Int,round((l+1)*(l+2)/2))
@@ -160,7 +160,7 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
             Cnew[i+9,1:end] = C[i+9,1:end]
             Cnew[i+2,1:end] = C[i+10,1:end]
         else
-            Cnew[i:i+ori,1:end] = C[i:i+ori,1:end]
+            Cnew[i+1:i+ori,1:end] = C[i+1:i+ori,1:end]
         end
 	i += ori
     end
