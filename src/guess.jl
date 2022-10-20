@@ -132,3 +132,38 @@ function order_subspaces(old_C,old_gamma,elag,H,I,b_mnl,p)
     return C,gamma,n,elag
 
 end
+
+function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
+
+    f = open(p.title*".gcf","w")
+    for i in 1:p.nbf5
+        @printf(f,"%6d %30.16f\n",i,n[i])
+    end
+    for i in p.nbf5+1:p.nbf
+        @printf(f,"%6d %30.16f\n",i,0.0)
+    end
+    sumsl = p.nbeta
+    for i in 1:p.nbeta
+        sumsl -= n[i]
+    end
+    @printf(f,"%30.16f\n",sumsl)
+    for i in 1:p.nbf
+        for j in 1:p.nbf
+            @printf(f,"%6d %30.16f\n",j,C[j,i])
+        end
+    end
+    for i in 1:p.nbf
+        @printf(f,"%6d %30.16f\n",i,elag[i])
+    end
+    for i in 1:p.nbf
+        @printf(f,"%6d %30.16f\n",i,fmiug0[i])
+    end
+    @printf(f,"%6d %30.16f\n",0,E)
+    @printf(f,"%6d %6d %6d %6d %6d %6d\n",p.no1,p.ndoc,p.nsoc,p.ncwo,p.nac,p.no0)
+    for i in 1:bset.natoms
+	@printf(f,"%6d%30.16f%30.16f%30.16f\n",bset.atoms[i].Z,bset.atoms[i].xyz[1],bset.atoms[i].xyz[2],bset.atoms[i].xyz[3])
+    end
+
+    close(f)
+
+end
