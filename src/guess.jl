@@ -148,7 +148,7 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
             Cnew[i+2,1:end] = C[i+4,1:end]
             Cnew[i+6,1:end] = C[i+5,1:end]
             Cnew[i+3,1:end] = C[i+6,1:end]
-        else if l==3
+        elseif l==3
             Cnew[i+1,1:end] = C[i+1,1:end]
             Cnew[i+4,1:end] = C[i+2,1:end]
             Cnew[i+5,1:end] = C[i+3,1:end]
