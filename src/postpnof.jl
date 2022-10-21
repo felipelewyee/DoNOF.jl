@@ -467,12 +467,10 @@ function mulliken_pop(bset,p,n,C,S)
     pop = zeros(p.natoms)
 
     ifun = 1
-    for iatom in 1:p.natoms
-        for ibasis in 1:size(bset.basis[iatom])[1]
-            nfun = 2*bset.basis[iatom][ibasis].l + 1
-            pop[iatom] += sum(nPS[ifun:ifun+nfun-1])
-            ifun += nfun
-        end
+    for iatom in 1:bset.natoms
+	nfun = bset.basis_per_atom[iatom]
+        pop[iatom] += sum(nPS[ifun:ifun+nfun-1])
+        ifun += nfun
     end
 
     println("")
@@ -507,12 +505,10 @@ function lowdin_pop(bset,p,n,C,S)
     pop = zeros(p.natoms)
 
     ifun = 1
-    for iatom in 1:p.natoms
-	for ibasis in 1:size(bset.basis[iatom])[1]
-	    nfun = 2*bset.basis[iatom][ibasis].l + 1
-	    pop[iatom] += sum(S_12nPS_12[ifun:ifun+nfun-1])
-	    ifun += nfun
-        end
+    for iatom in 1:bset.natoms
+	nfun = bset.basis_per_atom[iatom]
+	pop[iatom] += sum(S_12nPS_12[ifun:ifun+nfun-1])
+        ifun += nfun
     end
 
     println("")
