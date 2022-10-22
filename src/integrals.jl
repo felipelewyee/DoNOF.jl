@@ -203,7 +203,9 @@ function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
     CUDA.unsafe_free!(b_pql)
 
     #QHMATm
-    H_core = dropdims( sum(Cnbf5 .* (H * Cnbf5), dims=1), dims=1)
+    @tensor tmp[m,i] := H[m,n]*Cnbf5[n,i]
+    @tullio H_core[i] := tmp[m,i]*Cnbf5[m,i]
+    CUDA.unsafe_free!(tmp)
     #@tullio D[i,m,n] := Cnbf5[m,i]*Cnbf5[n,i]
     #@tensor H_core[i] := D[i,m,n]*H[m,n]
 

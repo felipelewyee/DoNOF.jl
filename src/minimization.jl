@@ -88,7 +88,11 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     n,dn = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
     cj12,ck12 = PNOFi_selector(n,p)
 
-    return gamma,n,cj12,ck12,res.iterations
+    if p.ndoc>0 && !freeze_occ
+        return gamma,n,cj12,ck12,0
+    else
+        return gamma,n,cj12,ck12,res.iterations
+    end
 end
 
 function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode=true)
