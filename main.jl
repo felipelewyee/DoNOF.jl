@@ -2,17 +2,17 @@ using DoNOF
 
 mol = """
 0 1
-  O   -0.0000000   -0.0072090    0.0000000
-  H   -0.0000000    0.3369355    0.7705103
-  H   -0.0000000    0.3369355   -0.7705103
+  O  0.0000   0.000   0.116
+  H  0.0000   0.749  -0.453
+  H  0.0000  -0.749  -0.453
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=false)
+bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 
 p.ipnof = 8
 
-p.RI = false
-p.gpu = false
+p.RI = true
+p.gpu = true
 
 p.method = "ID"
 

@@ -89,9 +89,9 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     cj12,ck12 = PNOFi_selector(n,p)
 
     if p.ndoc>0 && !freeze_occ
-        return gamma,n,cj12,ck12,0
-    else
         return gamma,n,cj12,ck12,res.iterations
+    else
+        return gamma,n,cj12,ck12,0
     end
 end
 
