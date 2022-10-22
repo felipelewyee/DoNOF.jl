@@ -140,7 +140,11 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
     i = 0
     for basis in bset.basis
         l = basis.l
-        ori = trunc(Int,round((l+1)*(l+2)/2))
+	if(p.spherical)
+	    ori = trunc(Int,round((l+1)))
+	else
+            ori = trunc(Int,round((l+1)*(l+2)/2))
+        end
         if l==2
             Cnew[i+1,1:end] = C[i+1,1:end]
             Cnew[i+4,1:end] = C[i+2,1:end]

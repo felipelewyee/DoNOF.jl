@@ -64,6 +64,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
     iloop = 0
     itlim = 1
+    E = 9999#EHF
     E_old = 9999#EHF
     E_diff = 9999
     sumdiff_old = 0
@@ -80,7 +81,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
         for i_ext in 1:p.maxit
 	    ta1 = time()
-            convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
+            convgdelag,E,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
 	    ta2 = time()
     
             gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
@@ -93,6 +94,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             if convgdelag
                 break
     	    end
+            E_old = E
         end
     end
 
@@ -193,13 +195,20 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         if do_hfidr
             @printf("       HF Total Energy = %15.7f\n",E_nuc + EHF)
 	end
-        @printf("Final NOF Total Energy = %15.7f\n",E_nuc + E_old)
+        @printf("Final NOF Total Energy = %15.7f\n",E_nuc + E)
         if do_hfidr
-            @printf("    Correlation Energy = %15.7f\n",E_old-EHF)
+            @printf("    Correlation Energy = %15.7f\n",E-EHF)
 	end
         println(" ")
         println(" ")
     end
+
+    E_t = E_nuc + E
+
+    fchk(p.title,p,bset,"Energy",E_t,elag,n,C)
+
+    t2 = time()
+    @printf("Elapsed time: %7.2f Seconds\n", t2-t1)
 
     if do_nofmp2
         nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy,tolnofmp2)
@@ -222,17 +231,14 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     end
 
     if(do_mbpt)
-        mbpt(n,C,H,I,b_mnl,E_nuc,E_old,p)
+        mbpt(n,C,H,I,b_mnl,E_nuc,E,p)
     end
 
     if(do_translate_to_donofsw)
-        write_to_DoNOFsw(p,bset,n,C,diag(elag),fmiug0,10,E_nuc + E_old)
+        write_to_DoNOFsw(p,bset,n,C,diag(elag),fmiug0,10,E_nuc + E)
     end
 
-    t2 = time()
-    @printf("Elapsed time: %7.2f Seconds\n", t2-t1)
-
-    return E_nuc + E_old,C,gamma,fmiug0
+    return E_nuc + E,C,gamma,fmiug0
 
 end
 

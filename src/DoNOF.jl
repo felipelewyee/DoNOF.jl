@@ -23,5 +23,6 @@ include("minimization.jl")
 include("guess.jl")
 include("postpnof.jl")
 include("energy.jl")
+include("output.jl")
 
 end # module
