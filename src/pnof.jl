@@ -1,7 +1,7 @@
 function PNOFi_selector(n,p)
-    #if(p.ipnof==5):
-    #    cj12,ck12 = CJCKD5(n,p)
-    if p.ipnof==7
+    if p.ipnof==5
+        cj12,ck12 = CJCKD5(n,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
+    elseif p.ipnof==7
         cj12,ck12 = CJCKD7(n,p.ista,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
     elseif p.ipnof==8
         cj12,ck12 = CJCKD8(n,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
@@ -11,18 +11,95 @@ function PNOFi_selector(n,p)
 end
 
 function der_PNOFi_selector(n,dn_dgamma,p)
-    #if p.ipnof==5
-    #    Dcj12r,Dck12r = der_CJCKD5(n,dn_dgamma,p)
-    if p.ipnof==7
+    if p.ipnof==5
+        Dcj12r,Dck12r = der_CJCKD5(n,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo)
+    elseif p.ipnof==7
         Dcj12r,Dck12r = der_CJCKD7(n,p.ista,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo)
-    end
-    if p.ipnof==8
+    elseif p.ipnof==8
         Dcj12r,Dck12r = der_CJCKD8(n,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nbeta,p.nv,p.nbf5,p.ndns,p.ncwo,p.MSpin,p.nsoc)
     end
 
     return Dcj12r,Dck12r
 end
 
+function CJCKD5(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
+
+    # Interpair Electron correlation #
+
+    @tullio cj12[i,j] := 2*n[i]*n[j]
+    @tullio ck12[i,j] := n[i]*n[j]
+
+    # Intrapair Electron Correlation
+
+    if MSpin==0 && nsoc>1
+        n_beta_alpha = view(n,nbeta+1:nalpha)
+        ck12_beta_alpha = view(ck12,nbeta+1:nalpha,nbeta+1:nalpha)
+        @tullio ck12_beta_alpha[i,j] = 2*n_beta_alpha[i]*n_beta_alpha[j]
+    end
+
+    for l in 1:ndoc
+        ldx = no1 + l
+        # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+        ll = no1 + ndns + ncwo*(ndoc - l) + 1
+        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+
+        cj12[ldx,ll:ul] .= 0
+        cj12[ll:ul,ldx] .= 0
+
+        cj12[ll:ul,ll:ul] .= 0
+
+        ck12[ldx,ll:ul] .= sqrt.(n[ldx]*n[ll:ul])
+        ck12[ll:ul,ldx] .= sqrt.(n[ldx]*n[ll:ul])
+
+        ck12_ww = view(ck12,ll:ul,ll:ul)
+        n_ww = view(n,ll:ul)
+        @tullio ck12_ww[i,j] = -sqrt(n_ww[i]*n_ww[j])
+    end
+
+    return cj12,ck12
+
+end
+
+function der_CJCKD5(n,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
+
+    # Interpair Electron correlation #
+
+    @tullio Dcj12r[i,j,k] := 2*dn_dgamma[i,k]*n[j]
+    @tullio Dck12r[i,j,k] := dn_dgamma[i,k]*n[j]
+
+    # Intrapair Electron Correlation
+
+    for l in 1:ndoc
+        ldx = no1 + l
+
+        # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+        ll = no1 + ndns + ncwo*(ndoc - l) + 1
+        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+
+        Dcj12r[ldx,ll:ul,1:nv] .= 0
+        Dcj12r[ll:ul,ldx,1:nv] .= 0
+
+        Dcj12r[ll:ul,ll:ul,1:nv] .= 0
+
+        a = max(n[ldx],10^-15)
+        b = n[ll:ul]
+        b[b.<10^-15] .= 10^-15
+
+        Dck12r_occ_cwo = view(Dck12r,ldx,ll:ul,1:nv)
+        Dck12r_cwo_occ = view(Dck12r,ll:ul,ldx,1:nv)
+        Dck12r_cwo_cwo = view(Dck12r,ll:ul,ll:ul,1:nv)
+        n_cwo = view(n,ll:ul)
+        n_occ = n[ldx]
+        dn_dgamma_occ = view(dn_dgamma,ldx,1:nv)
+        dn_dgamma_cwo = view(dn_dgamma,ll:ul,1:nv)
+        @tullio Dck12r_occ_cwo[i,j] = 1/2 * 1/sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
+        @tullio Dck12r_cwo_occ[i,j] = 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,j] * sqrt(n_occ)
+        @tullio Dck12r_cwo_cwo[i,j,k] = - 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,k] * sqrt(n_cwo[j])
+
+    end
+    return Dcj12r,Dck12r
+
+end
 
 function CJCKD7(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 
