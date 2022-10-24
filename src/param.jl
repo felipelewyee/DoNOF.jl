@@ -1,6 +1,7 @@
 #export Param
 
 mutable struct Param
+    mol::String
     natoms::Int64
     nbf::Int64
     nbfaux::Int64
@@ -54,6 +55,7 @@ end
 
 function Param(bset,mul,charge)
 
+    mol = ""
     natoms = bset.natoms
     nbf = bset.nbas
 
@@ -156,7 +158,8 @@ function Param(bset,mul,charge)
     spherical = false
     gpu_bits = 64
 
-    return Param(natoms,
+    return Param(mol,
+    natoms,
     nbf,
     nbfaux,
     nalpha,

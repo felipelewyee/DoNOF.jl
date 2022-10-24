@@ -49,6 +49,7 @@ function molecule(mol,basis;spherical=false)
         bset = BasisSet(basis, mol, spherical=false,lib=:acsint)
     end
     p = Param(bset,mul,charge)
+    p.mol = mol
     p.spherical = spherical
 
     return bset,p

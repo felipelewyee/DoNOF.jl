@@ -1,5 +1,66 @@
 function fchk(filename,p,bset,jobtype,E_t,elag,n,C)
 
+    Cnew = zeros(p.nbf,p.nbf)
+
+    i = 0
+    if(p.spherical)
+        Cnew = C
+    else
+        for basis in bset.basis
+            l = basis.l
+            ori = trunc(Int,round((l+1)*(l+2)/2))
+            if l==2
+                Cnew[i+1,1:end] = C[i+1,1:end]
+                Cnew[i+4,1:end] = C[i+2,1:end]
+                Cnew[i+5,1:end] = C[i+3,1:end]
+                Cnew[i+2,1:end] = C[i+4,1:end]
+                Cnew[i+6,1:end] = C[i+5,1:end]
+                Cnew[i+3,1:end] = C[i+6,1:end]
+            elseif l==3
+                Cnew[i+1,1:end] = C[i+1,1:end]
+                Cnew[i+5,1:end] = C[i+2,1:end]
+                Cnew[i+6,1:end] = C[i+3,1:end]
+                Cnew[i+4,1:end] = C[i+4,1:end]
+                Cnew[i+10,1:end] = C[i+5,1:end]
+                Cnew[i+7,1:end] = C[i+6,1:end]
+                Cnew[i+2,1:end] = C[i+7,1:end]
+                Cnew[i+9,1:end] = C[i+8,1:end]
+                Cnew[i+8,1:end] = C[i+9,1:end]
+                Cnew[i+3,1:end] = C[i+10,1:end]
+            elseif l>3
+		println("Warning: l>3, incorrect order in fchk")
+            else
+                Cnew[i+1:i+ori,1:end] = C[i+1:i+ori,1:end]
+            end
+            i += ori
+        end
+    end
+
+    gb_path = pathof(GaussianBasis)
+    coef = []
+    for atom in split(p.mol[1:end-1],"\n")
+       symbol = split(atom)[1]
+       f = open(gb_path[1:end-20]*"lib/"*bset.name*".gbs","r")
+       found = false
+       while !found
+           line = readline(f)
+           if(occursin(symbol*"     0",line))
+               found = true
+           end
+       end
+       end_of_basis = false
+       while !end_of_basis
+           line = readline(f)
+           if(occursin("****",line))
+               end_of_basis = true
+           end
+           if(size(split(line))[1]==2)
+               append!(coef,parse(Float64,replace(split(line)[2],"D"=>"E")))
+           end
+       end
+       close(f)
+    end
+
     ne = 0
     for i in 1:bset.natoms
       ne -= bset.atoms[i].Z
@@ -124,15 +185,22 @@ function fchk(filename,p,bset,jobtype,E_t,elag,n,C)
     end
     @printf(f,"Contraction coefficients                   R   N=      %6d\n",nprimitives)
     idata = 0
-    for ishell in 1:bset.nshells
-	for iprim in 1:size(bset.basis[ishell].exp)[1]
-            idata += 1
-            @printf(f," % .8e",bset.basis[ishell].coef[iprim])
-            if(idata%5==0 || idata==nprimitives)
-                @printf(f,"\n")
-            end
-        end
+    for iprim in 1:nprimitives
+        idata += 1
+        @printf(f," % .8e",coef[iprim])
+        if(idata%5==0 || idata==nprimitives)
+            @printf(f,"\n")
+	end
     end
+    #for ishell in 1:bset.nshells
+    #	for iprim in 1:size(bset.basis[ishell].exp)[1]
+    #        idata += 1
+    #        @printf(f," % .8e",bset.basis[ishell].coef[iprim])
+    #        if(idata%5==0 || idata==nprimitives)
+    #            @printf(f,"\n")
+    #        end
+    #    end
+    #end
 
     e_val = diag(elag)
     @printf(f,"Alpha Orbital Energies                     R   N=      %6d\n",p.nbf)
@@ -147,14 +215,14 @@ function fchk(filename,p,bset,jobtype,E_t,elag,n,C)
     for j in 1:p.nbf
         for i in 1:p.nbf
             idata += 1
-            @printf(f," % .8e",C[i,j])
+            @printf(f," % .8e",Cnew[i,j])
             if(idata%5==0 || idata==p.nbf*p.nbf)
                 @printf(f,"\n")
 	    end
         end
     end
     @printf(f,"Total SCF Density                          R   N=       %6d\n",p.nbf*(p.nbf+1)/2)
-    Cnbf5 = C[1:end,1:p.nbf5]
+    Cnbf5 = Cnew[1:end,1:p.nbf5]
     @tullio DM[m,nn] := 2*n[i]*Cnbf5[m,i]*Cnbf5[nn,i]
     idata = 0
     for mu in 1:p.nbf
