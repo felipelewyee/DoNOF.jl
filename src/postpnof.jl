@@ -523,7 +523,7 @@ function lowdin_pop(bset,p,n,C,S)
     end
 end
 
-function M_diagnostic(p,n)
+function M_diagnostic(p,n;get_value=false)
 
     m_vals = 2*n
     if(p.HighSpin)
@@ -543,6 +543,10 @@ function M_diagnostic(p,n)
     m_diagnostic += maximum(m_vals[p.nalpha+1:p.nbf5])
 
     m_diagnostic = 0.5 * m_diagnostic
+
+    if(get_value)
+        return m_diagnostic
+    end
 
     println("")
     println("---------------------------------")

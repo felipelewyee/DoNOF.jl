@@ -78,7 +78,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     if p.ndoc>0 && !freeze_occ
         J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
         if p.gradient=="analytical"
-		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, BFGS(), Optim.Options(g_abstol = 1e-4), inplace=false)
+		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, BFGS(), Optim.Options(g_abstol = p.threshen), inplace=false)
         elseif p.gradient=="numerical"
 	   res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
 	end
@@ -162,7 +162,8 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
             E_diff = E-E_old
             E_old = E
             if printmode
-		@printf("%6i %6i %14.8f %14.8f %14.8f %10.6f %1i\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
+                M = M_diagnostic(p,n,get_value=true)
+		@printf("%6i %6i %14.8f %14.8f %14.8f %10.6f %1i %4.2f\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros,M)
 	    end
             break
         end

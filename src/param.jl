@@ -131,7 +131,7 @@ function Param(bset,mul,charge)
     threshl = 10^-4   # Convergencia de los multiplicadores de Lagrange
     threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
-    threshen = 10^-10 # Convergencia  de la energía en optimización de ocupaciones
+    threshen = 10^-4 # Convergencia  de la energía en optimización de ocupaciones
     scaling = true     # Scaling for f
     nzeros = 0
     nzerosm = 5

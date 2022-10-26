@@ -118,7 +118,8 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
             grad_occ = calcoccg(gamma,J_MO,K_MO,H_core,p)
 
-	    @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_old,maxdiff,norm(grad_orb),norm(grad_occ))
+            M = M_diagnostic(p,n,get_value=true)
+	    @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_old,maxdiff,norm(grad_orb),norm(grad_occ),M)
 
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
 	    flush(stdout)
@@ -152,8 +153,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             grad = calccombg(x,C,H,I,b_mnl,p)
             grad_norm = norm(grad)
 	    grad_orb, grad_occ = grad[1:p.nvar], grad[p.nvar+1:end]
-
-	    @printf("%6i %7i %10.1e %14.8f %14.8f %14.8f %10.6f   %3.1e   %3.1e   %3.1e\n",i_ext,nit,ta2-ta1,E,E+E_nuc,E-E_old,maxdiff,norm(grad),norm(grad_orb),norm(grad_occ))
+  
+            M = M_diagnostic(p,n,get_value=true)
+	    @printf("%6i %7i %10.1e %14.8f %14.8f %14.8f %10.6f   %3.1e   %3.1e   %3.1e %4.2f\n",i_ext,nit,ta2-ta1,E,E+E_nuc,E-E_old,maxdiff,norm(grad),norm(grad_orb),norm(grad_occ),M)
 
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
             flush(stdout)
