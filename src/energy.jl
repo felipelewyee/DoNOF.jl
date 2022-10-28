@@ -86,7 +86,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     
             gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	    ta3 = time()
-	    #@printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
+	    @printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
 
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
