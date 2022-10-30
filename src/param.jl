@@ -51,6 +51,7 @@ mutable struct Param
     nvar::Int64
     spherical::Bool
     gpu_bits::Int64
+    h_cut::Float64
 end
 
 function Param(bset,mul,charge)
@@ -157,6 +158,7 @@ function Param(bset,mul,charge)
 
     spherical = false
     gpu_bits = 64
+    h_cut = 0.02*sqrt(2.0)
 
     return Param(mol,
     natoms,
@@ -207,7 +209,8 @@ function Param(bset,mul,charge)
     method,
     nvar,
     spherical,
-    gpu_bits)
+    gpu_bits,
+    h_cut)
 end
 
 function autozeros(p;restart=false)

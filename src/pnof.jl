@@ -212,7 +212,7 @@ function CJCKD8(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 
     nbf5 = size(n)[1]
 
-    h_cut = 0.02*sqrt(2.0)
+    h_cut = p.h_cut#0.02*sqrt(2.0)
     n_d = zeros(nbf5)
 
     for i in 1:ndoc
@@ -296,7 +296,7 @@ function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,ns
 
     nbf5 = size(n)[1]
 
-    h_cut = 0.02*sqrt(2.0)
+    h_cut = p.h_cut#0.02*sqrt(2.0)
     n_d = zeros(nbf5)
     dn_d_dgamma = zeros(nbf5,nv)
     dn_d12_dgamma = zeros(nbf5,nv)
