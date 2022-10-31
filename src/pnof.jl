@@ -4,7 +4,7 @@ function PNOFi_selector(n,p)
     elseif p.ipnof==7
         cj12,ck12 = CJCKD7(n,p.ista,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
     elseif p.ipnof==8
-        cj12,ck12 = CJCKD8(n,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
+        cj12,ck12 = CJCKD8(n,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin,p.h_cut)
     end
 
     return cj12,ck12
@@ -16,7 +16,7 @@ function der_PNOFi_selector(n,dn_dgamma,p)
     elseif p.ipnof==7
         Dcj12r,Dck12r = der_CJCKD7(n,p.ista,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo)
     elseif p.ipnof==8
-        Dcj12r,Dck12r = der_CJCKD8(n,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nbeta,p.nv,p.nbf5,p.ndns,p.ncwo,p.MSpin,p.nsoc)
+        Dcj12r,Dck12r = der_CJCKD8(n,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nbeta,p.nv,p.nbf5,p.ndns,p.ncwo,p.MSpin,p.nsoc,p.h_cut)
     end
 
     return Dcj12r,Dck12r
@@ -208,11 +208,11 @@ function der_CJCKD7(n,ista,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
 
 end
 
-function CJCKD8(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
+function CJCKD8(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin,h_cut)
 
     nbf5 = size(n)[1]
 
-    h_cut = p.h_cut#0.02*sqrt(2.0)
+    #h_cut = p.h_cut#0.02*sqrt(2.0)
     n_d = zeros(nbf5)
 
     for i in 1:ndoc
@@ -292,11 +292,11 @@ function CJCKD8(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
 
 end
 
-function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,nsoc)
+function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,nsoc,h_cut)
 
     nbf5 = size(n)[1]
 
-    h_cut = p.h_cut#0.02*sqrt(2.0)
+    #h_cut = p.h_cut#0.02*sqrt(2.0)
     n_d = zeros(nbf5)
     dn_d_dgamma = zeros(nbf5,nv)
     dn_d12_dgamma = zeros(nbf5,nv)
