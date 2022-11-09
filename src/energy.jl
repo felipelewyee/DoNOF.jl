@@ -80,13 +80,13 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         @printf("  %6s  %6s %8s %13s %15s %14s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
 
         for i_ext in 1:p.maxit
-	    ta1 = time()
+	    #ta1 = time()
             convgdelag,E,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
-	    ta2 = time()
+	    #ta2 = time()
     
             gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
-	    ta3 = time()
-	    @printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
+	    #ta3 = time()
+	    #@printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
 
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
@@ -124,7 +124,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
 	    flush(stdout)
 
-	    if(abs(E_old-E) < p.threshe || (norm(grad_orb) < 5e-4 && norm(grad_occ) < 5e-4))
+	    if(norm(grad_orb) < p.threshe && norm(grad_occ) < p.threshe)
 		 break
             end
 
@@ -160,7 +160,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
             flush(stdout)
 
-	    if(abs(E_old-E) < p.threshe || grad_norm < 5e-4)
+	    if(grad_norm < p.threshe)
 		break
 	    end
             E_old = E
