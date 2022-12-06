@@ -11,24 +11,40 @@ function fchk(filename,p,bset,jobtype,E_t,elag,n,C)
             ori = trunc(Int,round((l+1)*(l+2)/2))
             if l==2
                 Cnew[i+1,1:end] = C[i+1,1:end]
+                Cnew[i+2,1:end] = C[i+4,1:end]
+                Cnew[i+3,1:end] = C[i+6,1:end]
                 Cnew[i+4,1:end] = C[i+2,1:end]
                 Cnew[i+5,1:end] = C[i+3,1:end]
-                Cnew[i+2,1:end] = C[i+4,1:end]
                 Cnew[i+6,1:end] = C[i+5,1:end]
-                Cnew[i+3,1:end] = C[i+6,1:end]
             elseif l==3
                 Cnew[i+1,1:end] = C[i+1,1:end]
+                Cnew[i+2,1:end] = C[i+7,1:end]
+                Cnew[i+3,1:end] = C[i+10,1:end]
+                Cnew[i+4,1:end] = C[i+4,1:end]
                 Cnew[i+5,1:end] = C[i+2,1:end]
                 Cnew[i+6,1:end] = C[i+3,1:end]
-                Cnew[i+4,1:end] = C[i+4,1:end]
-                Cnew[i+10,1:end] = C[i+5,1:end]
                 Cnew[i+7,1:end] = C[i+6,1:end]
-                Cnew[i+2,1:end] = C[i+7,1:end]
-                Cnew[i+9,1:end] = C[i+8,1:end]
                 Cnew[i+8,1:end] = C[i+9,1:end]
-                Cnew[i+3,1:end] = C[i+10,1:end]
-            elseif l>3
-		println("Warning: l>3, incorrect order in fchk")
+                Cnew[i+9,1:end] = C[i+8,1:end]
+                Cnew[i+10,1:end] = C[i+5,1:end]
+            elseif l==4
+                Cnew[i+1,1:end] = C[i+1,1:end]
+                Cnew[i+2,1:end] = C[i+11,1:end]
+                Cnew[i+3,1:end] = C[i+15,1:end]
+                Cnew[i+4,1:end] = C[i+2,1:end]
+                Cnew[i+5,1:end] = C[i+3,1:end]
+                Cnew[i+6,1:end] = C[i+7,1:end]
+                Cnew[i+7,1:end] = C[i+12,1:end]
+                Cnew[i+8,1:end] = C[i+10,1:end]
+                Cnew[i+9,1:end] = C[i+14,1:end]
+                Cnew[i+10,1:end] = C[i+4,1:end]
+                Cnew[i+11,1:end] = C[i+6,1:end]
+                Cnew[i+12,1:end] = C[i+13,1:end]
+                Cnew[i+13,1:end] = C[i+5,1:end]
+                Cnew[i+14,1:end] = C[i+8,1:end]
+                Cnew[i+15,1:end] = C[i+9,1:end]
+            elseif l>4
+		println("Warning: l>4, incorrect order in fchk")
             else
                 Cnew[i+1:i+ori,1:end] = C[i+1:i+ori,1:end]
             end
