@@ -13,36 +13,36 @@ function fchk(filename,p,bset,jobtype,E_t,elag,n,C)
                 Cnew[i+1,1:end] = C[i+1,1:end]
                 Cnew[i+2,1:end] = C[i+4,1:end]
                 Cnew[i+3,1:end] = C[i+6,1:end]
-                Cnew[i+4,1:end] = C[i+2,1:end]
-                Cnew[i+5,1:end] = C[i+3,1:end]
-                Cnew[i+6,1:end] = C[i+5,1:end]
+                Cnew[i+4,1:end] = C[i+2,1:end]/sqrt(3)
+                Cnew[i+5,1:end] = C[i+3,1:end]/sqrt(3)
+                Cnew[i+6,1:end] = C[i+5,1:end]/sqrt(3)
             elseif l==3
                 Cnew[i+1,1:end] = C[i+1,1:end]
                 Cnew[i+2,1:end] = C[i+7,1:end]
                 Cnew[i+3,1:end] = C[i+10,1:end]
-                Cnew[i+4,1:end] = C[i+4,1:end]
-                Cnew[i+5,1:end] = C[i+2,1:end]
-                Cnew[i+6,1:end] = C[i+3,1:end]
-                Cnew[i+7,1:end] = C[i+6,1:end]
-                Cnew[i+8,1:end] = C[i+9,1:end]
-                Cnew[i+9,1:end] = C[i+8,1:end]
-                Cnew[i+10,1:end] = C[i+5,1:end]
+                Cnew[i+4,1:end] = C[i+4,1:end]/sqrt(5)
+                Cnew[i+5,1:end] = C[i+2,1:end]/sqrt(5)
+                Cnew[i+6,1:end] = C[i+3,1:end]/sqrt(5)
+                Cnew[i+7,1:end] = C[i+6,1:end]/sqrt(5)
+                Cnew[i+8,1:end] = C[i+9,1:end]/sqrt(5)
+                Cnew[i+9,1:end] = C[i+8,1:end]/sqrt(5)
+                Cnew[i+10,1:end] = C[i+5,1:end]/sqrt(15)
             elseif l==4
                 Cnew[i+1,1:end] = C[i+1,1:end]
                 Cnew[i+2,1:end] = C[i+11,1:end]
                 Cnew[i+3,1:end] = C[i+15,1:end]
-                Cnew[i+4,1:end] = C[i+2,1:end]
-                Cnew[i+5,1:end] = C[i+3,1:end]
-                Cnew[i+6,1:end] = C[i+7,1:end]
-                Cnew[i+7,1:end] = C[i+12,1:end]
-                Cnew[i+8,1:end] = C[i+10,1:end]
-                Cnew[i+9,1:end] = C[i+14,1:end]
-                Cnew[i+10,1:end] = C[i+4,1:end]
-                Cnew[i+11,1:end] = C[i+6,1:end]
-                Cnew[i+12,1:end] = C[i+13,1:end]
-                Cnew[i+13,1:end] = C[i+5,1:end]
-                Cnew[i+14,1:end] = C[i+8,1:end]
-                Cnew[i+15,1:end] = C[i+9,1:end]
+                Cnew[i+4,1:end] = C[i+2,1:end]/sqrt(7)
+                Cnew[i+5,1:end] = C[i+3,1:end]/sqrt(7)
+                Cnew[i+6,1:end] = C[i+7,1:end]/sqrt(7)
+                Cnew[i+7,1:end] = C[i+12,1:end]/sqrt(7)
+                Cnew[i+8,1:end] = C[i+10,1:end]/sqrt(7)
+                Cnew[i+9,1:end] = C[i+14,1:end]/sqrt(7)
+                Cnew[i+10,1:end] = C[i+4,1:end]*sqrt(3)/sqrt(35)
+                Cnew[i+11,1:end] = C[i+6,1:end]*sqrt(3)/sqrt(35)
+                Cnew[i+12,1:end] = C[i+13,1:end]*sqrt(3)/sqrt(35)
+                Cnew[i+13,1:end] = C[i+5,1:end]/np.sqrt(35)
+                Cnew[i+14,1:end] = C[i+8,1:end]/np.sqrt(35)
+                Cnew[i+15,1:end] = C[i+9,1:end]/np.sqrt(35)
             elseif l>4
 		println("Warning: l>4, incorrect order in fchk")
             else
