@@ -481,7 +481,7 @@ function mulliken_pop(bset,p,n,C,S)
     println("---------------------------------")
     for iatom in 1:p.natoms
 	symbol = Z_to_symbol(bset.atoms[iatom].Z)
-        @printf("%3i    %2s    %5.2f      %5.2f\n",iatom, symbol, pop[iatom], bset.atoms[iatom].Z-pop[iatom])
+        @printf("%3i    %2s    %6.3f      %6.3f\n",iatom, symbol, pop[iatom], bset.atoms[iatom].Z-pop[iatom])
     end
 
 end
@@ -519,7 +519,7 @@ function lowdin_pop(bset,p,n,C,S)
     println("---------------------------------")
     for iatom in 1:p.natoms
 	symbol = Z_to_symbol(bset.atoms[iatom].Z)
-        @printf("%3i    %2s    %5.2f      %5.2f\n",iatom, symbol, pop[iatom], bset.atoms[iatom].Z-pop[iatom])
+        @printf("%3i    %2s    %6.3f      %6.3f\n",iatom, symbol, pop[iatom], bset.atoms[iatom].Z-pop[iatom])
     end
 end
 

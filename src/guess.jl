@@ -201,3 +201,58 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
     close(f)
 
 end
+
+function build_chains(ps,Cs)
+
+    # dimensions of the new C matrix
+    nbf5_total = 0
+    ndoc_total = 0
+    nsoc_total = 0
+    nbf_total = 0
+    for p in ps
+        nbf5_total += p.nbf5
+        ndoc_total += p.ndoc
+        nsoc_total += p.nsoc
+        nbf_total += p.nbf
+    end
+    ndns_total = ndoc_total + nsoc_total
+
+    # new C matrix
+    C_new = zeros(nbf_total,nbf_total)
+
+    # indices of the new C matrix
+    idoc_new = 1
+    icwo_new = nbf5_total
+    isoc_new = ndoc_total+1
+    iout = nbf5_total+1
+    ibf = 1
+    for (p,C) in zip(ps,Cs)
+        
+        # add double occupied (and coupled) orbitals
+        for i in 1:p.ndoc	
+            idx = p.no1 + i
+
+	    C_new[ibf:ibf+p.nbf-1,idoc_new] = C[:,idx]
+	    idoc_new += 1
+
+            ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
+            ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
+            C_new[ibf:ibf+p.nbf-1,icwo_new-(ul-ll):icwo_new] = C[:,ll:ul]
+
+	    icwo_new += -(ul-ll + 1)
+        end
+
+	# add single occupied orbitals
+        C_new[ibf:ibf+p.nbf-1,isoc_new:isoc_new+p.nsoc-1] = C[:,p.ndoc+1:p.ndns]
+	isoc_new += p.nsoc
+
+	# add unoccupied orbitals 
+	C_new[ibf:ibf+p.nbf-1,iout:iout+p.nbf-p.nbf5-1] = C[:,p.nbf5+1:p.nbf]
+	iout += p.nbf-p.nbf5
+
+	ibf += p.nbf
+    end
+
+    return C_new
+
+end
