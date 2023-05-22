@@ -505,7 +505,9 @@ function calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
 
         # 2H + J
         @tullio E += n_beta[i]*(2*H_beta[i] + J_MO_beta[i,i])
-	@tullio E += n_alpha[i]*2*H_alpha[i]
+	if(p.nsoc>0)
+            @tullio E += n_alpha[i]*2*H_alpha[i]
+        end
 	@tullio E += n_nbf5[i]*(2*H_nbf5[i]+J_MO_nbf5[i,i])
 
         #C^J JMO
