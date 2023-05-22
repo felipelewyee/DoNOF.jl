@@ -125,7 +125,7 @@ function Param(bset,mul,charge)
     title = "donof"
     maxit = 1000  # Número máximo de iteraciones de Occ-SCF
     thresheid = 10^-6#8 # Convergencia de la energía total
-    maxitid = 300  # Número máximo de iteraciones externas en HF
+    maxitid = 30  # Número máximo de iteraciones externas en HF
     maxloop = 30  # Iteraciones internas en optimización orbital
     ipnof = 7     # PNOFi a calcular
     ista = 0     # PNOFi a calcular
