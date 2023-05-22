@@ -107,7 +107,7 @@ end
 
 function JKj_RI(C,b_mnl::CuArray,nbf,nbf5,nbfaux)
 
-    Cnbf5 = copy(C[1:nbf,1:nbf5])
+    Cnbf5 = C[1:nbf,1:nbf5]
     Cnbf5 = CuArray{typeof(b_mnl).parameters[1]}(Cnbf5)
 
     #b_transform
@@ -184,7 +184,7 @@ end
 
 function JKH_MO_RI(C,H,b_mnl::CuArray,nbf,nbf5,nbfaux)
 
-    Cnbf5 = copy(C[1:nbf,1:nbf5])
+    Cnbf5 = C[1:nbf,1:nbf5]
 
     #b transform
     @tensor b_pnl[p,n,l] := Cnbf5[m,p] * b_mnl[m,n,l]
