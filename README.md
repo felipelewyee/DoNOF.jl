@@ -35,6 +35,9 @@ add Revise
 To develop DoNOF.jl
 ~~~
 julia
+]
+activate .
+# Return to green prompt (press backspace key)
 using Revise # Assuming that it is installed
 using DoNOF
 ~~~
