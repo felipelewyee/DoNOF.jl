@@ -1019,7 +1019,7 @@ function calccombg(x,C,H,I,b_mnl,p)
 
     grad = zeros(p.nvar + p.nv)
 
-    grad[1:p.nvar] = calcorbg(y,n,cj12,ck12,Cnew,H,I,b_mnl,p)
+    grad[1:p.nvar] = calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p)
     grad[p.nvar+1:end] = calcoccg(gamma,J_MO,K_MO,H_core,p)
 
     return grad
