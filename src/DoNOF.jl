@@ -5,6 +5,7 @@ using CUDA, CUDAKernels, KernelAbstractions
 using NNlibCUDA
 using Tullio
 using TensorOperations
+using cuTENSOR
 
 using LinearAlgebra
 using Printf
