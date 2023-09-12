@@ -746,234 +746,9 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,pa)
 
     Cnew = rotate_orbital(y,C,pa)
 
-    if(pa.gpu)
-        Cnew = CuArray(Cnew)
-        H = CuArray(H)
-    end
+    elag,Hmat = compute_Lagrange2(Cnew,n,H,I,b_mnl,cj12,ck12,pa)
 
-    Cnbf5 = view(Cnew,1:pa.nbf,1:pa.nbf5)
-    @tullio tmp[m,j] := H[m,nn] * Cnbf5[nn,j]
-    @tullio H_mat[i,j] := Cnew[m,i] * tmp[m,j]
-    if pa.RI
-        @tullio tmp[m,q,l] := Cnbf5[nn,q]*b_mnl[m,nn,l]
-        @tullio b_MO[p,q,l] := Cnew[m,p]*tmp[m,q,l]
-    else
-    	@tullio tmp[m,q,s,l] := Cnbf5[nn,q]*I[m,nn,s,l]
-    	@tullio tmp2[m,q,r,l] := Cnbf5[s,r]*tmp[m,q,s,l]
-    	@tullio tmp[m,q,r,t] := Cnbf5[l,t]*tmp2[m,q,r,l]
-    	@tullio I_MO[p,q,r,t] := Cnew[m,p]*tmp[m,q,r,t]
-
-    end
-
-    grad_block = zeros(pa.nbf,pa.nbf)
-    cj12[diagind(cj12)] .= 0
-    ck12[diagind(ck12)] .= 0
-
-    if pa.gpu
-        grad_block = CUDA.zeros(pa.nbf,pa.nbf)
-        cj12 = CuArray(cj12)
-        ck12 = CuArray(ck12)
-        n = CuArray(n)
-    end 
-
-    n_beta =        view(n,1:pa.nbeta)
-    n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
-    Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
-    grad_nbf5 =      view(grad_block,1:pa.nbf,1:pa.nbf5)
-    grad_nbeta =     view(grad_block,1:pa.nbf,1:pa.nbeta)
-    grad_nalpha =    view(grad_block,1:pa.nbf,pa.nalpha+1:pa.nbf5)
-    if pa.RI
-        b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
-        b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
-        b_nbeta_beta =   view(b_MO,1:pa.nbeta,1:pa.nbeta,1:pa.nbfaux)
-        b_nalpha_alpha = view(b_MO,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
-        b_nbf_nbf5 =     view(b_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbfaux)
-        b_nbf5_nbf5 =    view(b_MO,1:pa.nbf5,1:pa.nbf5,1:pa.nbfaux)
-    else
-        I_nb_nb_nb =    view(I_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbeta,1:pa.nbeta)
-        I_na_na_na =    view(I_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5)
-        I_nbf5_nbf5_nbf5 =    view(I_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbf5,1:pa.nbf5)
-    end
-
-    if pa.RI
-            if(pa.MSpin==0)
-                # 2ndH/dy_ab
-                @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
-
-                # dJ_pp/dy_ab
-                @tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
-                @tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
-
-                # C^J_pq dJ_pq/dy_ab 
-                @tullio tmp[b,k] := cj12[b,q]*b_nbf5_nbf5[q,q,k]
-	        @tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*tmp[b,k]
-
-                # -C^K_pq dK_pq/dy_ab 
-                @tullio grad_nbf5[a,b] += -ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
-            end
-        else
-            if(pa.MSpin==0)
-                # 2ndH/dy_ab
-                @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b] 
-
-                # dJ_pp/dy_ab
-		@tullio grad_nbeta[a,b] += n_beta[b]*I_nb_nb_nb[a,b,b,b]
-                @tullio grad_nalpha[a,b] += n_alpha[b]*I_na_na_na[a,b,b,b]
-
-                # C^J_pq dJ_pq/dy_ab
-		@tullio grad_nbf5[a,b] += cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
-
-                # -C^K_pq dK_pq/dy_ab 
-		@tullio grad_nbf5[a,b] += -ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
-        end
-    end
-
-    grad_block = Array(grad_block)
-    grad = 4*grad_block - 4*grad_block'
-    grads = zeros(pa.nvar)
-    n = 1
-    for i in 1:pa.nbf5
-        for j in i+1:pa.nbf
-            grads[n] = grad[i,j]
-            n += 1
-        end
-    end
-    grad = grads
-
-    return grad
-
-end
-
-function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl::CuArray,pa)
-
-    Cnew = rotate_orbital(y,C,pa)
-
-    if(pa.gpu)
-        Cnew = CuArray{typeof(b_mnl).parameters[1]}(Cnew)
-        H = CuArray{typeof(b_mnl).parameters[1]}(H)
-    end
-
-    Cnbf5 = Cnew[1:pa.nbf,1:pa.nbf5]
-    H_mat = Cnew' * (H * Cnbf5)
-    #@tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnbf5[nn,j]
-    if pa.RI
-        @tensor tmp[m,q,l] := Cnbf5[nn,q]*b_mnl[m,nn,l]
-        @tensor b_MO[p,q,l] := Cnew[m,p]*tmp[m,q,l]
-	CUDA.unsafe_free!(tmp)
-    else
-        @tullio tmp[m,q,s,l] := Cnbf5[nn,q]*I[m,nn,s,l]
-        @tullio tmp2[m,q,r,l] := Cnbf5[s,r]*tmp[m,q,s,l]
-        @tullio tmp[m,q,r,t] := Cnbf5[l,t]*tmp2[m,q,r,l]
-        @tullio I_MO[p,q,r,t] := Cnew[m,p]*tmp[m,q,r,t]
-
-    end
-
-    cj12[diagind(cj12)] .= 0
-    ck12[diagind(ck12)] .= 0
-
-    if pa.gpu
-        grad_block = CUDA.zeros(typeof(b_mnl).parameters[1],pa.nbf,pa.nbf)
-	cj12 = CuArray{typeof(b_mnl).parameters[1]}(cj12)
-	ck12 = CuArray{typeof(b_mnl).parameters[1]}(ck12)
-	n = CuArray{typeof(b_mnl).parameters[1]}(n)
-    end
-
-    n_beta =        view(n,1:pa.nbeta)
-    n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
-    Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
-    grad_nbf5 =      view(grad_block,1:pa.nbf,1:pa.nbf5)
-    grad_nbeta =     view(grad_block,1:pa.nbf,1:pa.nbeta)
-    grad_nalpha =    view(grad_block,1:pa.nbf,pa.nalpha+1:pa.nbf5)
-    if !pa.RI
-        I_nb_nb_nb =    view(I_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbeta,1:pa.nbeta)
-        I_na_na_na =    view(I_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5)
-        I_nbf5_nbf5_nbf5 =    view(I_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbf5,1:pa.nbf5)
-    end
-
-    if pa.RI
-            if(pa.MSpin==0)
-                # 2ndH/dy_ab
-		grad_block[1:pa.nbf,1:pa.nbf5]  += Hmat_nbf5 .* n'
-                #@tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
-
-                # dJ_pp/dy_ab
-		b_nbeta_beta =   view(b_MO,1:pa.nbeta,1:pa.nbeta,1:pa.nbfaux)
-                b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
-
-                @tullio tmp[b,k] := b_nbeta_beta[b,b,k]
-                tmp2 = n_beta .* tmp
-	        CUDA.unsafe_free!(tmp)
-		tmp3 = permutedims(b_nbf_beta,(2,3,1))
-		tmp4 = tmp2 .* tmp3
-	        CUDA.unsafe_free!(tmp2)
-	        CUDA.unsafe_free!(tmp3)
-		tmp5 = sum(tmp4, dims=2)
-	        CUDA.unsafe_free!(tmp4)
-		tmp6 = dropdims(tmp5,dims=2)
-	        CUDA.unsafe_free!(tmp5)
-		grad_block[1:pa.nbf,1:pa.nbeta] += tmp6'
-	        CUDA.unsafe_free!(tmp6)
-                #@tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
-
-                b_nalpha_alpha = view(b_MO,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
-                b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
-                @tullio tmp[b,k] := b_nalpha_alpha[b,b,k]
-                tmp2 = n_alpha .* tmp
-                CUDA.unsafe_free!(tmp)
-                tmp3 = permutedims(b_nbf_alpha,(2,3,1))
-                tmp4 = tmp2 .* tmp3
-                CUDA.unsafe_free!(tmp2)
-                CUDA.unsafe_free!(tmp3)
-                tmp5 = sum(tmp4, dims=2)
-                CUDA.unsafe_free!(tmp4)
-                tmp6 = dropdims(tmp5,dims=2)
-                CUDA.unsafe_free!(tmp5)
-                grad_block[1:pa.nbf,pa.nalpha+1:pa.nbf5] += tmp6'
-                CUDA.unsafe_free!(tmp6)
-                #@tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
-
-                b_nbf_nbf5 =     view(b_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbfaux)
-                b_nbf5_nbf5 =    view(b_MO,1:pa.nbf5,1:pa.nbf5,1:pa.nbfaux)
-
-                # C^J_pq dJ_pq/dy_ab
-                @tullio tmp[q,k] := b_nbf5_nbf5[q,q,k]
-                @tensor tmp2[b,k] := cj12[b,q]*tmp[q,k]
-	        CUDA.unsafe_free!(tmp)
-                @tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*tmp2[b,k]
-	        CUDA.unsafe_free!(tmp2)
-                #@tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*cj12[b,q]*b_nbf5_nbf5[q,q,k]
-
-                # -C^K_pq dK_pq/dy_ab
-		tmp = ck12 .* b_nbf5_nbf5
-		tmp2 = permutedims(tmp,(2,1,3))
-	        CUDA.unsafe_free!(tmp)
-		tmp3 = NNlibCUDA.batched_mul(b_nbf_nbf5,tmp2)
-	        CUDA.unsafe_free!(tmp2)
-	        tmp4 = sum(tmp3, dims=3)
-		CUDA.unsafe_free!(tmp3)
-		grad_block[1:pa.nbf,1:pa.nbf5] += -dropdims(tmp4, dims=3)
-	        CUDA.unsafe_free!(tmp4)
-		#@tullio grad_nbf5[a,b] += -ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
-            end
-        else
-            if(pa.MSpin==0)
-                # 2ndH/dy_ab
-                @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
-
-                # dJ_pp/dy_ab
-                @tullio grad_nbeta[a,b] += n_beta[b]*I_nb_nb_nb[a,b,b,b]
-                @tullio grad_nalpha[a,b] += n_alpha[b]*I_na_na_na[a,b,b,b]
-
-                # C^J_pq dJ_pq/dy_ab
-                @tullio grad_nbf5[a,b] += cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
-
-                # -C^K_pq dK_pq/dy_ab
-                @tullio grad_nbf5[a,b] += -ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
-        end
-    end
-
-    grad = 4*grad_block - 4*grad_block'
-    grad = Array(grad)
+    grad = 4*elag - 4*elag'
     grads = zeros(pa.nvar)
     n = 1
     for i in 1:pa.nbf5
@@ -987,6 +762,30 @@ function calcorbg(y,n,cj12,ck12,C,H,I,b_mnl::CuArray,pa)
 
 end
 
+function calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,pa)
+    
+    Cnew = rotate_orbital(y,C,pa)
+
+    elag,Hmat = compute_Lagrange2(Cnew,n,H,I,b_mnl,cj12,ck12,pa)
+
+    if G!=nothing
+        grad = 4*elag - 4*elag'
+        grads = zeros(pa.nvar)
+        nn = 1
+        for i in 1:pa.nbf5
+            for j in i+1:pa.nbf
+                grads[nn] = grad[i,j]
+                nn += 1
+            end
+        end
+        G .= grads
+    end
+    if F!=nothing
+        E = computeE_elec(Hmat,n,elag,pa)
+        return E
+    end
+
+end
 
 function calccombe(x,C,H,I,b_mnl,p)
 
@@ -1023,4 +822,37 @@ function calccombg(x,C,H,I,b_mnl,p)
     grad[p.nvar+1:end] = calcoccg(gamma,J_MO,K_MO,H_core,p)
 
     return grad
+end
+
+function calccombeg(F,G,x,C,H,I,b_mnl,p)
+
+    y = x[1:p.nvar]
+    gamma = x[p.nvar+1:end]
+
+    Cnew = rotate_orbital(y,C,p)
+
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    cj12,ck12 = PNOFi_selector(n,p)
+
+    J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
+
+    if G!=nothing
+        grad = zeros(p.nvar + p.nv)
+
+        grad[p.nvar+1:end] = calcoccg(gamma,J_MO,K_MO,H_core,p)
+        if F!=nothing
+	    gv = view(grad,1:p.nvar)
+            E = calcorbeg(F,gv,y,n,cj12,ck12,C,H,I,b_mnl,p)
+	    G .= grad
+	    return E
+        else
+            grad[1:p.nvar] = calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p)
+	    G .= grad
+	end
+    end
+    if F!=nothing
+        E = calcocce(gamma,J_MO,K_MO,H_core,p)
+	return E
+    end
+
 end

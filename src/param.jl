@@ -29,6 +29,9 @@ mutable struct Param
     threshe::Float64
     threshec::Float64
     threshen::Float64
+    threshgorb::Float64
+    threshgocc::Float64
+    threshgcomb::Float64
     scaling::Bool
     nzeros::Int64
     nzerosm::Int64
@@ -133,6 +136,9 @@ function Param(bset,mul,charge)
     threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
     threshen = 10^-4 # Convergencia  de la energía en optimización de ocupaciones
+    threshgorb = 10^-4   # Convergencia del gradiente orbital
+    threshgocc = 10^-4   # Convergencia del gradiente de numeros de ocupacion
+    threshgcomb = 10^-4   # Convergencia del gradiente combinado
     scaling = true     # Scaling for f
     nzeros = 0
     nzerosm = 5
@@ -188,6 +194,9 @@ function Param(bset,mul,charge)
     threshe, 
     threshec, 
     threshen, 
+    threshgorb, 
+    threshgocc, 
+    threshgcomb, 
     scaling, 
     nzeros, 
     nzerosm, 

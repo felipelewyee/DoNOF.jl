@@ -16,4 +16,4 @@ p.gpu = false
 
 p.method = "ID"
 
-E,C,gamma,fmiug0 = DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true,do_mbpt=false,do_translate_to_donofsw=true)
+E,C,gamma,fmiug0 = DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true)

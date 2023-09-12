@@ -1,19 +1,232 @@
-function ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+function compute_Lagrange2(C,n,H,I,b_mnl,cj12,ck12,pa)
 
-    J,K = computeJKj(C,I,b_mnl,p)
-    
-    if p.MSpin==0
-	if p.gpu
-	    F = computeF_RC(J,K,n,H,cj12,ck12,p)
-        else
-            F = computeF_RC(J,K,n,H,cj12,ck12,p)
-	end
-    elseif p.MSpin!=0
-        F = computeF_RO(J,K,n,H,cj12,ck12,p)
+    Cnbf5 = view(C,1:pa.nbf,1:pa.nbf5)
+    @tullio tmp[m,j] := H[m,nn] * Cnbf5[nn,j]
+    @tullio H_mat[i,j] := C[m,i] * tmp[m,j]
+    if pa.RI
+        @tullio tmp[m,q,l] := Cnbf5[nn,q]*b_mnl[m,nn,l]
+        @tullio b_MO[p,q,l] := C[m,p]*tmp[m,q,l]
+    else
+        @tullio tmp[m,q,s,l] := Cnbf5[nn,q]*I[m,nn,s,l]
+        @tullio tmp2[m,q,r,l] := Cnbf5[s,r]*tmp[m,q,s,l]
+        @tullio tmp[m,q,r,t] := Cnbf5[l,t]*tmp2[m,q,r,l]
+        @tullio I_MO[p,q,r,t] := C[m,p]*tmp[m,q,r,t]
+
     end
 
-    elag = computeLagrange(F,C,p)
+    elag = zeros(pa.nbf,pa.nbf)
+    cj12[diagind(cj12)] .= 0
+    ck12[diagind(ck12)] .= 0
 
+    n_beta =        view(n,1:pa.nbeta)
+    n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
+    Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
+    grad_nbf5 =      view(elag,1:pa.nbf,1:pa.nbf5)
+    grad_nbeta =     view(elag,1:pa.nbf,1:pa.nbeta)
+    grad_nalpha =    view(elag,1:pa.nbf,pa.nalpha+1:pa.nbf5)
+    if pa.RI
+        b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
+        b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
+        b_nbeta_beta =   view(b_MO,1:pa.nbeta,1:pa.nbeta,1:pa.nbfaux)
+        b_nalpha_alpha = view(b_MO,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
+        b_nbf_nbf5 =     view(b_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbfaux)
+        b_nbf5_nbf5 =    view(b_MO,1:pa.nbf5,1:pa.nbf5,1:pa.nbfaux)
+    else
+        I_nb_nb_nb =    view(I_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbeta,1:pa.nbeta)
+        I_na_na_na =    view(I_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5)
+        I_nbf5_nbf5_nbf5 =    view(I_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbf5,1:pa.nbf5)
+    end
+
+    if pa.RI
+            if(pa.MSpin==0)
+                # 2ndH/dy_ab
+                @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
+
+                # dJ_pp/dy_ab
+                @tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
+                @tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
+
+                # C^J_pq dJ_pq/dy_ab 
+                @tullio tmp[b,k] := cj12[b,q]*b_nbf5_nbf5[q,q,k]
+                @tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*tmp[b,k]
+
+                # -C^K_pq dK_pq/dy_ab 
+                @tullio grad_nbf5[a,b] += -ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
+            end
+        else
+            if(pa.MSpin==0)
+                # 2ndH/dy_ab
+                @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
+
+                # dJ_pp/dy_ab
+                @tullio grad_nbeta[a,b] += n_beta[b]*I_nb_nb_nb[a,b,b,b]
+                @tullio grad_nalpha[a,b] += n_alpha[b]*I_na_na_na[a,b,b,b]
+
+                # C^J_pq dJ_pq/dy_ab
+                @tullio grad_nbf5[a,b] += cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
+
+                # -C^K_pq dK_pq/dy_ab 
+                @tullio grad_nbf5[a,b] += -ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
+        end
+    end
+
+    return elag,H_mat
+
+end
+
+function compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
+
+    if(pa.gpu)
+        C = CuArray{typeof(b_mnl).parameters[1]}(C)
+        H = CuArray{typeof(b_mnl).parameters[1]}(H)
+    end
+
+    Cnbf5 = C[1:pa.nbf,1:pa.nbf5]
+    H_mat = C' * (H * Cnbf5)
+    #@tullio H_mat[i,j] := Cnew[m,i] * H[m,nn] * Cnbf5[nn,j]
+    if pa.RI
+        @tensor tmp[m,q,l] := Cnbf5[nn,q]*b_mnl[m,nn,l]
+        @tensor b_MO[p,q,l] := C[m,p]*tmp[m,q,l]
+	CUDA.unsafe_free!(tmp)
+    else
+        @tullio tmp[m,q,s,l] := Cnbf5[nn,q]*I[m,nn,s,l]
+        @tullio tmp2[m,q,r,l] := Cnbf5[s,r]*tmp[m,q,s,l]
+        @tullio tmp[m,q,r,t] := Cnbf5[l,t]*tmp2[m,q,r,l]
+        @tullio I_MO[p,q,r,t] := C[m,p]*tmp[m,q,r,t]
+
+    end
+
+    cj12[diagind(cj12)] .= 0
+    ck12[diagind(ck12)] .= 0
+
+    if pa.gpu
+        elag = CUDA.zeros(typeof(b_mnl).parameters[1],pa.nbf,pa.nbf)
+	cj12 = CuArray{typeof(b_mnl).parameters[1]}(cj12)
+	ck12 = CuArray{typeof(b_mnl).parameters[1]}(ck12)
+	n = CuArray{typeof(b_mnl).parameters[1]}(n)
+    end
+
+    n_beta =        view(n,1:pa.nbeta)
+    n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
+    Hmat_nbf5 =      view(H_mat,1:pa.nbf,1:pa.nbf5)
+    grad_nbf5 =      view(elag,1:pa.nbf,1:pa.nbf5)
+    grad_nbeta =     view(elag,1:pa.nbf,1:pa.nbeta)
+    grad_nalpha =    view(elag,1:pa.nbf,pa.nalpha+1:pa.nbf5)
+    if !pa.RI
+        I_nb_nb_nb =    view(I_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbeta,1:pa.nbeta)
+        I_na_na_na =    view(I_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5)
+        I_nbf5_nbf5_nbf5 =    view(I_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbf5,1:pa.nbf5)
+    end
+
+    if pa.RI
+            if(pa.MSpin==0)
+                # 2ndH/dy_ab
+		elag[1:pa.nbf,1:pa.nbf5]  += Hmat_nbf5 .* n'
+                #@tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
+
+                # dJ_pp/dy_ab
+		b_nbeta_beta =   view(b_MO,1:pa.nbeta,1:pa.nbeta,1:pa.nbfaux)
+                b_nbf_beta =     view(b_MO,1:pa.nbf,1:pa.nbeta,1:pa.nbfaux)
+
+                @tullio tmp[b,k] := b_nbeta_beta[b,b,k]
+                tmp2 = n_beta .* tmp
+	        CUDA.unsafe_free!(tmp)
+		tmp3 = permutedims(b_nbf_beta,(2,3,1))
+		tmp4 = tmp2 .* tmp3
+	        CUDA.unsafe_free!(tmp2)
+	        CUDA.unsafe_free!(tmp3)
+		tmp5 = sum(tmp4, dims=2)
+	        CUDA.unsafe_free!(tmp4)
+		tmp6 = dropdims(tmp5,dims=2)
+	        CUDA.unsafe_free!(tmp5)
+		elag[1:pa.nbf,1:pa.nbeta] += tmp6'
+	        CUDA.unsafe_free!(tmp6)
+                #@tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
+
+                b_nalpha_alpha = view(b_MO,pa.nalpha+1:pa.nbf5,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
+                b_nbf_alpha =    view(b_MO,1:pa.nbf,pa.nalpha+1:pa.nbf5,1:pa.nbfaux)
+                @tullio tmp[b,k] := b_nalpha_alpha[b,b,k]
+                tmp2 = n_alpha .* tmp
+                CUDA.unsafe_free!(tmp)
+                tmp3 = permutedims(b_nbf_alpha,(2,3,1))
+                tmp4 = tmp2 .* tmp3
+                CUDA.unsafe_free!(tmp2)
+                CUDA.unsafe_free!(tmp3)
+                tmp5 = sum(tmp4, dims=2)
+                CUDA.unsafe_free!(tmp4)
+                tmp6 = dropdims(tmp5,dims=2)
+                CUDA.unsafe_free!(tmp5)
+                elag[1:pa.nbf,pa.nalpha+1:pa.nbf5] += tmp6'
+                CUDA.unsafe_free!(tmp6)
+                #@tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
+
+                b_nbf_nbf5 =     view(b_MO,1:pa.nbf,1:pa.nbf5,1:pa.nbfaux)
+                b_nbf5_nbf5 =    view(b_MO,1:pa.nbf5,1:pa.nbf5,1:pa.nbfaux)
+
+                # C^J_pq dJ_pq/dy_ab
+                @tullio tmp[q,k] := b_nbf5_nbf5[q,q,k]
+                @tensor tmp2[b,k] := cj12[b,q]*tmp[q,k]
+	        CUDA.unsafe_free!(tmp)
+                @tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*tmp2[b,k]
+	        CUDA.unsafe_free!(tmp2)
+                #@tullio grad_nbf5[a,b] += b_nbf_nbf5[a,b,k]*cj12[b,q]*b_nbf5_nbf5[q,q,k]
+
+                # -C^K_pq dK_pq/dy_ab
+		tmp = ck12 .* b_nbf5_nbf5
+		tmp2 = permutedims(tmp,(2,1,3))
+	        CUDA.unsafe_free!(tmp)
+		tmp3 = NNlibCUDA.batched_mul(b_nbf_nbf5,tmp2)
+	        CUDA.unsafe_free!(tmp2)
+	        tmp4 = sum(tmp3, dims=3)
+		CUDA.unsafe_free!(tmp3)
+		elag[1:pa.nbf,1:pa.nbf5] += -dropdims(tmp4, dims=3)
+	        CUDA.unsafe_free!(tmp4)
+		#@tullio grad_nbf5[a,b] += -ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
+            end
+        else
+            if(pa.MSpin==0)
+                # 2ndH/dy_ab
+                @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
+
+                # dJ_pp/dy_ab
+                @tullio grad_nbeta[a,b] += n_beta[b]*I_nb_nb_nb[a,b,b,b]
+                @tullio grad_nalpha[a,b] += n_alpha[b]*I_na_na_na[a,b,b,b]
+
+                # C^J_pq dJ_pq/dy_ab
+                @tullio grad_nbf5[a,b] += cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]
+
+                # -C^K_pq dK_pq/dy_ab
+                @tullio grad_nbf5[a,b] += -ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
+        end
+    end
+
+    elag = Array(elag)
+    H_mat = Array(H_mat)
+    
+    return elag,H_mat
+
+end
+
+function ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+
+    if(p.no1==0)
+        elag,Hmat = compute_Lagrange2(C,n,H,I,b_mnl,cj12,ck12,p)
+	E = computeE_elec(Hmat,n,elag,p)
+    else
+        J,K = computeJKj(C,I,b_mnl,p)
+
+        if p.MSpin==0
+            if p.gpu
+                F = computeF_RC(J,K,n,H,cj12,ck12,p)
+            else
+                F = computeF_RC(J,K,n,H,cj12,ck12,p)
+            end
+        elseif p.MSpin!=0
+            F = computeF_RO(J,K,n,H,cj12,ck12,p)
+        end
+
+        elag = computeLagrange(F,C,p)
+    end
     E = computeE_elec(H,C,n,elag,p)
 
     sumdiff,maxdiff = computeLagrangeConvergency(elag)
@@ -125,7 +338,6 @@ function computeLagrange(F,C,p)
 
 function computeF_RO(J,K,n,H,cj12,ck12,p)
 
-
     # Matriz de Fock Generalizada
     F = zeros(p.nbf5,p.nbf,p.nbf)
 
@@ -220,6 +432,19 @@ function computeE_elec(H,C,n,elag,p)
     n_alpha_nbf5 = view(n,p.nalpha+1:p.nbf5)
     C_alpha_nbf5 = view(C,:,p.nalpha+1:p.nbf5)
     @tullio E += n_alpha_nbf5[i]*C_alpha_nbf5[m,i]*H[m,n]*C_alpha_nbf5[n,i]
+
+    return E
+
+    end
+
+function computeE_elec(Hmat,n,elag,p)
+    #EELECTRr
+    E = 0
+    elag_nbf5 = view(elag,1:p.nbf5,1:p.nbf5)
+    @tullio E += elag_nbf5[i,i]
+    n_nbf5 = view(n,1:p.nbf5)
+    H_nbf5 = view(Hmat,1:p.nbf5,1:p.nbf5)
+    @tullio E += n_nbf5[i]*H_nbf5[i,i]
 
     return E
 

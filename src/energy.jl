@@ -128,7 +128,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    end
 	    flush(stdout)
 
-	    if(norm(grad_orb) < p.threshe && norm(grad_occ) < p.threshe)
+	    if(norm(grad_orb) < p.threshgorb && norm(grad_occ) < p.threshgocc)
 		 break
             end
 
@@ -168,7 +168,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    end
             flush(stdout)
 
-	    if(grad_norm < p.threshe)
+	    if(grad_norm < p.threshgcomb)
 		break
 	    end
             E_old = E
