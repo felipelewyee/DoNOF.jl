@@ -1,16 +1,3 @@
-function compute_gamma(p)
-    gamma = zeros(p.nv)
-    for i in 1:p.ndoc
-        gamma[i] = acos(sqrt(2.0*0.999-1.0))
-        for j in 1:p.ncwo-1
-		ig = p.ndoc+(i-1)*(p.ncwo-1)+j
-	    gamma[ig] = asin(sqrt(1.0/(p.ncwo-j+1)))
-
-        end
-    end
-    return gamma
-end
-
 function read_C(;title = "donof")
 
     C = load(title*".jld")["C"]
@@ -18,10 +5,10 @@ function read_C(;title = "donof")
 
 end
 
-function read_gamma(;title = "donof")
+function read_n(;title = "donof")
 
-    gamma = load(title*".jld")["gamma"]
-    return gamma
+    n = load(title*".jld")["n"]
+    return n
 
 end
 
@@ -34,10 +21,10 @@ end
 
 function read_all(;title = "donof")
     C = read_C(title=title)
-    gamma = read_gamma(title=title)
+    n = read_n(title=title)
     fmiug0 = read_fmiug0(title=title)
 
-    return C,gamma,fmiug0
+    return C,n,fmiug0
 
 end
 
@@ -75,9 +62,10 @@ function increment_gamma(old_gamma,old_ncwo,p)
     return gamma
 end
 
-function order_subspaces(old_C,old_gamma,elag,H,I,b_mnl,p)
+function order_subspaces(old_C,old_n,elag,H,I,b_mnl,p)
 
     C = zeros(p.nbf,p.nbf)
+    n = zeros(p.nbf5)
     
     #Sort no1 orbitals
     elag_diag = diag(elag)[1:p.no1]
@@ -91,6 +79,7 @@ function order_subspaces(old_C,old_gamma,elag,H,I,b_mnl,p)
     elag_diag = diag(elag)[p.no1+1:p.ndoc]
     sort_idx = sortperm(elag_diag)
     C[1:p.nbf,1:p.no1] = old_C[1:p.nbf,1:p.no1]
+    n[1:p.no1] = old_n[1:p.no1]
     for i in 1:p.ndoc
 	i_old  = sort_idx[i]
         ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
@@ -100,18 +89,8 @@ function order_subspaces(old_C,old_gamma,elag,H,I,b_mnl,p)
 
         C[1:p.nbf,p.no1+i] = old_C[1:p.nbf,p.no1+i_old]
         C[1:p.nbf,ll:ul] = old_C[1:p.nbf,ll_old:ul_old]
-    end
-
-    gamma = zeros(p.nv)
-    for i in 1:p.ndoc
-	i_old  = sort_idx[i]
-        ll = p.ndoc + (p.ncwo-1)*(i-1) + 1
-        ul = p.ndoc + (p.ncwo-1)*i
-        ll_old = p.ndoc + (p.ncwo-1)*(i_old-1) + 1
-        ul_old = p.ndoc + (p.ncwo-1)*i_old
-
-	gamma[i] = old_gamma[i_old]
-	gamma[ll:ul] = old_gamma[ll_old:ul_old]
+        n[p.no1+i] = old_n[p.no1+i_old]
+        n[ll:ul] = old_n[ll_old:ul_old]
     end
 
     #Sort nsoc orbitals
@@ -120,16 +99,15 @@ function order_subspaces(old_C,old_gamma,elag,H,I,b_mnl,p)
     for i in 1:p.nsoc
 	i_old  = sort_idx[i]
         C[1:p.nbf,p.no1+p.ndoc+i] = old_C[1:p.nbf,p.no1+p.ndoc+i_old] 
+        n[p.no1+p.ndoc+i] = old_n[p.no1+p.ndoc+i_old] 
     end
 
     C[1:p.nbf,p.nbf5+1:p.nbf] = old_C[1:p.nbf,p.nbf5+1:p.nbf]
 
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
-
     cj12,ck12 = PNOFi_selector(n,p)
     Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
-    return C,gamma,n,elag
+    return C,n,elag
 
 end
 
@@ -256,3 +234,16 @@ function build_chains(ps,Cs)
     return C_new
 
 end
+
+function guess_gamma_trigonometric(p)
+    gamma = zeros(p.nv)
+    for i in 1:p.ndoc
+        gamma[i] = acos(sqrt(2.0*0.999-1.0))
+        for j in 1:p.ncwo-1
+            ig = p.ndoc+(i-1)*(p.ncwo-1)+j
+            gamma[ig] = asin(sqrt(1.0/(p.ncwo-j+1)))
+        end
+    end
+    return gamma
+end
+

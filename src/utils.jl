@@ -627,3 +627,51 @@ function rotate_orbital(y,C,p)
     return Cnew
 
 end
+
+function n_to_gammas_softmax(n,p)
+
+    gamma = zeros(p.nv)
+
+    for i in 1:p.ndoc
+
+        ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
+        ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
+        llg = ll - p.ndns + p.ndoc - p.no1
+        ulg = ul - p.ndns + p.ndoc - p.no1
+
+	ns = n[ll:ul]
+
+	A = zeros(p.ncwo,p.ncwo)
+	b = zeros(p.ncwo)
+
+        for j in 1:p.ncwo
+	    A[j,:] .= ns[j]
+	    A[j,j] = ns[j]-1
+	    b[j] = -ns[j]
+	end
+
+	x = log.(A\b)
+
+	gamma[llg:ulg] .= x
+
+    end
+
+    return gamma
+
+end
+
+function n_gamma_trigonometric(n,p)
+    gamma = zeros(p.nv)
+    for i in 1:p.ndoc
+	idx = p.no1 + i
+	gamma[i] = acos(sqrt(2.0*n[idx]-1.0))
+	prefactor = max(1-n[idx],1e-14)
+        for j in 1:p.ncwo-1
+            jg = p.ndoc+(i-1)*(p.ncwo-1)+j
+            ig = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + j
+	    gamma[jg] = asin(sqrt(n[ig]/prefactor))
+	    prefactor = prefactor * (cos(gamma[jg]))^2
+        end
+    end
+    return gamma
+end

@@ -1,6 +1,6 @@
 export energy
 
-function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,do_mbpt=false,freeze_occ=false,do_translate_to_donofsw=false)
+function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,do_mbpt=false,freeze_occ=false,do_translate_to_donofsw=false)
 
     t0 = time()
     println("Computing Integrals")
@@ -55,8 +55,20 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
     end
     C = check_ortho(C,S,p)
 
-    if isnothing(gamma)
-        gamma = compute_gamma(p)
+    if isnothing(n)
+        gamma = guess_gamma_trigonometric(p)
+        n,dn_dgamma = ocupacion_trigonometric(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+        if p.occ_method == "Softmax"
+	    p.nv = p.nbf5 - p.no1 - p.nsoc
+	    gamma = n_to_gammas_softmax(n,p)
+        end
+    else
+        if p.occ_method == "Trigonometric"
+            gamma = n_to_gammas_trigonometric(n,p)
+        elseif p.occ_method == "Softmax"
+	    p.nv = p.nbf5 - p.no1 - p.nsoc
+	    gamma = n_to_gammas_softmax(n,p)
+	end
     end
 
     elag = zeros(p.nbf,p.nbf)
@@ -76,7 +88,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         println(" ")
     end
 
-    if p.method == "ID"
+    if p.orb_method == "ID"
         @printf("  %6s  %6s %8s %13s %15s %14s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
 
         for i_ext in 1:p.maxit
@@ -89,7 +101,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    #@printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
 
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
-            save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
+            save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
 	    flush(stdout)
             if convgdelag
                 break
@@ -98,7 +110,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         end
     end
 
-    if p.method == "Rotations"
+    if p.orb_method == "Rotations"
 
 	@printf("  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n","Nitext","Nit_orb","Time","Nit_occ","Time","Eelec","Etot","Ediff","maxdiff","Grad_orb","Grad_occ")
         for i_ext in 1:p.maxit
@@ -112,7 +124,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
             y = zeros(p.nvar)
-            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
             cj12,ck12 = PNOFi_selector(n,p)
             grad_orb = calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p)
             J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
@@ -122,9 +134,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_old,maxdiff,norm(grad_orb),norm(grad_occ),M)
 
             if isnothing(fmiug0)
-                save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma)
+                save(p.title*".jld", "E", Etmp, "C", C,"n",n)
 	    else
-                save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
+                save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
 	    end
 	    flush(stdout)
 
@@ -140,7 +152,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 
     end
 
-    if p.method == "Combined"
+    if p.orb_method == "Combined"
 
 	    @printf("  %6s  %6s %6s      %8s %13s %15s %12s    %8s  %8s  %8s\n","Nitext","Nitint","Time","Eelec","Etot","Ediff","maxdiff","Grad_tot","Grad_orb","Grad_occ")
         for i_ext in 1:p.maxit
@@ -148,7 +160,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
             E,C,gamma,n,nit,success = comb(gamma,C,H,I,b_mnl,p)
             ta2 = time()
 
-            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
             cj12,ck12 = PNOFi_selector(n,p)
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
@@ -162,9 +174,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	    @printf("%6i %7i %10.1e %14.8f %14.8f %14.8f %10.6f   %3.1e   %3.1e   %3.1e %4.2f\n",i_ext,nit,ta2-ta1,E,E+E_nuc,E-E_old,maxdiff,norm(grad),norm(grad_orb),norm(grad_occ),M)
 
             if isnothing(fmiug0)
-                save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma)
+                save(p.title*".jld", "E", Etmp, "C", C,"n",n)
 	    else
-                save(p.title*".jld", "E", Etmp, "C", C,"gamma",gamma,"fmiug0",fmiug0)
+                save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
 	    end
             flush(stdout)
 
@@ -175,12 +187,13 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
 	end
     end
 
-    C,gamma,n,elag = order_subspaces(C,gamma,elag,H,I,b_mnl,p)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
+    C,n,elag = order_subspaces(C,n,elag,H,I,b_mnl,p)
 
     if isnothing(fmiug0)
-        save(p.title*".jld", "C", C,"gamma",gamma)
+        save(p.title*".jld", "C", C,"n",n)
     else
-        save(p.title*".jld", "C", C,"gamma",gamma,"fmiug0",fmiug0)
+        save(p.title*".jld", "C", C,"n",n,"fmiug0",fmiug0)
     end
 
     if printmode
@@ -252,7 +265,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,gamma=nothing,do_hfidr=true,do_n
         write_to_DoNOFsw(p,bset,n,C,diag(elag),fmiug0,10,E_nuc + E)
     end
 
-    return E_nuc + E,C,gamma,fmiug0
+    return E_nuc + E,C,n,fmiug0
 
 end
 

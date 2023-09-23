@@ -85,7 +85,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	gamma = res.minimizer
     end
 
-    n,dn = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
     if p.ndoc>0 && !freeze_occ
@@ -175,7 +175,7 @@ function orbopt_rotations(gamma,C,H,I,b_mnl,p)
 
     y = zeros(p.nvar)
 
-    n,dn = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
     res = optimize(Optim.only_fg!((F,G,y)->calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,p)), y, LBFGS(), Optim.Options(iterations = p.maxloop), inplace=false)
@@ -203,7 +203,7 @@ function comb(gamma,C,H,I,b_mnl,p)
     gamma = x[p.nvar+1:end]
     C = rotate_orbital(y,C,p)
 
-    n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dR = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
 
     return E,C,gamma,n,res.iterations,res.g_converged
 end

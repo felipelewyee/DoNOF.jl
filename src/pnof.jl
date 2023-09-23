@@ -411,7 +411,16 @@ function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,ns
 
 end
 
-function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
+function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin,occ_method)
+    if occ_method == "Trigonometric"
+        n,dn_dgamma = ocupacion_trigonometric(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
+    elseif occ_method == "Softmax"
+        n,dn_dgamma = ocupacion_softmax(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
+    end
+    return n,dn_dgamma
+end
+
+function ocupacion_trigonometric(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 
     n = zeros(nbf5)
     dni_dgammai = zeros(nbf5)
@@ -485,8 +494,55 @@ function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
     end
 
    return n,dn_dgamma
+end
 
+function ocupacion_softmax(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 
+    n = zeros(nbf5)
+    dn_dgamma = zeros(nbf5,nv)
+
+    n[1:no1] .= 1                                              # [1,no1]
+    if !HighSpin
+        n[no1+ndoc+1:no1+ndns] .= 0.5   # (no1+ndoc,no1+ndns]
+    elseif HighSpin
+        n[no1+ndoc+1:no1+ndns] .= 1.0   # (no1+ndoc,no1+ndns]
+    end
+
+    exp_gamma = exp.(gamma)
+
+    for i in 1:ndoc
+
+        ll = no1 + ndns + ncwo*(ndoc - i) + 1
+        ul = no1 + ndns + ncwo*(ndoc - i + 1)
+        llg = ndoc + ncwo*(ndoc - i) + 1
+        ulg = ndoc + ncwo*(ndoc - i + 1)
+
+        sum_exp = exp_gamma[i] + sum(exp_gamma[llg:ulg])
+	
+        n[i] = exp_gamma[i] / sum_exp 
+        n[ll:ul] .= exp_gamma[llg:ulg] ./ sum_exp 
+
+        for j in ll:ul
+            for k in llg:ulg
+                jg = j - no1 - ndns + ndoc
+                dn_dgamma[j,k] = -exp_gamma[jg]*exp_gamma[k]/sum_exp^2
+            end
+        end
+        for jg in llg:ulg
+            dn_dgamma[i,jg] = -exp_gamma[i]*exp_gamma[jg]/sum_exp^2
+        end
+        for j in ll:ul
+            jg = j - no1 - ndns + ndoc
+            dn_dgamma[j,i] = -exp_gamma[i]*exp_gamma[jg]/sum_exp^2
+        end
+
+        dn_dgamma[i,i] = exp_gamma[i]*(sum_exp - exp_gamma[i])/sum_exp ^2
+        for j in ll:ul
+            jg = j - no1 - ndns + ndoc
+            dn_dgamma[j,jg] = exp_gamma[jg]*(sum_exp - exp_gamma[jg])/sum_exp ^2
+        end
+    end
+    return n,dn_dgamma
 end
 
 function calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
@@ -578,7 +634,8 @@ function calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
 end
 
 function calcocce(gamma,J_MO,K_MO,H_core,p)
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
     E = calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
@@ -590,8 +647,7 @@ end
 function calcoccg(gamma,J_MO,K_MO,H_core,p)
 
     grad = zeros(p.nv)
-
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     Dcj12r,Dck12r = der_PNOFi_selector(n,dn_dgamma,p)
 
     if p.MSpin==0
@@ -794,7 +850,7 @@ function calccombe(x,C,H,I,b_mnl,p)
 
     Cnew = rotate_orbital(y,C,p)
 
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
     J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
@@ -811,7 +867,7 @@ function calccombg(x,C,H,I,b_mnl,p)
 
     Cnew = rotate_orbital(y,C,p)
 
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
     J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
@@ -831,7 +887,7 @@ function calccombeg(F,G,x,C,H,I,b_mnl,p)
 
     Cnew = rotate_orbital(y,C,p)
 
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
     J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)

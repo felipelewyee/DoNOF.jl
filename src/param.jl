@@ -50,7 +50,8 @@ mutable struct Param
     RI::Bool
     HighSpin::Bool
     MSpin::Int64
-    method::String
+    occ_method::String
+    orb_method::String
     nvar::Int64
     spherical::Bool
     gpu_bits::Int64
@@ -136,9 +137,9 @@ function Param(bset,mul,charge)
     threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
     threshen = 10^-4 # Convergencia  de la energía en optimización de ocupaciones
-    threshgorb = 10^-4   # Convergencia del gradiente orbital
-    threshgocc = 10^-4   # Convergencia del gradiente de numeros de ocupacion
-    threshgcomb = 10^-4   # Convergencia del gradiente combinado
+    threshgorb = 5*10^-4   # Convergencia del gradiente orbital
+    threshgocc = 5*10^-4   # Convergencia del gradiente de numeros de ocupacion
+    threshgcomb = 5*10^-4   # Convergencia del gradiente combinado
     scaling = true     # Scaling for f
     nzeros = 0
     nzerosm = 5
@@ -150,7 +151,7 @@ function Param(bset,mul,charge)
     perdiis = true      # Aplica DIIS cada NDIIS (true) o después de NDIIS (false)
     ncwo = ncwo         # Número de orbitales débilmente ocupados acoplados a cada orbital fueremtente ocupado
     noptorb = noptorb   # Número de orbitales a optimizar Nbf5 <= Noptorb <= Nbf
-    nv = ncwo*ndoc
+    nv = nbf5 - no1 - nsoc #ncwo*ndoc
     gradient = "analytical"
     optimizer = "BFGS"
     gpu = false
@@ -159,7 +160,8 @@ function Param(bset,mul,charge)
     HighSpin = false
     MSpin = 0
 
-    method = "ID"
+    occ_method = "Trigonometric"
+    orb_method = "ID"
     nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
     spherical = false
@@ -215,7 +217,8 @@ function Param(bset,mul,charge)
     RI,
     HighSpin,
     MSpin,
-    method,
+    occ_method,
+    orb_method,
     nvar,
     spherical,
     gpu_bits,
