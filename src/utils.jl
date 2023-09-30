@@ -660,7 +660,7 @@ function n_to_gammas_softmax(n,p)
 
 end
 
-function n_gammas_trigonometric(n,p)
+function n_to_gammas_trigonometric(n,p)
     gamma = zeros(p.nv)
     for i in 1:p.ndoc
 	idx = p.no1 + i
