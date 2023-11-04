@@ -1,7 +1,7 @@
 module DoNOF
 
 using LoopVectorization
-using CUDA, CUDAKernels, KernelAbstractions
+using CUDA, KernelAbstractions
 using NNlibCUDA
 using Tullio
 using TensorOperations
