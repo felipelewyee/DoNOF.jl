@@ -173,7 +173,8 @@ function compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
 
                 # -C^K_pq dK_pq/dy_ab
 		tmp = ck12 .* b_nbf5_nbf5
-		tmp2 = permutedims(tmp,(2,1,3))
+		#tmp2 = permutedims(tmp,(2,1,3))
+                @tullui tmp2[j,i,k] := tmp[i,j,k]
 	        CUDA.unsafe_free!(tmp)
 		tmp3 = NNlibCUDA.batched_mul(b_nbf_nbf5,tmp2)
 	        CUDA.unsafe_free!(tmp2)
