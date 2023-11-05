@@ -183,6 +183,7 @@ function compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
 	        CUDA.unsafe_free!(tmp4)
 		#@tullio grad_nbf5[a,b] += -ck12[b,q]*b_nbf_nbf5[a,q,k]*b_nbf5_nbf5[b,q,k]
             end
+            CUDA.unsafe_free!(b_MO)
         else
             if(pa.MSpin==0)
                 # 2ndH/dy_ab
@@ -198,6 +199,7 @@ function compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
                 # -C^K_pq dK_pq/dy_ab
                 @tullio grad_nbf5[a,b] += -ck12[b,q]*I_nbf5_nbf5_nbf5[a,q,b,q]
         end
+        CUDA.unsafe_free!(I_MO)
     end
 
     elag = Array(elag)
