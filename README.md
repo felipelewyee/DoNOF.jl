@@ -2,6 +2,8 @@
 
 This is a Julia version of the [DoNOF](https://github.com/DoNOF/DoNOFsw/) (Donostia Natural Orbital Functionals) software written by Prof. Mario Piris, with the intention of take advantage of the wonderful capabilities of Julia language.
 
+# <img src="https://github.com/felipelewyee/DoNOF.jl/blob/master/DoNOFjl.png" height=150>
+
 # Requirements
 
 You should have Julia installed. 
