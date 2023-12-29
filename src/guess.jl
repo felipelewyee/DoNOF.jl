@@ -246,4 +246,3 @@ function guess_gamma_trigonometric(p)
     end
     return gamma
 end
-

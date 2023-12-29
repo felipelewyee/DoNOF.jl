@@ -678,3 +678,36 @@ function n_to_gammas_trigonometric(n,p)
     end
     return gamma
 end
+
+function order_occupations_softmax(old_C,old_gamma,H,I,b_mnl,p)
+
+    C = copy(old_C)
+    gamma = zeros(p.nv)
+
+    #Sort ndoc subspaces
+    gamma_tmp = zeros(1+p.ncwo)
+    C_tmp = zeros(p.nbf,1+p.ncwo)
+    for i in 1:p.ndoc
+        old_ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
+        old_ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
+        C_tmp[:,1] = old_C[:,p.no1+i]
+        C_tmp[:,2:end] = old_C[:,old_ll:old_ul]
+
+        old_ll_x = old_ll - p.ndns + p.ndoc - p.no1
+        old_ul_x = old_ul - p.ndns + p.ndoc - p.no1
+        gamma_tmp[1] = old_gamma[i]
+        gamma_tmp[2:end] = old_gamma[old_ll_x:old_ul_x]
+
+        sort_idx = sortperm(gamma_tmp)[end:-1:1]
+        gamma_tmp = gamma_tmp[sort_idx]
+        C_tmp = C_tmp[:,sort_idx]
+
+        gamma[i] = gamma_tmp[1]
+        gamma[old_ll_x:old_ul_x] = gamma_tmp[2:end]
+        C[:,p.no1+i] = C_tmp[:,1]
+        C[:,old_ll:old_ul] = C_tmp[:,2:end]
+    end
+
+    return C,gamma
+end
+

@@ -99,6 +99,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
             gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	    #ta3 = time()
 	    #@printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
+	    if(p.occ_method=="Softmax")
+                C,gamma = order_occupations_softmax(C,gamma,H,I,b_mnl,p)
+	    end
 
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
             save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
@@ -120,6 +123,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 
             gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	    ta3 = time()
+	    if(p.occ_method=="Softmax")
+                C,gamma = order_occupations_softmax(C,gamma,H,I,b_mnl,p)
+	    end
 
             Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 

@@ -14,7 +14,6 @@ p.ipnof = 8
 p.RI = true
 p.gpu = false
 
-p.occ_method = "Softmax"
 p.orb_method = "Rotations"
 
 E,C,gamma,fmiug0 = DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true)
