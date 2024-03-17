@@ -994,3 +994,376 @@ function ECorrNonDyn(n,C,H,I,b_mnl,p)
 
     return ECndHF,ECndl
 end
+
+function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
+
+    println("\n---------------")
+    println(" ERPA Analysis")
+    println("---------------\n")
+
+    tol_dn = 10^-3
+
+    C_nbf5 = view(C,1:pp.nbf,1:pp.nbf5)
+    n_nbf5 = view(n,1:pp.nbf5)
+    @tullio h_nbf5[m,j] := H[m,n]*C_nbf5[n,j]
+    @tullio h[i,j] := C_nbf5[m,i]*h_nbf5[m,j]
+
+
+    if(pp.RI)
+        @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
+        @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
+	@tullio Iijkr[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
+    else
+        @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
+        @tullio Iijsl[i,j,s,l] := Iinsl[i,n,s,l] * C_nbf5[n,j]
+        @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
+        @tullio Iijkr[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
+    #if(pp.gpu):
+    #    I = I.get()
+    end
+
+    c = sqrt.(n_nbf5)
+    c[pp.no1+pp.ndns+1:end] *= -1
+
+    @tullio I_MO[r,p,s,q] := Iijkr[r,s,p,q]
+
+    A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
+    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
+
+    @tullio A[r,s,p,q] +=  h[s,q]*Id[p,r]*n_nbf5[p]
+    @tullio A[r,s,p,q] += -h[s,q]*Id[p,r]*n_nbf5[s]
+    @tullio A[r,s,p,q] +=  h[p,r]*Id[s,q]*n_nbf5[q]
+    @tullio A[r,s,p,q] += -h[p,r]*Id[s,q]*n_nbf5[r]
+
+    Daa, Dab = compute_2RDM(pp,n_nbf5)
+
+    @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * Daa[p,u,r,t]
+    @tullio A[r,s,p,q] += -I_MO[s,t,u,q] * Daa[p,u,r,t]
+    @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * Dab[p,u,r,t]
+    @tullio A[r,s,p,q] +=  I_MO[s,t,u,q] * Dab[p,u,t,r]
+    @tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * Daa[s,t,q,u]
+    @tullio A[r,s,p,q] += -I_MO[u,p,r,t] * Daa[s,t,q,u]
+    @tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * Dab[s,t,q,u]
+    @tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * Dab[s,t,u,q]
+
+   ####
+    @tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * Daa[t,u,r,q]
+    @tullio A[r,s,p,q] += -I_MO[p,s,t,u] * Dab[u,t,r,q]
+    @tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * Daa[s,p,t,u]
+    @tullio A[r,s,p,q] += -I_MO[t,u,q,r] * Dab[p,s,t,u]
+    ####
+
+    @tullio A[r,s,p,q] +=  Id[s,q]*I_MO[t,p,w,u] * Daa[w,u,r,t]
+    @tullio A[r,s,p,q] += -Id[s,q]*I_MO[t,p,w,u] * Dab[u,w,r,t]
+    @tullio A[r,s,p,q] +=  Id[p,r]*I_MO[t,u,w,q] * Daa[s,w,t,u]
+    @tullio A[r,s,p,q] += -Id[p,r]*I_MO[t,u,w,q] * Dab[w,s,t,u]
+
+    M = zeros(pp.nbf5^2,pp.nbf5^2)
+
+    i = 0
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            j = 0
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+		end
+	    end
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+		end
+	    end
+            for p in 1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]
+	    end
+	end
+    end
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            j = 0
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+                end
+            end
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+                end
+            end
+            for p in 1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]
+            end
+        end
+    end
+
+    for r in 1:pp.nbf5
+        i += 1
+        j = 0
+        for q in 1:pp.nbf5
+            for p in q+1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,r,p,q]
+            end
+        end
+        for q in 1:pp.nbf5
+            for p in q+1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,r,q,p]
+            end
+        end
+        for p in 1:pp.nbf5
+            j += 1
+            M[i,j] = A[r,r,p,p]
+        end
+    end
+    
+    v = zeros(pp.nbf5*(pp.nbf5-1))
+    i = 0
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            v[i] = +(n[s] - n[r])
+        end
+    end
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            v[i] = -(n[s] - n[r])
+        end
+    end
+
+    idx = []
+    for (i,vi) in enumerate(v)
+        if(abs(vi) < tol_dn)
+            push!(idx,i)
+        end
+    end
+
+    dim = (pp.nbf5)*(pp.nbf5-1) - size(idx)[1]
+    
+    for (i,j) in enumerate(idx)
+        tmp = v[j-(i-1)]
+        v[j-(i-1):end-1] = v[j-(i-1)+1:end]
+        v[end] = tmp
+
+        tmp = M[j-(i-1),:]
+        M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
+        M[end,:] = tmp
+        tmp = M[:,j-(i-1)]
+        M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
+        M[:,end] = tmp
+    end
+
+    @printf("M_ERPA Orig dim: %i New dim: %i Elements below tol_dN: %i \n", (pp.nbf5)*(pp.nbf5-1), dim, size(idx)[1])
+
+    ######## ERPA0 ########
+
+    dd = Int64(dim/2)
+    AA = M[1:dd,1:dd]
+    BB = M[1:dd,dd+1:2*dd]
+
+    ApB = AA + BB
+    AmB = AA - BB
+
+    dN = v[1:dd] #Diagonal(v[1:dd])
+    dNm1 = 1 ./ dN #inv(dN)
+
+    maxApBsym = maximum(abs.(ApB - ApB'))
+    maxAmBsym = maximum(abs.(AmB - AmB'))
+    @printf("Max diff ApB %3.1e and Max AmB %3.1e\n",maxApBsym,maxAmBsym)
+    println()
+
+    @tullio dNm1ApBdNm1[i,j] := dNm1[i]*ApB[i,j]*dNm1[j]
+    @tullio MM[i,k] := dNm1ApBdNm1[i,j]*AmB[j,k]
+    vals = eigvals!(MM)
+    
+    vals_neg = vals[vals.<0]
+    vals_pos = vals[vals.>=0]
+    vals = sqrt.(vals_pos)
+
+    n_neg_vals = size(vals_neg)[1]
+    vals = vals*27.2114
+
+    @printf("  Excitation energies ERPA0/PNOF%i (eV)\n",pp.ipnof)
+    println("  ===================================")
+    for i in 1:min(10,size(vals)[1])
+        @printf("    Exc. en. %2i: %6.3f\n",i,vals[i])
+    end
+    @printf("  Number of negative eigenvalues: %i\n",n_neg_vals)
+    println()
+
+    ######## ERPA  ########
+  
+    CC = M[1:dd,2*dd+1:2*dd+pp.nbf5]
+    EE = M[2*dd+1:2*dd+pp.nbf5,1:dd]
+    FF = M[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
+
+    FFm1 = pinv(FF)
+
+    @tullio CCFFm1[i,k] := CC[i,j]*FFm1[j,k]
+    @tullio tmpMat[i,k] := 2*CCFFm1[i,j]*EE[j,k]
+
+    @tullio dNm1ApBdNm1[i,j] := dNm1[i]*(ApB[i,j]-tmpMat[i,j])*dNm1[j]
+    @tullio MM[i,k] := dNm1ApBdNm1[i,j]*AmB[j,k]
+    vals = eigvals!(MM)
+
+    vals_neg = vals[vals.<0]
+    vals_pos = vals[vals.>=0]
+    vals = sqrt.(vals_pos)
+
+    n_neg_vals = size(vals_neg)[1]
+    vals = vals*27.2114
+
+    @printf("  Excitation energies ERPA/PNOF%i (eV)\n",pp.ipnof)
+    println("  ===================================")
+    for i in 1:min(10,size(vals)[1])
+        @printf("    Exc. en. %2i: %6.3f\n",i,vals[i])
+    end
+    @printf("  Number of negative eigenvalues: %i\n",n_neg_vals)
+    println()
+
+    ######## ERPA2 ########
+
+    i = 0
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            j = 0
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+                end
+            end
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+                end
+            end
+            for p in 1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]*1/2*(c[s]/(c[p]*(c[r]+c[s])))
+            end
+        end
+    end
+
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            j = 0
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+                end
+            end
+            for q in 1:pp.nbf5
+                for p in q+1:pp.nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+                end
+            end
+            for p in 1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]*1/2*(c[r]/(c[p]*(c[r]+c[s])))
+            end
+        end
+    end
+
+    for r in 1:pp.nbf5
+        i += 1
+        j = 0
+        for q in 1:pp.nbf5
+            for p in q+1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,r,p,q]*(1/c[r])
+            end
+        end
+        for q in 1:pp.nbf5
+            for p in q+1:pp.nbf5
+                j += 1
+                M[i,j] = A[r,r,q,p]*(1/c[r])
+            end
+        end
+        for p in 1:pp.nbf5
+            j += 1
+            M[i,j] = A[r,r,p,p]*(1/(4*c[p]*c[r]))
+        end
+    end
+
+    v = zeros(pp.nbf5^2)
+    i = 0
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            v[i] = +(n[s] - n[r])
+	end
+    end
+    for s in 1:pp.nbf5
+        for r in s+1:pp.nbf5
+            i += 1
+            v[i] = -(n[s] - n[r])
+	end
+    end
+    for r in 1:pp.nbf5
+        i += 1
+        v[i] = 1
+    end
+    
+    idx = []
+    for (i,vi) in enumerate(v)
+        if(abs(vi) < tol_dn)
+            push!(idx,i)
+        end
+    end
+
+    dim = pp.nbf5^2 - size(idx)[1]
+
+    for (i,j) in enumerate(idx)
+        tmp = v[j-(i-1)]
+        v[j-(i-1):end-1] = v[j-(i-1)+1:end]
+        v[end] = tmp
+
+        tmp = M[j-(i-1),:]
+        M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
+        M[end,:] = tmp
+        tmp = M[:,j-(i-1)]
+        M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
+        M[:,end] = tmp
+    end
+
+    M_ERPA2 = M[1:dim,1:dim]
+
+    for i in 1:dim
+        M_ERPA2[i,:] = M_ERPA2[i,:] ./ v[i] 
+    end
+
+    vals = eigvals!(M_ERPA2)
+
+    vals_real = real.(vals)
+    vals_complex = imag.(vals)
+    n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 0.04])[1]
+    vals_real = vals_real[abs.(vals_complex) .< 0.04]
+    vals = vals_real[vals_real .> 0.04]
+    vals = vals*27.2114
+
+    @printf("  Excitation energies ERPA2/PNOF%i (eV)\n",pp.ipnof)
+    println("  ===================================")
+    for i in 1:min(10,size(vals)[1])
+        @printf("    Exc. en. %2i: %6.3f\n",i,vals[i])
+    end
+    @printf("  Number of complex eigenvalues: %i\n",n_complex_vals)
+    println()
+
+end

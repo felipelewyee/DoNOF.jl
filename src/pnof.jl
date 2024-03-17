@@ -29,7 +29,7 @@ function CJCKD5(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
     @tullio cj12[i,j] := 2*n[i]*n[j]
     @tullio ck12[i,j] := n[i]*n[j]
 
-    # Intrapair Electron Correlation
+    # Intrapair Electron Correlation #
 
     if MSpin==0 && nsoc>1
         n_beta_alpha = view(n,nbeta+1:nalpha)
@@ -910,5 +910,136 @@ function calccombeg(F,G,x,C,H,I,b_mnl,p)
         E = calcocce(gamma,J_MO,K_MO,H_core,p)
 	return E
     end
+
+end
+
+function compute_2RDM(pp,n)
+
+    # PNOF5
+    # Interpair Electron correlation
+    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
+
+    inter = n .* n'
+    intra = zeros(pp.nbf5,pp.nbf5)
+
+    # Intrapair Electron Correlation
+    for l in 1:pp.ndoc
+        ldx = pp.no1 + l
+        # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+        ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l) + 1
+        ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l + 1)
+
+        inter[ldx,ldx] = 0
+        inter[ldx,ll:ul] .= 0
+        inter[ll:ul,ldx] .= 0
+        inter[ll:ul,ll:ul] .= 0
+
+        intra[ldx,ldx] = sqrt(n[ldx]*n[ldx])
+        intra[ldx,ll:ul] .= -sqrt.(n[ldx]*n[ll:ul])
+        intra[ll:ul,ldx] .= -sqrt.(n[ldx]*n[ll:ul])
+
+        intra_ww = view(intra,ll:ul,ll:ul)
+        n_ww = view(n,ll:ul)
+        @tullio intra_ww[i,j] = sqrt(n_ww[i]*n_ww[j])
+    end
+
+    for i in pp.nbeta+1:pp.nalpha
+        inter[i,i] = 0
+    end
+
+    @tullio Daa[p,q,r,t] :=  inter[p,q]*Id[p,r]*Id[q,t]
+    @tullio Daa[p,q,r,t] += -inter[p,q]*Id[p,t]*Id[q,r]
+    @tullio Dab[p,q,r,t] :=  inter[p,q]*Id[p,r]*Id[q,t]
+    @tullio Dab[p,q,r,t] +=  intra[p,r]*Id[p,q]*Id[r,t]
+
+    # PNOF7
+    if(pp.ipnof == 7 || pp.ipnof==8)
+        fi = n .* (1 .- n)
+        fi[fi .<= 0] .= 0
+        fi = sqrt.(fi)
+        Pi_s = fi .* fi'
+        # Intrapair Electron Correlation
+        for l in 1:pp.ndoc
+            ldx = pp.no1 + l
+            # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+            ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l) + 1
+            ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l + 1)
+
+            Pi_s[ldx,ldx] = 0
+            Pi_s[ldx,ll:ul] .= 0
+            Pi_s[ll:ul,ldx] .= 0
+            Pi_s[ll:ul,ll:ul] .= 0
+	end
+        for i in pp.nbeta+1:pp.nalpha
+            Pi_s[i,i] = 0
+        end
+
+        inter2 = 0*Pi_s
+        inter2[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha] = Pi_s[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha]
+        Pi_s[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha] .= 0
+
+	@tullio Dab[p,q,r,t] += -inter2[p,r]*Id[p,t]*Id[q,r]
+
+        if(pp.ipnof==8)
+            Pi_s[1:pp.nbeta,1:pp.nbeta] .= 0
+            Pi_s[1:pp.nbeta,pp.nbeta+1:pp.nalpha] *= 0.5
+            Pi_s[pp.nbeta+1:pp.nalpha,1:pp.nbeta] *= 0.5
+        end
+
+	@tullio Dab[p,q,r,t] += -Pi_s[p,r]*Id[p,q]*Id[r,t]
+
+        if(pp.ipnof==8)
+
+            h_cut = 0.02*sqrt(2.0)
+	    n_d = zeros(size(n)[1])
+
+            for i in 1:pp.ndoc
+                idx = pp.no1 + i
+                # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+                ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - i) + 1
+                ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - i + 1)
+
+                h = 1.0 - n[idx]
+                coc = h / h_cut
+                arg = -coc^2
+                F = exp(arg)  # ! Hd/Hole
+                n_d[idx] = n[idx] * F
+                n_d[ll:ul] = n[ll:ul] * F  # ROd = RO*Hd/Hole
+            end
+
+            n_d12 = sqrt.(n_d)
+
+            inter = n_d12 .* n_d12' - n_d .* n_d'
+            inter2 = n_d12 .* n_d12' + n_d .* n_d'
+            # Intrapair Electron Correlation
+            for l in 1:pp.ndoc
+                ldx = pp.no1 + l
+                # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+                ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l) + 1
+                ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l + 1)
+
+                inter[ldx,ldx] = 0
+                inter[ldx,ll:ul] .= 0
+                inter[ll:ul,ldx] .= 0
+                inter[ll:ul,ll:ul] .= 0
+                inter2[ldx,ldx] = 0
+                inter2[ldx,ll:ul] .= 0
+                inter2[ll:ul,ldx] .= 0
+                inter2[ll:ul,ll:ul] .= 0
+            end
+
+	    inter[pp.nbeta+1:end,pp.nbeta+1:end] .= 0
+            inter[1:pp.nalpha,1:pp.nalpha] .= 0
+	    inter2[pp.nbeta+1:end,pp.nbeta+1:end] .= 0
+            inter2[1:pp.nalpha,:] .= 0
+            inter2[:,1:pp.nalpha] .= 0
+
+            Pi_d = inter - inter2
+
+	    @tullio Dab[p,q,r,t] += -Pi_d[p,r]*Id[p,q]*Id[r,t]
+        end
+    end
+
+    return Daa, Dab
 
 end

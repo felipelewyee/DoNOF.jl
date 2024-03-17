@@ -1,6 +1,6 @@
 export energy
 
-function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,do_mbpt=false,freeze_occ=false,do_translate_to_donofsw=false)
+function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,do_mbpt=false,freeze_occ=false,do_translate_to_donofsw=false,do_erpa=false)
 
     t0 = time()
     println("Computing Integrals")
@@ -265,6 +265,10 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 
     if(do_mbpt)
         mbpt(n,C,H,I,b_mnl,E_nuc,E,p)
+    end
+
+    if(do_erpa)
+        erpa(n,C,H,I,b_mnl,E_nuc,E,p)
     end
 
     if(do_translate_to_donofsw)
