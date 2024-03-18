@@ -1012,12 +1012,17 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     if(pp.RI)
         @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
         @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
+	b_pnl = nothing
 	@tullio Iijkr[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
+	b_pql = nothing
     else
         @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
         @tullio Iijsl[i,j,s,l] := Iinsl[i,n,s,l] * C_nbf5[n,j]
+	Iinsl = nothing
         @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
+	Iijsl = nothing
         @tullio Iijkr[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
+	Iijkl = nothing
     #if(pp.gpu):
     #    I = I.get()
     end
@@ -1026,6 +1031,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     c[pp.no1+pp.ndns+1:end] *= -1
 
     @tullio I_MO[r,p,s,q] := Iijkr[r,s,p,q]
+    Iijkr = nothing
 
     A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
     Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
@@ -1057,9 +1063,11 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     @tullio A[r,s,p,q] += -Id[s,q]*I_MO[t,p,w,u] * Dab[u,w,r,t]
     @tullio A[r,s,p,q] +=  Id[p,r]*I_MO[t,u,w,q] * Daa[s,w,t,u]
     @tullio A[r,s,p,q] += -Id[p,r]*I_MO[t,u,w,q] * Dab[w,s,t,u]
+    I_MO = nothing
+    D_aa = nothing
+    D_ab = nothing
 
     M = zeros(pp.nbf5^2,pp.nbf5^2)
-
     i = 0
     for s in 1:pp.nbf5
         for r in s+1:pp.nbf5
@@ -1105,7 +1113,6 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
             end
         end
     end
-
     for r in 1:pp.nbf5
         i += 1
         j = 0
@@ -1174,6 +1181,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ApB = AA + BB
     AmB = AA - BB
+    AA = nothing
+    BB = nothing
 
     dN = v[1:dd] #Diagonal(v[1:dd])
     dNm1 = 1 ./ dN #inv(dN)
@@ -1185,8 +1194,11 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     @tullio dNm1ApBdNm1[i,j] := dNm1[i]*ApB[i,j]*dNm1[j]
     @tullio MM[i,k] := dNm1ApBdNm1[i,j]*AmB[j,k]
+    dNm1ApBdNm1 = nothing
     vals = eigvals!(MM)
+    MM = nothing
     
+    vals = real.(vals)
     vals_neg = vals[vals.<0]
     vals_pos = vals[vals.>=0]
     vals = sqrt.(vals_pos)
@@ -1207,16 +1219,28 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     CC = M[1:dd,2*dd+1:2*dd+pp.nbf5]
     EE = M[2*dd+1:2*dd+pp.nbf5,1:dd]
     FF = M[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
+    M = nothing
 
     FFm1 = pinv(FF)
+    FF = nothing
 
     @tullio CCFFm1[i,k] := CC[i,j]*FFm1[j,k]
+    FFm1 = nothing
+    CC = nothing
     @tullio tmpMat[i,k] := 2*CCFFm1[i,j]*EE[j,k]
+    EE = nothing
+    CCFFm1 = nothing
 
     @tullio dNm1ApBdNm1[i,j] := dNm1[i]*(ApB[i,j]-tmpMat[i,j])*dNm1[j]
+    ApB = nothing
+    tmpMat = nothing
     @tullio MM[i,k] := dNm1ApBdNm1[i,j]*AmB[j,k]
+    AmB = nothing
+    dNm1ApBdNm1 = nothing
     vals = eigvals!(MM)
+    MM = nothing
 
+    vals = real.(vals)
     vals_neg = vals[vals.<0]
     vals_pos = vals[vals.>=0]
     vals = sqrt.(vals_pos)
@@ -1234,6 +1258,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ######## ERPA2 ########
 
+    M = zeros(pp.nbf5^2,pp.nbf5^2)
     i = 0
     for s in 1:pp.nbf5
         for r in s+1:pp.nbf5
@@ -1257,7 +1282,6 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
             end
         end
     end
-
     for s in 1:pp.nbf5
         for r in s+1:pp.nbf5
             i += 1
@@ -1280,7 +1304,6 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
             end
         end
     end
-
     for r in 1:pp.nbf5
         i += 1
         j = 0
@@ -1320,6 +1343,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
         i += 1
         v[i] = 1
     end
+    A = nothing
     
     idx = []
     for (i,vi) in enumerate(v)
@@ -1344,6 +1368,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     end
 
     M_ERPA2 = M[1:dim,1:dim]
+    M = nothing
 
     for i in 1:dim
         M_ERPA2[i,:] = M_ERPA2[i,:] ./ v[i] 
