@@ -1050,7 +1050,6 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     Daa, Dab = compute_2RDM(pp,n_nbf5)
 
-    t0 = time()
     @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * Daa[p,u,r,t]
     @tullio A[r,s,p,q] += -I_MO[s,t,u,q] * Daa[p,u,r,t]
     @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * Dab[p,u,r,t]
@@ -1083,10 +1082,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     flush(stdout)
 
     M = zeros(pp.nbf5^2,pp.nbf5^2)
-    i = 0
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+	    i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
             j = 0
             for q in 1:pp.nbf5
                 for p in q+1:pp.nbf5
@@ -1106,9 +1104,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 	    end
 	end
     end
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+	    i = Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
             j = 0
             for q in 1:pp.nbf5
                 for p in q+1:pp.nbf5
@@ -1128,8 +1126,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
             end
         end
     end
-    for r in 1:pp.nbf5
-        i += 1
+    Threads.@threads for r in 1:pp.nbf5
+        i = Int64(pp.nbf5*(pp.nbf5-1) + r)
         j = 0
         for q in 1:pp.nbf5
             for p in q+1:pp.nbf5
@@ -1150,16 +1148,15 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     end
     
     v = zeros(pp.nbf5*(pp.nbf5-1))
-    i = 0
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+            i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
             v[i] = +(n[s] - n[r])
         end
     end
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+            i =  Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5) 
             v[i] = -(n[s] - n[r])
         end
     end
@@ -1171,6 +1168,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
         end
     end
 
+    println("Sorting M")
+    flush(stdout)
     dim = (pp.nbf5)*(pp.nbf5-1) - size(idx)[1]
     
     for (i,j) in enumerate(idx)
@@ -1195,16 +1194,16 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     AA = M[1:dd,1:dd]
     BB = M[1:dd,dd+1:2*dd]
 
-    ApB = AA + BB
-    AmB = AA - BB
+    ApB = AA .+ BB
+    AmB = AA .- BB
     AA = nothing
     BB = nothing
 
     dN = v[1:dd] #Diagonal(v[1:dd])
     dNm1 = 1 ./ dN #inv(dN)
 
-    maxApBsym = maximum(abs.(ApB - ApB'))
-    maxAmBsym = maximum(abs.(AmB - AmB'))
+    maxApBsym = maximum(abs.(ApB .- ApB'))
+    maxAmBsym = maximum(abs.(AmB .- AmB'))
     @printf("Max diff ApB %3.1e and Max AmB %3.1e\n",maxApBsym,maxAmBsym)
     println()
     flush(stdout)
@@ -1279,9 +1278,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     M = zeros(pp.nbf5^2,pp.nbf5^2)
     i = 0
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+            i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
             j = 0
             for q in 1:pp.nbf5
                 for p in q+1:pp.nbf5
@@ -1301,9 +1300,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
             end
         end
     end
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+            i = Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
             j = 0
             for q in 1:pp.nbf5
                 for p in q+1:pp.nbf5
@@ -1323,8 +1322,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
             end
         end
     end
-    for r in 1:pp.nbf5
-        i += 1
+    Threads.@threads for r in 1:pp.nbf5
+        i = Int64(pp.nbf5*(pp.nbf5-1) + r)
         j = 0
         for q in 1:pp.nbf5
             for p in q+1:pp.nbf5
@@ -1346,20 +1345,20 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     v = zeros(pp.nbf5^2)
     i = 0
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+            i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
             v[i] = +(n[s] - n[r])
 	end
     end
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i += 1
+    Threads.@threads for s in 1:pp.nbf5
+        Threads.@threads for r in s+1:pp.nbf5
+            i = Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5) 
             v[i] = -(n[s] - n[r])
 	end
     end
-    for r in 1:pp.nbf5
-        i += 1
+    Threads.@threads for r in 1:pp.nbf5
+        i = Int64(pp.nbf5*(pp.nbf5-1) + r)
         v[i] = 1
     end
     A = nothing
