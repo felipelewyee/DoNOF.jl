@@ -76,10 +76,10 @@ end
 
 function compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
 
-    if(pa.gpu)
-        C = CuArray{typeof(b_mnl).parameters[1]}(C)
-        H = CuArray{typeof(b_mnl).parameters[1]}(H)
-    end
+    #if(pa.gpu)
+    #    C = CuArray{typeof(b_mnl).parameters[1]}(C)
+    #    H = CuArray{typeof(b_mnl).parameters[1]}(H)
+    #end
 
     Cnbf5 = C[1:pa.nbf,1:pa.nbf5]
     H_mat = C' * (H * Cnbf5)
@@ -99,12 +99,12 @@ function compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
     cj12[diagind(cj12)] .= 0
     ck12[diagind(ck12)] .= 0
 
-    if pa.gpu
-        elag = CUDA.zeros(typeof(b_mnl).parameters[1],pa.nbf,pa.nbf)
-	cj12 = CuArray{typeof(b_mnl).parameters[1]}(cj12)
-	ck12 = CuArray{typeof(b_mnl).parameters[1]}(ck12)
-	n = CuArray{typeof(b_mnl).parameters[1]}(n)
-    end
+    #if pa.gpu
+    #    elag = CUDA.zeros(typeof(b_mnl).parameters[1],pa.nbf,pa.nbf)
+    #    cj12 = CuArray{typeof(b_mnl).parameters[1]}(cj12)
+    #    ck12 = CuArray{typeof(b_mnl).parameters[1]}(ck12)
+    #    n = CuArray{typeof(b_mnl).parameters[1]}(n)
+    #end
 
     n_beta =        view(n,1:pa.nbeta)
     n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
@@ -219,11 +219,11 @@ function ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
         J,K = computeJKj(C,I,b_mnl,p)
 
         if p.MSpin==0
-            if p.gpu
+            #if p.gpu
+            #    F = computeF_RC(J,K,n,H,cj12,ck12,p)
+            #else
                 F = computeF_RC(J,K,n,H,cj12,ck12,p)
-            else
-                F = computeF_RC(J,K,n,H,cj12,ck12,p)
-            end
+            #end
         elseif p.MSpin!=0
             F = computeF_RO(J,K,n,H,cj12,ck12,p)
         end
@@ -276,52 +276,52 @@ function computeF_RC(J,K,n,H,cj12,ck12,p)
 
 end
 
-function computeF_RC(J::CuArray,K,n,H,cj12,ck12,p)
-
-    ini = 0
-    if(p.no1>1)
-        ini = p.no1
-    end
-
-    # Matriz de Fock Generalizada
-    n = CuArray{typeof(J).parameters[1]}(n)
-    H = CuArray{typeof(J).parameters[1]}(H)
-
-    # nH
-    @tullio F[i,m,s] := n[i]*H[m,s]
-
-    # -C^K K
-    ck12_ini_nbf5 = view(ck12,ini+1:p.nbf5,ini+1:p.nbf5)
-    ck12_ini_nbf5[diagind(ck12_ini_nbf5)] .= 0.0
-    ck12_gpu = CuArray{typeof(J).parameters[1]}(ck12)
-    @tensor F[i,m,n] += -ck12_gpu[i,j]*K[j,m,n]
-    CUDA.unsafe_free!(ck12_gpu)
-    CUDA.unsafe_free!(K)
-
-    # C^J J
-    cj12_ini_nbf5 = view(cj12,ini+1:p.nbf5,ini+1:p.nbf5)
-    cj12_ini_nbf5[diagind(cj12_ini_nbf5)] .= 0.0
-    cj12_gpu = CuArray{typeof(J).parameters[1]}(cj12)
-    @tensor F[i,m,n] += cj12_gpu[i,j]*J[j,m,n]
-    CUDA.unsafe_free!(cj12_gpu)
-
-    # nJ
-    n_ini_beta = n[ini+1:p.nbeta]
-    J_ini_beta = J[ini+1:p.nbeta,1:p.nbf,1:p.nbf]
-    F[ini+1:p.nbeta,1:p.nbf,1:p.nbf] += n_ini_beta .* J_ini_beta
-    CUDA.unsafe_free!(n_ini_beta)
-    CUDA.unsafe_free!(J_ini_beta)
-
-    n_alpha_nbf5 = n[p.nalpha+1:p.nbf5]
-    J_alpha_nbf5 = J[p.nalpha+1:p.nbf5,1:p.nbf,1:p.nbf]
-    F[p.nalpha+1:p.nbf5,1:p.nbf,1:p.nbf] += n_alpha_nbf5 .* J_alpha_nbf5
-    CUDA.unsafe_free!(n_alpha_nbf5)
-    CUDA.unsafe_free!(J_alpha_nbf5)
-    CUDA.unsafe_free!(J)
-
-    return Array(F)
-
-end
+#function computeF_RC(J::CuArray,K,n,H,cj12,ck12,p)
+#
+#    ini = 0
+#    if(p.no1>1)
+#        ini = p.no1
+#    end
+#
+#    # Matriz de Fock Generalizada
+#    n = CuArray{typeof(J).parameters[1]}(n)
+#    H = CuArray{typeof(J).parameters[1]}(H)
+#
+#    # nH
+#    @tullio F[i,m,s] := n[i]*H[m,s]
+#
+#    # -C^K K
+#    ck12_ini_nbf5 = view(ck12,ini+1:p.nbf5,ini+1:p.nbf5)
+#    ck12_ini_nbf5[diagind(ck12_ini_nbf5)] .= 0.0
+#    ck12_gpu = CuArray{typeof(J).parameters[1]}(ck12)
+#    @tensor F[i,m,n] += -ck12_gpu[i,j]*K[j,m,n]
+#    CUDA.unsafe_free!(ck12_gpu)
+#    CUDA.unsafe_free!(K)
+#
+#    # C^J J
+#    cj12_ini_nbf5 = view(cj12,ini+1:p.nbf5,ini+1:p.nbf5)
+#    cj12_ini_nbf5[diagind(cj12_ini_nbf5)] .= 0.0
+#    cj12_gpu = CuArray{typeof(J).parameters[1]}(cj12)
+#    @tensor F[i,m,n] += cj12_gpu[i,j]*J[j,m,n]
+#    CUDA.unsafe_free!(cj12_gpu)
+#
+#    # nJ
+#    n_ini_beta = n[ini+1:p.nbeta]
+#    J_ini_beta = J[ini+1:p.nbeta,1:p.nbf,1:p.nbf]
+#    F[ini+1:p.nbeta,1:p.nbf,1:p.nbf] += n_ini_beta .* J_ini_beta
+#    CUDA.unsafe_free!(n_ini_beta)
+#    CUDA.unsafe_free!(J_ini_beta)
+#
+#    n_alpha_nbf5 = n[p.nalpha+1:p.nbf5]
+#    J_alpha_nbf5 = J[p.nalpha+1:p.nbf5,1:p.nbf,1:p.nbf]
+#    F[p.nalpha+1:p.nbf5,1:p.nbf,1:p.nbf] += n_alpha_nbf5 .* J_alpha_nbf5
+#    CUDA.unsafe_free!(n_alpha_nbf5)
+#    CUDA.unsafe_free!(J_alpha_nbf5)
+#    CUDA.unsafe_free!(J)
+#
+#    return Array(F)
+#
+#end
 
 function computeLagrange(F,C,p)
 

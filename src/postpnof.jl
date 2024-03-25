@@ -714,12 +714,12 @@ function build_F_MO(C,H,I,b_mnl,p)
             D = D + 0.5*Dalpha
         end
 
-	if(p.gpu)
-	    D = CuArray(D)
-            @tensor J[m,n] := D[l,s] * I[m,n,s,l]
-            @tensor K[m,s] := D[n,l] * I[m,n,s,l]
-	    J,K,D = Array(J), Array(K), Array(D)
-        else
+	#if(p.gpu)
+	#    D = CuArray(D)
+        #    @tensor J[m,n] := D[l,s] * I[m,n,s,l]
+        #    @tensor K[m,s] := D[n,l] * I[m,n,s,l]
+	#    J,K,D = Array(J), Array(K), Array(D)
+        #else
 	    if p.RI
 		@tullio X[l] := b_mnl[m,n,l] * D[m,n]
                 @tullio J[m,n] := b_mnl[m,n,l] * X[l]
@@ -730,7 +730,7 @@ function build_F_MO(C,H,I,b_mnl,p)
                 @tullio J[m,n] := D[l,s] * I[m,n,s,l]
                 @tullio K[m,s] := D[n,l] * I[m,n,s,l]
             end
-	end
+	#end
         F = H + 2*J - K
         EHFL = tr( D * H + D * F )
     end

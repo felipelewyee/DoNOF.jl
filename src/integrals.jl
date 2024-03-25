@@ -34,17 +34,17 @@ function compute_integrals(bset,p)
         p.nbfaux = size(b_mnl)[3]
     end
 
-    if(p.gpu)
-        if (!p.RI)
-            I = CuArray(I)
-        else
-	    if(p.gpu_bits==64)
-                b_mnl = CuArray(b_mnl)
-	    else
-                b_mnl = cu(b_mnl)
-	    end
-        end
-    end
+    #if(p.gpu)
+    #    if (!p.RI)
+    #        I = CuArray(I)
+    #    else
+    #	    if(p.gpu_bits==64)
+    #            b_mnl = CuArray(b_mnl)
+    #	    else
+    #            b_mnl = cu(b_mnl)
+    #	    end
+    #    end
+    #end
 
     return S,T,V,H,I,b_mnl
 
@@ -55,21 +55,21 @@ end
 
 function computeJKj(C,I,b_mnl,p)
 
-    if(p.gpu)
-        if(p.RI)
-	    J,K = JKj_RI(C,b_mnl,p.nbf,p.nbf5,p.nbfaux)
-        else
-            J,K = JKj_Full(CuArray(C),I,p.nbf,p.nbf5)
-        end
-        return J,K
-    else
+    #if(p.gpu)
+    #    if(p.RI)
+    #        J,K = JKj_RI(C,b_mnl,p.nbf,p.nbf5,p.nbfaux)
+    #    else
+    #        J,K = JKj_Full(CuArray(C),I,p.nbf,p.nbf5)
+    #    end
+    #    return J,K
+    #else
         if(p.RI)
             J,K = JKj_RI(C,b_mnl,p.nbf,p.nbf5,p.nbfaux)
         else
             J,K = JKj_Full(C,I,p.nbf,p.nbf5)
         end
         return J,K
-    end
+    #end
 
 end
 
@@ -139,21 +139,21 @@ end
 
 function computeJKH_MO(C,H,I,b_mnl,p)
 
-    if(p.gpu)
-        if(p.RI)
-	    J_MO,K_MO,H_core = JKH_MO_RI(CuArray{typeof(b_mnl).parameters[1]}(C),CuArray{typeof(b_mnl).parameters[1]}(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
-        else
-            J_MO,K_MO,H_core = JKH_MO_Full(CuArray(C),CuArray(H),I,p.nbf,p.nbf5)
-        end
-        return Array(J_MO),Array(K_MO),Array(H_core)
-     else
+    #if(p.gpu)
+    #    if(p.RI)
+    #        J_MO,K_MO,H_core = JKH_MO_RI(CuArray{typeof(b_mnl).parameters[1]}(C),CuArray{typeof(b_mnl).parameters[1]}(H),b_mnl,p.nbf,p.nbf5,p.nbfaux)
+    #    else
+    #        J_MO,K_MO,H_core = JKH_MO_Full(CuArray(C),CuArray(H),I,p.nbf,p.nbf5)
+    #    end
+    #    return Array(J_MO),Array(K_MO),Array(H_core)
+    # else
         if(p.RI)
              J_MO,K_MO,H_core = JKH_MO_RI(C,H,b_mnl,p.nbf,p.nbf5,p.nbfaux)
          else
              J_MO,K_MO,H_core = JKH_MO_Full(C,H,I,p.nbf,p.nbf5)
          end
          return J_MO,K_MO,H_core
-      end
+    #  end
 
 end
 
@@ -253,13 +253,13 @@ end
 
 function computeJK_HF(D,I,p)
 
-    if(p.gpu)
-	J,K = JK_HF_Full(CuArray(D),I,p)
-	return Array(J),Array(K)
-    else
+    #if(p.gpu)
+    #    J,K = JK_HF_Full(CuArray(D),I,p)
+    #    return Array(J),Array(K)
+    #else
         J,K = JK_HF_Full(D,I,p)
         return J,K
-    end
+    #end
 
 
 end
@@ -276,13 +276,13 @@ end
 
 function compute_iajb(C,I,p)
 
-    if(p.gpu)
-        iajb = iajb_Full(CuArray(C),I,p.no1,p.nalpha,p.nbf,p.nbf5)
-	return Array(iajb)
-    else
+    #if(p.gpu)
+    #    iajb = iajb_Full(CuArray(C),I,p.no1,p.nalpha,p.nbf,p.nbf5)
+    #	return Array(iajb)
+    #else
         iajb = iajb_Full(C,I,p.no1,p.nalpha,p.nbf,p.nbf5)
         return iajb
-    end
+    #end
 
 end
 
