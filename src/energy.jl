@@ -242,6 +242,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 
     t2 = time()
     @printf("Elapsed time: %7.2f Seconds\n", t2-t1)
+    flush(stdout)
 
     if do_nofmp2
         nofmp2(n,C,H,I,b_mnl,E_nuc,p,nofmp2strategy,tolnofmp2)
