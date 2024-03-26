@@ -246,7 +246,7 @@ function fchk(filename,p,bset,jobtype,E_t,elag,n,C)
             idata += 1
 	    @printf(f," % .8e",DM[mu,nu])
             if(idata%5==0 || idata==p.nbf*(p.nbf+1)/2)
-                @print(f,"\n")
+                @printf(f,"\n")
 	    end
         end
     end
