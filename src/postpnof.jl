@@ -1212,8 +1212,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     MM = nothing
     
     vals = real.(vals)
-    vals_neg = vals[vals.<0]
-    vals_pos = vals[vals.>=0]
+    vals_neg = vals[vals.<=0.04]
+    vals_pos = vals[vals.>0.04]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
@@ -1255,8 +1255,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     MM = nothing
 
     vals = real.(vals)
-    vals_neg = vals[vals.<0]
-    vals_pos = vals[vals.>=0]
+    vals_neg = vals[vals.<0.04]
+    vals_pos = vals[vals.>=0.04]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
