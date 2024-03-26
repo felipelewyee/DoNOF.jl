@@ -995,6 +995,155 @@ function ECorrNonDyn(n,C,H,I,b_mnl,p)
     return ECndHF,ECndl
 end
 
+function build_M_ERPA(nbf5,A)
+    M = zeros(nbf5^2,nbf5^2)
+    Threads.@threads for s in 1:nbf5
+        Threads.@threads for r in s+1:nbf5
+	    i = Int64((2*nbf5*s - s^2 - s)/2 + r - nbf5)
+            j = 0
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+		end
+	    end
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+		end
+	    end
+            for p in 1:nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]
+	    end
+	end
+    end
+    Threads.@threads for s in 1:nbf5
+        Threads.@threads for r in s+1:nbf5
+	    i = Int64(nbf5*(nbf5-1)/2 + (2*nbf5*s - s^2 - s)/2 + r - nbf5)
+            j = 0
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+                end
+            end
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+                end
+            end
+            for p in 1:nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]
+            end
+        end
+    end
+    Threads.@threads for r in 1:nbf5
+        i = Int64(nbf5*(nbf5-1) + r)
+        j = 0
+        for q in 1:nbf5
+            for p in q+1:nbf5
+                j += 1
+                M[i,j] = A[r,r,p,q]
+            end
+        end
+        for q in 1:nbf5
+            for p in q+1:nbf5
+                j += 1
+                M[i,j] = A[r,r,q,p]
+            end
+        end
+        for p in 1:nbf5
+            j += 1
+            M[i,j] = A[r,r,p,p]
+        end
+    end
+    return M
+end
+
+function build_dN_ERPA(nbf5,n)
+    dN = zeros(Int64(nbf5*(nbf5-1)/2))
+    Threads.@threads for s in 1:nbf5
+        Threads.@threads for r in s+1:nbf5
+            i = Int64((2*nbf5*s - s^2 - s)/2 + r - nbf5)
+            dN[i] = +(n[s] - n[r])
+        end
+    end
+    return dN
+end
+
+function build_M_ERPA2(nbf5,A,c)
+    M = zeros(nbf5^2,nbf5^2)
+    Threads.@threads for s in 1:nbf5
+        Threads.@threads for r in s+1:nbf5
+            i = Int64((2*nbf5*s - s^2 - s)/2 + r - nbf5)
+            j = 0
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+                end
+            end
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+                end
+            end
+            for p in 1:nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]*1/2*(c[s]/(c[p]*(c[r]+c[s])))
+            end
+        end
+    end
+    Threads.@threads for s in 1:nbf5
+        Threads.@threads for r in s+1:nbf5
+            i = Int64(nbf5*(nbf5-1)/2 + (2*nbf5*s - s^2 - s)/2 + r - nbf5)
+            j = 0
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,q,p]
+                end
+            end
+            for q in 1:nbf5
+                for p in q+1:nbf5
+                    j += 1
+                    M[i,j] = A[r,s,p,q]
+                end
+            end
+            for p in 1:nbf5
+                j += 1
+                M[i,j] = A[r,s,p,p]*1/2*(c[r]/(c[p]*(c[r]+c[s])))
+            end
+        end
+    end
+    Threads.@threads for r in 1:nbf5
+        i = Int64(nbf5*(nbf5-1) + r)
+        j = 0
+        for q in 1:nbf5
+            for p in q+1:nbf5
+                j += 1
+                M[i,j] = A[r,r,p,q]*(1/c[r])
+            end
+        end
+        for q in 1:nbf5
+            for p in q+1:nbf5
+                j += 1
+                M[i,j] = A[r,r,q,p]*(1/c[r])
+            end
+        end
+        for p in 1:nbf5
+            j += 1
+            M[i,j] = A[r,r,p,p]*(1/(4*c[p]*c[r]))
+        end
+    end
+    return M
+end
+
 function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     println("\n---------------")
@@ -1081,80 +1230,10 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     println("Building M")
     flush(stdout)
 
-    M = zeros(pp.nbf5^2,pp.nbf5^2)
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-	    i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
-            j = 0
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j = Int64((2*pp.nbf5*q - q^2 - q)/2 + p - pp.nbf5)
-                    M[i,j] = A[r,s,p,q]
-		end
-	    end
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j = Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*q - q^2 - q)/2 + p - pp.nbf5)
-                    M[i,j] = A[r,s,q,p]
-		end
-	    end
-            for p in 1:pp.nbf5
-                j = Int64(pp.nbf5*(pp.nbf5-1) + p)
-                M[i,j] = A[r,s,p,p]
-	    end
-	end
-    end
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-	    i = Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
-            j = 0
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j += 1
-                    M[i,j] = A[r,s,q,p]
-                end
-            end
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j += 1
-                    M[i,j] = A[r,s,p,q]
-                end
-            end
-            for p in 1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,s,p,p]
-            end
-        end
-    end
-    for r in 1:pp.nbf5
-        i = Int64(pp.nbf5*(pp.nbf5-1) + r)
-        j = 0
-        for q in 1:pp.nbf5
-            for p in q+1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,r,p,q]
-            end
-        end
-        for q in 1:pp.nbf5
-            for p in q+1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,r,q,p]
-            end
-        end
-        for p in 1:pp.nbf5
-            j += 1
-            M[i,j] = A[r,r,p,p]
-        end
-    end
-    
+    M = build_M_ERPA(pp.nbf5,A)
+    dN = build_dN_ERPA(pp.nbf5,n)
+
     v = zeros(pp.nbf5*(pp.nbf5-1))
-    dN = zeros(Int64(pp.nbf5*(pp.nbf5-1)/2))
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
-            dN[i] = +(n[s] - n[r])
-        end
-    end
     v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
     v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
 
@@ -1273,81 +1352,10 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ######## ERPA2 ########
 
-    M = zeros(pp.nbf5^2,pp.nbf5^2)
-    i = 0
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
-            j = 0
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j += 1
-                    M[i,j] = A[r,s,p,q]
-                end
-            end
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j += 1
-                    M[i,j] = A[r,s,q,p]
-                end
-            end
-            for p in 1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,s,p,p]*1/2*(c[s]/(c[p]*(c[r]+c[s])))
-            end
-        end
-    end
-    for s in 1:pp.nbf5
-        for r in s+1:pp.nbf5
-            i = Int64(pp.nbf5*(pp.nbf5-1)/2 + (2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
-            j = 0
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j += 1
-                    M[i,j] = A[r,s,q,p]
-                end
-            end
-            for q in 1:pp.nbf5
-                for p in q+1:pp.nbf5
-                    j += 1
-                    M[i,j] = A[r,s,p,q]
-                end
-            end
-            for p in 1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,s,p,p]*1/2*(c[r]/(c[p]*(c[r]+c[s])))
-            end
-        end
-    end
-    for r in 1:pp.nbf5
-        i = Int64(pp.nbf5*(pp.nbf5-1) + r)
-        j = 0
-        for q in 1:pp.nbf5
-            for p in q+1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,r,p,q]*(1/c[r])
-            end
-        end
-        for q in 1:pp.nbf5
-            for p in q+1:pp.nbf5
-                j += 1
-                M[i,j] = A[r,r,q,p]*(1/c[r])
-            end
-        end
-        for p in 1:pp.nbf5
-            j += 1
-            M[i,j] = A[r,r,p,p]*(1/(4*c[p]*c[r]))
-        end
-    end
+    M = build_M_ERPA2(pp.nbf5,A,c)
+    dN = build_dN_ERPA(pp.nbf5,n)
 
     v = zeros(pp.nbf5^2)
-    dN = zeros(Int64(pp.nbf5*(pp.nbf5-1)/2))
-    Threads.@threads for s in 1:pp.nbf5
-        Threads.@threads for r in s+1:pp.nbf5
-            i = Int64((2*pp.nbf5*s - s^2 - s)/2 + r - pp.nbf5)
-            dN[i] = +(n[s] - n[r])
-        end
-    end
     v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
     v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
     v[Int64(pp.nbf5*(pp.nbf5-1)+1):end] .= 1
