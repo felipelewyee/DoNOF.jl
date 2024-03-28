@@ -1237,6 +1237,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
     v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
 
+    println("Sorting M")
+    flush(stdout)
+
     sort_idx = sortperm(abs.(dN),rev=true)
     idx = length(dN)
     for (count,i) in enumerate(sort_idx)
