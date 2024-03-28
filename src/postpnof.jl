@@ -1237,31 +1237,57 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
     v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
 
-    idx = []
-    for (i,vi) in enumerate(v)
-        if(abs(vi) < tol_dn)
-            push!(idx,i)
+    sort_idx = sortperm(abs.(dN),rev=true)
+    idx = length(dN)
+    for (count,i) in enumerate(sort_idx)
+        if(abs(dN[i]) < tol_dn)
+            idx = count-1
+	    break
         end
     end
 
-    println("Sorting M")
-    flush(stdout)
-    dim = (pp.nbf5)*(pp.nbf5-1) - size(idx)[1]
-    
-    for (i,j) in enumerate(idx)
-        tmp = v[j-(i-1)]
-        v[j-(i-1):end-1] = v[j-(i-1)+1:end]
-        v[end] = tmp
+    significant = sort_idx[1:idx]
+    no_significant = sort_idx[idx+1:end]
+    empt = collect(pp.nbf5*(pp.nbf5-1)+1:pp.nbf5^2)
 
-        tmp = M[j-(i-1),:]
-        M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
-        M[end,:] = tmp
-        tmp = M[:,j-(i-1)]
-        M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
-        M[:,end] = tmp
-    end
+    new_idx = vcat(significant,length(dN) .+ significant)
+    new_idx = vcat(new_idx,no_significant)
+    new_idx = vcat(new_idx,length(dN) .+ no_significant)
+    v = v[new_idx]
 
-    @printf("M_ERPA Orig dim: %i New dim: %i Elements below tol_dN: %i \n", (pp.nbf5)*(pp.nbf5-1), dim, size(idx)[1])
+    new_idx = vcat(significant, length(dN) .+ significant)
+    new_idx = vcat(new_idx,empt)
+    new_idx = vcat(new_idx,no_significant)
+    new_idx = vcat(new_idx,length(dN) .+ no_significant)
+    M = M[new_idx,new_idx]
+
+    dim = 2*length(significant)
+
+#    idx = []
+#    for (i,vi) in enumerate(v)
+#        if(abs(vi) < tol_dn)
+#            push!(idx,i)
+#        end
+#    end
+#
+#    println("Sorting M")
+#    flush(stdout)
+#    dim = (pp.nbf5)*(pp.nbf5-1) - size(idx)[1]
+#    
+#    for (i,j) in enumerate(idx)
+#        tmp = v[j-(i-1)]
+#        v[j-(i-1):end-1] = v[j-(i-1)+1:end]
+#        v[end] = tmp
+#
+#        tmp = M[j-(i-1),:]
+#        M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
+#        M[end,:] = tmp
+#        tmp = M[:,j-(i-1)]
+#        M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
+#        M[:,end] = tmp
+#    end
+
+    @printf("M_ERPA Orig dim: %i New dim: %i Elements below tol_dN: %i \n", (pp.nbf5)*(pp.nbf5-1), dim, 2*length(no_significant))
     flush(stdout)
 
     ######## ERPA0 ########
@@ -1361,28 +1387,50 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     v[Int64(pp.nbf5*(pp.nbf5-1)+1):end] .= 1
 
     A = nothing
-    
-    idx = []
-    for (i,vi) in enumerate(v)
-        if(abs(vi) < tol_dn)
-            push!(idx,i)
+
+    sort_idx = sortperm(abs.(dN),rev=true)
+    idx = length(dN)
+    for (count,i) in enumerate(sort_idx)
+        if(abs(dN[i]) < tol_dn)
+            idx = count-1
+            break
         end
     end
 
-    dim = pp.nbf5^2 - size(idx)[1]
+    significant = sort_idx[1:idx]
+    no_significant = sort_idx[idx+1:end]
+    empt = collect(pp.nbf5*(pp.nbf5-1)+1:pp.nbf5^2)
 
-    for (i,j) in enumerate(idx)
-        tmp = v[j-(i-1)]
-        v[j-(i-1):end-1] = v[j-(i-1)+1:end]
-        v[end] = tmp
+    new_idx = vcat(significant,length(dN) .+ significant)
+    new_idx = vcat(new_idx,empt)
+    new_idx = vcat(new_idx,no_significant)
+    new_idx = vcat(new_idx,length(dN) .+ no_significant)
+    v = v[new_idx]
+    M = M[new_idx,new_idx]
 
-        tmp = M[j-(i-1),:]
-        M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
-        M[end,:] = tmp
-        tmp = M[:,j-(i-1)]
-        M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
-        M[:,end] = tmp
-    end
+    dim = 2*length(significant) + length(empt)
+
+    #idx = []
+    #for (i,vi) in enumerate(v)
+    #    if(abs(vi) < tol_dn)
+    #        push!(idx,i)
+    #    end
+    #end
+
+    #dim = pp.nbf5^2 - size(idx)[1]
+
+    #for (i,j) in enumerate(idx)
+    #    tmp = v[j-(i-1)]
+    #    v[j-(i-1):end-1] = v[j-(i-1)+1:end]
+    #    v[end] = tmp
+
+    #    tmp = M[j-(i-1),:]
+    #    M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
+    #    M[end,:] = tmp
+    #    tmp = M[:,j-(i-1)]
+    #    M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
+    #    M[:,end] = tmp
+    #end
 
     M_ERPA2 = M[1:dim,1:dim]
     M = nothing
