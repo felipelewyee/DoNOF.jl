@@ -1,7 +1,7 @@
 name = "DoNOF"
 uuid = "c2cb89bc-8ac9-4fc1-90b0-361a3529c1c9"
 authors = ["Juan Felipe Huan Lew Yee <felipe.lew.yee@quimica.unam.mx>", "Jorge Martín del Campo Ramírez <jmdelc@unam.mx>", "Mario Piris <mario.piris@ehu.eus>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 GaussianBasis = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"

@@ -6,79 +6,46 @@ This is a Julia version of the [DoNOF](https://github.com/DoNOF/DoNOFsw/) (Donos
 
 # Requirements
 
-You should have Julia installed. 
+You should have [Julia installed](https://julialang.org/downloads)
 
-Example:
-~~~
-wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.2-linux-x86_64.tar.gz
-tar zxvf julia-1.9.2-linux-x86_64.tar.gz
-sudo mv julia-1.9.2 /opt
-~~~
-Append to .bashrc
-~~~
-export PATH="$PATH:/opt/julia-1.9.2/bin"
-~~~
-or simple do: apt install julia
+# Installation (for normal execution)
 
-# Installation (for internal development)
+Open a julia prompt, enter to the Pkg REPL by pressing ], and simply add DoNOF:
+~~~
+add DoNOF
+~~~
 
-For development, you only need to clone DoNOF.jl from github and change to the project directory
-~~~
-git clone https://github.com/felipelewyee/DoNOF.jl.git
-cd DoNOF.jl
-~~~
-[Suggestion] Install Revise.jl (only the first time)
-~~~
-julia
-]
-activate .
-add Revise
-~~~
-To develop DoNOF.jl
-~~~
-julia
-]
-activate .
-# Return to green prompt (press backspace key)
-using Revise # Assuming that it is installed
-using DoNOF
-~~~
-Example of input
+# Example
+
+You can copy-paste the following directly on the Julia prompt to run a calculation:
 ~~~
 using DoNOF
 
 mol = """
 0 1
-  O  0.0000   0.000   0.121
-  H  0.0000   0.751  -0.485
-  H  0.0000  -0.751  -0.485
+ O  0.0000   0.000   0.121
+ H  0.0000   0.751  -0.485
+ H  0.0000  -0.751  -0.485
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
+bset,p = DoNOF.molecule(mol,"cc-pvtz")
 
 p.ipnof = 8
 
 p.RI = true
 p.gpu = false
 
-p.method = "ID"
+p.orb_method = "Rotations"
 
-E,C,gamma,fmiug0 = DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true,do_mbpt=false,do_translate_to_donofsw=true)
+E,C,gamma,fmiug0 = DoNOF.energy(bset,p)
 ~~~
 
-# Installation (for normal execution)
-
-Open a julia prompt and do:
-~~~
-add https://github.com/felipelewyee/DoNOF.jl # Only the first time
-using DoNOF
-~~~
-then you can do
-~~~
-input("example.jl")
-~~~
-or simply copy and paste the content of the file in the prompt.
-You can also do
+You can also save the input in a file and run it directly on the command line:
 ~~~
 julia example.jl > example.out
+~~~
+
+Remember to have configured the number of threads that Jullia can use for parallelism, for example:
+~~~
+export JULIA_NUM_THREADS=12
 ~~~
