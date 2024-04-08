@@ -1,6 +1,6 @@
 export energy
 
-function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false,do_mbpt=false,freeze_occ=false,do_translate_to_donofsw=false,do_erpa=false)
+function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp2=false,printmode=true,nofmp2strategy="numerical",tolnofmp2=1e-10,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=true,do_m_diagnostic=true,do_mbpt=false,freeze_occ=false,do_translate_to_donofsw=false,do_erpa=false)
 
     t0 = time()
     println("Computing Integrals")
@@ -72,7 +72,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     end
 
     elag = zeros(p.nbf,p.nbf)
-    gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
+    E_occ,nit_occ,success_occ,gamma,n,cj12,ck1 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
     iloop = 0
     itlim = 1
@@ -88,114 +88,53 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
         println(" ")
     end
 
-    if p.orb_method == "ID"
-        @printf("  %6s  %6s %8s %13s %15s %14s\n","Nitext","Nitint","Eelec","Etot","Ediff","maxdiff")
+    @printf("  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n","Nitext","Nit_orb","Time","Nit_occ","Time","Eelec","Etot","Ediff","maxdiff","Grad_orb","Grad_occ")
 
-        for i_ext in 1:p.maxit
-	    #ta1 = time()
-            convgdelag,E,E_diff,sumdiff_old,itlim,fmiug0,C,elag = orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode)
-	    #ta2 = time()
+    for i_ext in 1:p.maxit
+	ta1 = time()
+        if p.orb_method == "ID"
+            E_orb,C,nit_orb,success_orb,itlim,fmiug0 = orboptr(C,n,H,I,b_mnl,cj12,ck12,i_ext,itlim,fmiug0,p,printmode)
+        elseif p.orb_method == "Rotations"
+            E_orb,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
+        end
+	ta2 = time()
     
-            gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
-	    #ta3 = time()
-	    #@printf("Orb: %6.2e Occ: %6.2e\n", ta2-ta1, ta3-ta2)
-	    if(p.occ_method=="Softmax")
-                C,gamma = order_occupations_softmax(C,gamma,H,I,b_mnl,p)
-	    end
-
-            Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
-            save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
-	    flush(stdout)
-            if convgdelag
-                break
-    	    end
-            E_old = E
-        end
-    end
-
-    if p.orb_method == "Rotations"
-
-	@printf("  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n","Nitext","Nit_orb","Time","Nit_occ","Time","Eelec","Etot","Ediff","maxdiff","Grad_orb","Grad_occ")
-        for i_ext in 1:p.maxit
-	    ta1 = time()
-            E,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
-	    ta2 = time()
-
-            gamma,n,cj12,ck12,nit_occ = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
-	    ta3 = time()
-	    if(p.occ_method=="Softmax")
-                C,gamma = order_occupations_softmax(C,gamma,H,I,b_mnl,p)
-	    end
-
-            Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
-
-            y = zeros(p.nvar)
-            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
-            cj12,ck12 = PNOFi_selector(n,p)
-            grad_orb = calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p)
-            J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
-            grad_occ = calcoccg(gamma,J_MO,K_MO,H_core,p)
-
-            M = M_diagnostic(p,n,get_value=true)
-	    @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_old,maxdiff,norm(grad_orb),norm(grad_occ),M)
-
-            if isnothing(fmiug0)
-                save(p.title*".jld", "E", Etmp, "C", C,"n",n)
-	    else
-                save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
-	    end
-	    flush(stdout)
-
-	    if(norm(grad_orb) < p.threshgorb && norm(grad_occ) < p.threshgocc)
-		 break
-            end
-
-	    #if maxdiff<p.threshl && abs(E - E_old)<p.threshe
-	    #    break
-	    #end
-            E_old = E
-        end
-
-    end
-
-    if p.orb_method == "Combined"
-
-	    @printf("  %6s  %6s %6s      %8s %13s %15s %12s    %8s  %8s  %8s\n","Nitext","Nitint","Time","Eelec","Etot","Ediff","maxdiff","Grad_tot","Grad_orb","Grad_occ")
-        for i_ext in 1:p.maxit
-            ta1 = time()
-            E,C,gamma,n,nit,success = comb(gamma,C,H,I,b_mnl,p)
-            ta2 = time()
-
-            n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
-            cj12,ck12 = PNOFi_selector(n,p)
-            Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
-
-            x = zeros(p.nvar+p.nv)
-	    x[p.nvar+1:end] = gamma
-            grad = calccombg(x,C,H,I,b_mnl,p)
-            grad_norm = norm(grad)
-	    grad_orb, grad_occ = grad[1:p.nvar], grad[p.nvar+1:end]
-  
-            M = M_diagnostic(p,n,get_value=true)
-	    @printf("%6i %7i %10.1e %14.8f %14.8f %14.8f %10.6f   %3.1e   %3.1e   %3.1e %4.2f\n",i_ext,nit,ta2-ta1,E,E+E_nuc,E-E_old,maxdiff,norm(grad),norm(grad_orb),norm(grad_occ),M)
-
-            if isnothing(fmiug0)
-                save(p.title*".jld", "E", Etmp, "C", C,"n",n)
-	    else
-                save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
-	    end
-            flush(stdout)
-
-	    if(grad_norm < p.threshgcomb)
-		break
-	    end
-            E_old = E
+        E_occ,nit_occ,success_occ,gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
+	if(p.occ_method=="Softmax")
+            C,gamma = order_occupations_softmax(C,gamma,H,I,b_mnl,p)
 	end
+	ta3 = time()
+
+        E = E_orb
+        E_diff = E-E_old
+        E_old = E
+
+        Etmp,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
+
+        y = zeros(p.nvar)
+        n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
+        cj12,ck12 = PNOFi_selector(n,p)
+        grad_orb = calcorbg(y,n,cj12,ck12,C,H,I,b_mnl,p)
+        J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
+        grad_occ = calcoccg(gamma,J_MO,K_MO,H_core,p)
+
+        M = M_diagnostic(p,n,get_value=true)
+        @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_diff,maxdiff,norm(grad_orb),norm(grad_occ),M)
+
+        if isnothing(fmiug0)
+            save(p.title*".jld", "E", Etmp, "C", C,"n",n)
+        else
+            save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
+        end
+        flush(stdout)
+
+        if(norm(grad_orb) < p.threshgorb && norm(grad_occ) < p.threshgocc)
+            break
+        end
+
     end
 
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     C,n,elag = order_subspaces(C,n,elag,H,I,b_mnl,p)
-
     if isnothing(fmiug0)
         save(p.title*".jld", "C", C,"n",n)
     else

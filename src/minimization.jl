@@ -77,11 +77,7 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
     if p.ndoc>0 && !freeze_occ
         J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
-        if p.gradient=="analytical"
-		res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, BFGS(), Optim.Options(g_abstol = p.threshen), inplace=false)
-        elseif p.gradient=="numerical"
-	   res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma,ConjugateGradient())
-	end
+	res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p),gamma->calcoccg(gamma,J_MO,K_MO,H_core,p),gamma, ConjugateGradient(), Optim.Options(g_abstol = p.threshen), inplace=false)
 	gamma = res.minimizer
     end
 
@@ -89,37 +85,31 @@ function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
     cj12,ck12 = PNOFi_selector(n,p)
 
     if p.ndoc>0 && !freeze_occ
-        return gamma,n,cj12,ck12,res.iterations
+        return res.minimum, res.iterations, res.ls_success, gamma, n, cj12, ck12
     else
-        return gamma,n,cj12,ck12,0
+        return -1, 0, true, gamma, n, cj12, ck12
     end
 end
 
-function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fmiug0,E_nuc,p,printmode=true)
+function orboptr(C,n,H,I,b_mnl,cj12,ck12,i_ext,itlim,fmiug0,p,printmode=true)
 
-    convgdelag = false
+    i_int = 0
+    success_orb = false
 
     E,elag,sumdiff,maxdiff = ENERGY1r(C,n,H,I,b_mnl,cj12,ck12,p)
 
-    #E_diff = E-E_old
-    #P_CONV = abs(E_diff)
-    #E_old = E
-
-    if maxdiff<p.threshl && abs(E_diff)<p.threshe
-        convgdelag = true
-        if printmode
-	    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f %1i\n",i_ext,0,E,E+E_nuc,E_diff,maxdiff,p.nzeros)
-	end
-        return convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag
+    if maxdiff<p.threshl
+        success_orb = true
+        return E,C,i_int,success_orb,itlim,fmiug0
     end
 
-    if p.scaling && i_ext>2 && i_ext >= itlim && sumdiff > sumdiff_old
+    if p.scaling && i_ext>2 && i_ext >= itlim #&& sumdiff > sumdiff_old
         p.nzeros = p.nzeros + 1
         itlim = i_ext + p.itziter
-        #if p.nzeros>p.nzerosm
-        #    p.nzeros = p.nzerosr
-        if p.nzeros>abs(trunc(Int,log10(maxdiff)))+1
-            p.nzeros = p.nzerosr#abs(trunc(Int,log10(maxdiff)))
+        if p.nzeros>p.nzerosm
+            p.nzeros = p.nzerosr
+        #if p.nzeros>abs(trunc(Int,log10(maxdiff)))+1
+        #    p.nzeros = p.nzerosr#abs(trunc(Int,log10(maxdiff)))
 	end
     end
     sumdiff_old = sumdiff
@@ -159,16 +149,10 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
         E_diff2 = E-E_old2
 
         if abs(E_diff2)<p.threshec || i_int==maxlp
-            E_diff = E-E_old
-            E_old = E
-            if printmode
-                M = M_diagnostic(p,n,get_value=true)
-		@printf("%6i %6i %14.8f %14.8f %14.8f %10.6f %1i %4.2f\n",i_ext,i_int,E,E+E_nuc,E_diff,maxdiff,p.nzeros,M)
-	    end
-            break
+	    break
         end
     end
-    return convgdelag,E_old,E_diff,sumdiff_old,itlim,fmiug0,C,elag
+    return E,C,iloop,success_orb,itlim,fmiug0
 end
 
 function orbopt_rotations(gamma,C,H,I,b_mnl,p)
@@ -178,7 +162,7 @@ function orbopt_rotations(gamma,C,H,I,b_mnl,p)
     n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
-    res = optimize(Optim.only_fg!((F,G,y)->calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,p)), y, LBFGS(), Optim.Options(iterations = p.maxloop), inplace=false)
+    res = optimize(Optim.only_fg!((F,G,y)->calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,p)), y, ConjugateGradient(), Optim.Options(iterations = p.maxloop), inplace=false)
 
     E = res.minimum
     y = res.minimizer
@@ -195,7 +179,7 @@ function comb(gamma,C,H,I,b_mnl,p)
     x = zeros(p.nvar+p.nv)
     x[p.nvar+1:end] = gamma
 
-    res = optimize(Optim.only_fg!((F,G,x)->calccombeg(F,G,x,C,H,I,b_mnl,p)), x, LBFGS(), Optim.Options(iterations = p.maxloop), inplace=false)
+    res = optimize(Optim.only_fg!((F,G,x)->calccombeg(F,G,x,C,H,I,b_mnl,p)), x, ConjugateGradient(), Optim.Options(iterations = p.maxloop), inplace=false)
 
     E = res.minimum
     x = res.minimizer

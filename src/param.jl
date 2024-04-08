@@ -31,7 +31,6 @@ mutable struct Param
     threshen::Float64
     threshgorb::Float64
     threshgocc::Float64
-    threshgcomb::Float64
     scaling::Bool
     nzeros::Int64
     nzerosm::Int64
@@ -44,8 +43,6 @@ mutable struct Param
     ncwo::Int64
     noptorb::Int64
     nv::Int64
-    gradient::String
-    optimizer::String
     gpu::Bool
     RI::Bool
     HighSpin::Bool
@@ -137,9 +134,8 @@ function Param(bset,mul,charge)
     threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
     threshen = 10^-4 # Convergencia  de la energía en optimización de ocupaciones
-    threshgorb = 5*10^-4   # Convergencia del gradiente orbital
-    threshgocc = 5*10^-4   # Convergencia del gradiente de numeros de ocupacion
-    threshgcomb = 5*10^-4   # Convergencia del gradiente combinado
+    threshgorb = 10^-3   # Convergencia del gradiente orbital
+    threshgocc = 10^-3   # Convergencia del gradiente de numeros de ocupacion
     scaling = true     # Scaling for f
     nzeros = 0
     nzerosm = 5
@@ -152,15 +148,13 @@ function Param(bset,mul,charge)
     ncwo = ncwo         # Número de orbitales débilmente ocupados acoplados a cada orbital fueremtente ocupado
     noptorb = noptorb   # Número de orbitales a optimizar Nbf5 <= Noptorb <= Nbf
     nv = nbf5 - no1 - nsoc #ncwo*ndoc
-    gradient = "analytical"
-    optimizer = "BFGS"
     gpu = false
     RI = false
 
     HighSpin = false
     MSpin = 0
 
-    occ_method = "Trigonometric"
+    occ_method = "Softmax"
     orb_method = "ID"
     nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
@@ -198,7 +192,6 @@ function Param(bset,mul,charge)
     threshen, 
     threshgorb, 
     threshgocc, 
-    threshgcomb, 
     scaling, 
     nzeros, 
     nzerosm, 
@@ -211,7 +204,6 @@ function Param(bset,mul,charge)
     ncwo, 
     noptorb, 
     nv, 
-    gradient, 
     optimizer, 
     gpu,
     RI,
