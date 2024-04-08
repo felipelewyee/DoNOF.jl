@@ -204,7 +204,6 @@ function Param(bset,mul,charge)
     ncwo, 
     noptorb, 
     nv, 
-    optimizer, 
     gpu,
     RI,
     HighSpin,
