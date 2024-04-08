@@ -124,7 +124,7 @@ function orboptr(C,n,H,I,b_mnl,cj12,ck12,E_old,E_diff,sumdiff_old,i_ext,itlim,fm
     end
     sumdiff_old = sumdiff
 
-    if fmiug0==nothing && i_ext==1
+    if fmiug0===nothing && i_ext==1
         maxlp = 1
     else
         maxlp = p.maxloop

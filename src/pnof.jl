@@ -824,7 +824,7 @@ function calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,pa)
 
     elag,Hmat = compute_Lagrange2(Cnew,n,H,I,b_mnl,cj12,ck12,pa)
 
-    if G!=nothing
+    if G!==nothing
         grad = 4*elag - 4*elag'
         grads = zeros(pa.nvar)
         nn = 1
@@ -836,7 +836,7 @@ function calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,pa)
         end
         G .= grads
     end
-    if F!=nothing
+    if F!==nothing
         E = computeE_elec(Hmat,n,elag,pa)
         return E
     end
@@ -892,11 +892,11 @@ function calccombeg(F,G,x,C,H,I,b_mnl,p)
 
     J_MO,K_MO,H_core = computeJKH_MO(Cnew,H,I,b_mnl,p)
 
-    if G!=nothing
+    if G!==nothing
         grad = zeros(p.nvar + p.nv)
 
         grad[p.nvar+1:end] = calcoccg(gamma,J_MO,K_MO,H_core,p)
-        if F!=nothing
+        if F!==nothing
 	    gv = view(grad,1:p.nvar)
             E = calcorbeg(F,gv,y,n,cj12,ck12,C,H,I,b_mnl,p)
 	    G .= grad
@@ -906,7 +906,7 @@ function calccombeg(F,G,x,C,H,I,b_mnl,p)
 	    G .= grad
 	end
     end
-    if F!=nothing
+    if F!==nothing
         E = calcocce(gamma,J_MO,K_MO,H_core,p)
 	return E
     end

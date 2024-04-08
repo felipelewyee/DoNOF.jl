@@ -279,33 +279,3 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     return E_nuc + E,C,n,fmiug0
 
 end
-
-function brute_force_energy(bset,p;intents=5,C=nothing,gamma=nothing,fmiug0=nothing,do_hfidr=true,RI_last=false,gpu_last=false,do_ekt=false,do_mulliken_pop=false,do_lowdin_pop=false,do_m_diagnostic=false)
-
-    E,C,gamma,fmiug0 = energy(bset,p,C=C,gamma=gamma,fmiug0=fmiug0,do_hfidr=do_hfidr)
-    E_min = E
-    C_min = C
-    gamma_min = gamma
-    fmiug0_min = fmiug0
-
-    for i in 1:intents
-        autozeros(p)
-
-        E,C,gamma,fmiug0 = energy(bset,p,C=C,gamma=gamma,fmiug0=nothing,do_hfidr=false)
-        if(E<E_min)
-            E_min = E
-            C_min = C
-            gamma_min = gamma
-            fmiug0_min = fmiug0
-        end
-    end
-
-    p.RI = RI_last
-    p.gpu = gpu_last
-    E,C,gamma,fmiug0 = energy(bset,p,C=C_min,gamma=gamma_min,fmiug0=fmiug0_min,do_hfidr=false,do_ekt=do_ekt,do_mulliken_pop=do_mulliken_pop,do_lowdin_pop=do_lowdin_pop,do_m_diagnostic=do_m_diagnostic)
-
-    @printf("Best Total NOF Energy %15.7f\n",E)
-
-    return E,C,gamma,fmiug0
-
-end
