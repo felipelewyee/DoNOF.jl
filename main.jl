@@ -1,3 +1,4 @@
+using CUDA, KernelAbstractions, NNlibCUDA, cuTENSOR
 using DoNOF
 
 mol = """
@@ -12,8 +13,8 @@ bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 p.ipnof = 8
 
 p.RI = true
-p.gpu = false
+p.gpu = true
 
 p.orb_method = "Rotations"
 
-E,C,gamma,fmiug0 = DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true)
+DoNOF.energy(bset,p,do_hfidr=false,do_m_diagnostic=true)

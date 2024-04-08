@@ -6,7 +6,11 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     println("Computing Integrals")
     flush(stdout)
 
-    S,T,V,H,I,b_mnl = compute_integrals(bset,p)
+    if p.gpu
+        S,T,V,H,I,b_mnl = compute_integrals(bset,p,true)
+    else
+        S,T,V,H,I,b_mnl = compute_integrals(bset,p)
+    end
 
     t1 = time()
     @printf("Elapsed time: %7.2f Seconds\n\n", t1-t0)
@@ -74,7 +78,6 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     elag = zeros(p.nbf,p.nbf)
     E_occ,nit_occ,success_occ,gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
-    iloop = 0
     itlim = 1
     E = 9999#EHF
     E_old = 9999#EHF
