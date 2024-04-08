@@ -119,7 +119,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
         grad_occ = calcoccg(gamma,J_MO,K_MO,H_core,p)
 
         M = M_diagnostic(p,n,get_value=true)
-        @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E-E_diff,maxdiff,norm(grad_orb),norm(grad_occ),M)
+        @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",i_ext,nit_orb,ta2-ta1,nit_occ,ta3-ta2,E,E+E_nuc,E_diff,maxdiff,norm(grad_orb),norm(grad_occ),M)
 
         if isnothing(fmiug0)
             save(p.title*".jld", "E", Etmp, "C", C,"n",n)
