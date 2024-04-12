@@ -162,9 +162,6 @@ function DoNOF.compute_Lagrange2(C,n,H,I,b_mnl::CuArray,cj12,ck12,pa)
 
     end
 
-    cj12[diagind(cj12)] .= 0
-    ck12[diagind(ck12)] .= 0
-
     elag = CUDA.zeros(typeof(b_mnl).parameters[1],pa.nbf,pa.nbf)
     cj12 = CuArray{typeof(b_mnl).parameters[1]}(cj12)
     ck12 = CuArray{typeof(b_mnl).parameters[1]}(ck12)

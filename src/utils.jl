@@ -15,8 +15,6 @@ function compute_Lagrange2(C,n,H,I,b_mnl,cj12,ck12,pa)
     end
 
     elag = zeros(pa.nbf,pa.nbf)
-    cj12[diagind(cj12)] .= 0
-    ck12[diagind(ck12)] .= 0
 
     n_beta =        view(n,1:pa.nbeta)
     n_alpha =       view(n,pa.nalpha+1:pa.nbf5)
