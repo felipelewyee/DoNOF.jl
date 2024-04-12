@@ -86,7 +86,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 
     if printmode 
         println(" ")
-        @printf("PNOF%i Calculation\n",p.ipnof)
+	@printf("PNOF%i/%s Calculation\n",p.ipnof,p.orb_method)
         println("==================")
         println(" ")
     end
