@@ -157,22 +157,64 @@ end
 
 function orbopt_rotations(gamma,C,H,I,b_mnl,p)
 
-    y = zeros(p.nvar)
-
     n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
 
-    res = optimize(Optim.only_fg!((F,G,y)->calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,p)), y, ConjugateGradient(), Optim.Options(iterations = p.maxloop), inplace=false)
+    if p.orb_method=="Rotations"
 
-    E = res.minimum
-    y = res.minimizer
+        y = zeros(p.nvar)
+        res = optimize(Optim.only_fg!((F,G,y)->calcorbeg(F,G,y,n,cj12,ck12,C,H,I,b_mnl,p)), y, ConjugateGradient(), Optim.Options(iterations = p.maxloop), inplace=false)
+    
+        E = res.minimum
+        y = res.minimizer
+    
+        C = rotate_orbital(y,C,p)
+        nit = res.iterations
+        success = res.g_converged
 
-    C = rotate_orbital(y,C,p)
-    nit = res.iterations
-    success = res.g_converged
+    elseif p.orb_method=="Rotations_Experimental"  
+        E,C,nit,success = experimental_minimize_rotations(n,cj12,ck12,C,H,I,b_mnl,p)
+    end
 
     return E,C,nit,success
 end
+
+#### Experimental ####
+function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
+
+    y = zeros(p.nvar)
+    Id = 1. * Matrix(I, p.nbf, p.nbf)
+    nit = 0
+    E = 0
+    for i in 1:30
+	nit = nit + 1
+        C = rotate_orbital(y,C,p)
+
+        elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+
+        E = computeE_elec(Hmat,n,elag,p)
+
+        grad = 4*elag - 4*elag'
+        grads = zeros(p.nvar)
+        nn = 1
+        for i in 1:p.nbf5
+            for j in i+1:p.nbf
+                grads[nn] = grad[i,j]
+                nn += 1
+            end
+        end
+	y = -0.01*grads
+    end
+    if nit < 30
+        success = true 
+    else
+        success = false
+    end
+
+    return E,C,nit,success
+end
+
+######################
 
 function comb(gamma,C,H,I,b_mnl,p)
 
