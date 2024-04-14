@@ -185,36 +185,48 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
     y = zeros(p.nvar)
     Id = 1. * Matrix(I, p.nbf, p.nbf)
     nit = 0
-    E = 0
+    elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+    E = computeE_elec(Hmat,n,elag,p)
+    E_old = E
     alpha = 0.1
     for i in 1:30
 	nit = nit + 1
         C_new = rotate_orbital(y,C,p)
 
         elag,Hmat = compute_Lagrange2(C_new,n,H,I_AO,b_mnl,cj12,ck12,p)
-
+        
         E = computeE_elec(Hmat,n,elag,p)
-        #println(E)
 
-	C=C_new
+	if E <= E_old
+            #println(E," ",alpha," Accepted")
+            E_old = E
+  	    C = C_new
 
-        grad = 4*elag - 4*elag'
-        grads = zeros(p.nvar)
-        nn = 1
-        for i in 1:p.nbf5
-            for j in i+1:p.nbf
-                grads[nn] = grad[i,j]
-                nn += 1
+            grad = 4*elag - 4*elag'
+            grads = zeros(p.nvar)
+            nn = 1
+            for i in 1:p.nbf5
+                for j in i+1:p.nbf
+                    grads[nn] = grad[i,j]
+                    nn += 1
+                end
             end
+            y = -alpha*grads
+	    alpha = alpha*2
+	else
+            #println(E," ", alpha, " Rejected")
+	    y = y ./ 2
+	    alpha = alpha/2
         end
-	y = -0.01*grads
     end
-    if nit < 30
+    if nit < 60
         success = true 
     else
         success = false
     end
 
+    elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+    E = computeE_elec(Hmat,n,elag,p)
     return E,C,nit,success
 end
 
