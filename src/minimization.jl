@@ -186,13 +186,17 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
     Id = 1. * Matrix(I, p.nbf, p.nbf)
     nit = 0
     E = 0
+    alpha = 0.1
     for i in 1:30
 	nit = nit + 1
-        C = rotate_orbital(y,C,p)
+        C_new = rotate_orbital(y,C,p)
 
-        elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+        elag,Hmat = compute_Lagrange2(C_new,n,H,I_AO,b_mnl,cj12,ck12,p)
 
         E = computeE_elec(Hmat,n,elag,p)
+        #println(E)
+
+	C=C_new
 
         grad = 4*elag - 4*elag'
         grads = zeros(p.nvar)
