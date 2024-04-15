@@ -182,52 +182,61 @@ end
 #### Experimental ####
 function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 
+    best_C = C
+
     y = zeros(p.nvar)
     Id = 1. * Matrix(I, p.nbf, p.nbf)
     nit = 0
     elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
     E = computeE_elec(Hmat,n,elag,p)
     E_old = E
-    alpha = 0.1
-    for i in 1:30
+    best_E = E
+    success = false
+    alpha = 0.02
+    step = 0 .* y
+    momentum = 0.95
+    for i in 1:p.maxloop
 	nit = nit + 1
         C_new = rotate_orbital(y,C,p)
 
         elag,Hmat = compute_Lagrange2(C_new,n,H,I_AO,b_mnl,cj12,ck12,p)
         
         E = computeE_elec(Hmat,n,elag,p)
+	if E <= best_E
+	    best_C = C_new
+	    best_E = E
+	#    alpha = alpha*2
+	#else
+	#    alpha = alpha/2
+	end
+	#alpha = min(alpha, 0.05)
 
-	if E <= E_old
-            #println(E," ",alpha," Accepted")
-            E_old = E
-  	    C = C_new
+        #println(E," ",alpha," ", E <= best_E)
+        E_old = E
+  	C = C_new
 
-            grad = 4*elag - 4*elag'
-            grads = zeros(p.nvar)
-            nn = 1
-            for i in 1:p.nbf5
-                for j in i+1:p.nbf
-                    grads[nn] = grad[i,j]
-                    nn += 1
-                end
+        grad = 4*elag - 4*elag'
+        grads = zeros(p.nvar)
+        nn = 1
+        for i in 1:p.nbf5
+            for j in i+1:p.nbf
+                grads[nn] = grad[i,j]
+                nn += 1
             end
-            y = -alpha*grads
-	    alpha = alpha*2
-	else
-            #println(E," ", alpha, " Rejected")
-	    y = y ./ 2
-	    alpha = alpha/2
         end
-    end
-    if nit < 60
-        success = true 
-    else
-        success = false
+	if norm(grads) < p.threshgorb
+	    success = true
+	    break
+	end
+        #step = -alpha*grads
+	new_step = -alpha*grads + momentum*step
+	step = new_step
+        y = new_step
     end
 
     elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
     E = computeE_elec(Hmat,n,elag,p)
-    return E,C,nit,success
+    return best_E,best_C,nit,success
 end
 
 ######################
