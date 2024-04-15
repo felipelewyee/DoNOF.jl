@@ -193,8 +193,8 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
     best_E = E
     success = false
     step = 0 .* y
-    momentum = 0.97
-    alpha = 1-momentum
+    momentum = 0.99
+    alpha = 1.0-momentum
     for i in 1:p.maxloop
 	nit = nit + 1
         C_new = rotate_orbital(y,C,p)
