@@ -32,6 +32,7 @@ mutable struct Param
     threshgorb::Float64
     threshgocc::Float64
     scaling::Bool
+    alpha::Float64
     nzeros::Int64
     nzerosm::Int64
     nzerosr::Int64
@@ -137,6 +138,7 @@ function Param(bset,mul,charge)
     threshgorb = 10^-3   # Convergencia del gradiente orbital
     threshgocc = 10^-3   # Convergencia del gradiente de numeros de ocupacion
     scaling = true     # Scaling for f
+    alpha = 0.02
     nzeros = 0
     nzerosm = 5
     nzerosr = 2
@@ -193,6 +195,7 @@ function Param(bset,mul,charge)
     threshgorb, 
     threshgocc, 
     scaling, 
+    alpha,
     nzeros, 
     nzerosm, 
     nzerosr, 

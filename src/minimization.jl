@@ -180,7 +180,7 @@ function orbopt_rotations(gamma,C,H,I,b_mnl,p)
 end
 
 #### Experimental ####
-# RMSprop
+# ADAM
 function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 
     best_C = C
@@ -192,10 +192,12 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
     E_old = E
     best_E = E
     success = false
-    sg = 0.0 .* y
-    alpha = 0.0 .* y
-    eta = 0.0004
-    rho = 0.999
+    alpha = p.alpha
+    m = 0.0 .* y
+    v = 0.0 .* y
+    beta1 = 0.8
+    beta2 = 0.999
+    improved = false
     for i in 1:p.maxloop
         nit = nit + 1
         C_new = rotate_orbital(y,C,p)
@@ -203,9 +205,10 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
         elag,Hmat = compute_Lagrange2(C_new,n,H,I_AO,b_mnl,cj12,ck12,p)
 
         E = computeE_elec(Hmat,n,elag,p)
-        if E <= best_E
+        if E < best_E
             best_C = C_new
             best_E = E
+	    improved = true
         end
 
         #println(E," ", E <= best_E)
@@ -226,15 +229,79 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
             break
         end
 
-        sg = rho .* sg + (1-rho) .* (grads .^ 2)
-	alpha = eta ./ sqrt.(sg .+ 10^-8)
-	y = -alpha .* grads
+        m = beta1 .* m + (1 - beta1) .* grads
+	v = beta2 .* v + (1 - beta2) .* (grads .^ 2)
+	mhat = m ./ (1.0 - beta1^i)
+	vhat = v ./ (1.0 - beta2^i)
+	y = - alpha * mhat ./ (sqrt.(vhat .+ 10^-8))
+
+    end
+
+    if !improved
+        p.alpha = p.alpha/1.1
+	println("      alpha ",p.alpha)
     end
 
     elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
     E = computeE_elec(Hmat,n,elag,p)
     return best_E,best_C,nit,success
 end
+
+# RMSprop
+#function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
+#
+#    best_C = C
+#
+#    y = zeros(p.nvar)
+#    nit = 0
+#    elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+#    E = computeE_elec(Hmat,n,elag,p)
+#    E_old = E
+#    best_E = E
+#    success = false
+#    sg = 0.0 .* y
+#    alpha = 0.0 .* y
+#    eta = 0.0004
+#    rho = 0.999
+#    for i in 1:p.maxloop
+#        nit = nit + 1
+#        C_new = rotate_orbital(y,C,p)
+#
+#        elag,Hmat = compute_Lagrange2(C_new,n,H,I_AO,b_mnl,cj12,ck12,p)
+#
+#        E = computeE_elec(Hmat,n,elag,p)
+#        if E <= best_E
+#            best_C = C_new
+#            best_E = E
+#        end
+#
+#        println(E," ", E <= best_E)
+#        E_old = E
+#        C = C_new
+#
+#        grad = 4*elag - 4*elag'
+#        grads = zeros(p.nvar)
+#        nn = 1
+#        for i in 1:p.nbf5
+#            for j in i+1:p.nbf
+#                grads[nn] = grad[i,j]
+#                nn += 1
+#            end
+#        end
+#        if norm(grads) < p.threshgorb
+#            success = true
+#            break
+#        end
+#
+#        sg = rho .* sg + (1-rho) .* (grads .^ 2)
+#	alpha = eta ./ sqrt.(sg .+ 10^-8)
+#	y = -alpha .* grads
+#    end
+#
+#    elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+#    E = computeE_elec(Hmat,n,elag,p)
+#    return best_E,best_C,nit,success
+#end
 
 # Momentum Gradient Descent
 #function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
