@@ -956,7 +956,7 @@ function compute_2RDM(pp,n)
         inter2[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha] = Pi_s[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha]
         Pi_s[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha] .= 0
 
-	@tullio Dab[p,q,r,t] += -inter2[p,r]*Id[p,t]*Id[q,r]
+	@tullio Dab[p,q,r,t] += -inter2[p,q]*Id[p,t]*Id[q,r]
 
         if(pp.ipnof==8)
             Pi_s[1:pp.nbeta,1:pp.nbeta] .= 0
@@ -1008,9 +1008,9 @@ function compute_2RDM(pp,n)
 
 	    inter[pp.nbeta+1:end,pp.nbeta+1:end] .= 0
             inter[1:pp.nalpha,1:pp.nalpha] .= 0
-	    inter2[pp.nbeta+1:end,pp.nbeta+1:end] .= 0
             inter2[1:pp.nalpha,:] .= 0
             inter2[:,1:pp.nalpha] .= 0
+            println(inter2)
 
             Pi_d = inter - inter2
 
