@@ -329,7 +329,7 @@ function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,ns
     end
 
     n_d12 = sqrt.(n_d)
-    dn_d12_dgamma = 0.5 * dn_d_dgamma ./ n_d12
+    dn_d12_dgamma = 0.5 * dn_d_dgamma ./ max.(n_d12,10^-15)
 
     fi = n .*(1 .- n)
     fi[fi.<=0] .= 0
