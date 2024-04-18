@@ -28,40 +28,6 @@ function read_all(;title = "donof")
 
 end
 
-function increment_C(old_C,old_ncwo,p)
-
-    C = zeros(p.nbf,p.nbf)
-    C[1:p.nbf,1:p.no1+p.ndns] = old_C[1:p.nbf,1:p.no1+p.ndns]
-    for i in 1:p.ndoc
-        old_ll = p.no1 + p.ndns + old_ncwo*(p.ndoc - i) + 1
-        old_ul = p.no1 + p.ndns + old_ncwo*(p.ndoc - i + 1)
-        ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
-        ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
-	dif_ncwo = p.ncwo - old_ncwo
-        C[1:p.nbf,ll:ll+old_ncwo-1] = old_C[1:p.nbf,old_ll:old_ul]
-	C[1:p.nbf,ll+old_ncwo:ul] = old_C[1:p.nbf,p.no1+p.ndns+old_ncwo*p.ndoc+dif_ncwo*(i-1)+1:p.no1+p.ndns+old_ncwo*p.ndoc+dif_ncwo*i]
-    end
-    C[1:p.nbf,p.no1+p.ndns+p.ndoc*p.ncwo+1:p.nbf] = old_C[1:p.nbf,p.no1+p.ndns+p.ndoc*p.ncwo+1:p.nbf]
-
-    return C
-
-end
-
-function increment_gamma(old_gamma,old_ncwo,p)
-    
-    gamma = ones(p.nv)*pi/2
-    for i in 1:p.ndoc
-        gamma[i] = old_gamma[i]
-	old_ll = p.ndoc + (old_ncwo-1)*(i-1) + 1
-	old_ul = p.ndoc + (old_ncwo-1)*i
-	ll = p.ndoc + (p.ncwo-1)*(i - 1) + 1
-	ul = p.ndoc + (p.ncwo-1)*i
-	gamma[ll:ll+(old_ncwo-1)-1] = old_gamma[old_ll:old_ul]
-    end
-    
-    return gamma
-end
-
 function order_subspaces(old_C,old_n,elag,H,I,b_mnl,p)
 
     C = zeros(p.nbf,p.nbf)
@@ -81,16 +47,17 @@ function order_subspaces(old_C,old_n,elag,H,I,b_mnl,p)
     C[1:p.nbf,1:p.no1] = old_C[1:p.nbf,1:p.no1]
     n[1:p.no1] = old_n[1:p.no1]
     for i in 1:p.ndoc
-	i_old  = sort_idx[i]
-        ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
-        ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
-        ll_old = p.no1 + p.ndns + p.ncwo*(p.ndoc - i_old) + 1
-        ul_old = p.no1 + p.ndns + p.ncwo*(p.ndoc - i_old + 1)
+    	i_old  = sort_idx[i]
+        ll = p.no1 + p.ndns + (p.ndoc-i) + 1
+        ul = ll + p.ndoc*(p.ncwo-1)
 
+        ll_old = p.no1 + p.ndns + (p.ndoc-i_old) + 1
+        ul_old = ll_old + p.ndoc*(p.ncwo-1)
+        
         C[1:p.nbf,p.no1+i] = old_C[1:p.nbf,p.no1+i_old]
-        C[1:p.nbf,ll:ul] = old_C[1:p.nbf,ll_old:ul_old]
+        C[1:p.nbf,ll:p.ndoc:ul] = old_C[1:p.nbf,ll_old:p.ndoc:ul_old]
         n[p.no1+i] = old_n[p.no1+i_old]
-        n[ll:ul] = old_n[ll_old:ul_old]
+        n[ll:p.ndoc:ul] = old_n[ll_old:p.ndoc:ul_old]
     end
 
     #Sort nsoc orbitals
@@ -180,69 +147,16 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
 
 end
 
-function build_chains(ps,Cs)
-
-    # dimensions of the new C matrix
-    nbf5_total = 0
-    ndoc_total = 0
-    nsoc_total = 0
-    nbf_total = 0
-    for p in ps
-        nbf5_total += p.nbf5
-        ndoc_total += p.ndoc
-        nsoc_total += p.nsoc
-        nbf_total += p.nbf
-    end
-    ndns_total = ndoc_total + nsoc_total
-
-    # new C matrix
-    C_new = zeros(nbf_total,nbf_total)
-
-    # indices of the new C matrix
-    idoc_new = 1
-    icwo_new = nbf5_total
-    isoc_new = ndoc_total+1
-    iout = nbf5_total+1
-    ibf = 1
-    for (p,C) in zip(ps,Cs)
-        
-        # add double occupied (and coupled) orbitals
-        for i in 1:p.ndoc	
-            idx = p.no1 + i
-
-	    C_new[ibf:ibf+p.nbf-1,idoc_new] = C[:,idx]
-	    idoc_new += 1
-
-            ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
-            ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
-            C_new[ibf:ibf+p.nbf-1,icwo_new-(ul-ll):icwo_new] = C[:,ll:ul]
-
-	    icwo_new += -(ul-ll + 1)
-        end
-
-	# add single occupied orbitals
-        C_new[ibf:ibf+p.nbf-1,isoc_new:isoc_new+p.nsoc-1] = C[:,p.ndoc+1:p.ndns]
-	isoc_new += p.nsoc
-
-	# add unoccupied orbitals 
-	C_new[ibf:ibf+p.nbf-1,iout:iout+p.nbf-p.nbf5-1] = C[:,p.nbf5+1:p.nbf]
-	iout += p.nbf-p.nbf5
-
-	ibf += p.nbf
-    end
-
-    return C_new
-
-end
-
 function guess_gamma_trigonometric(p)
-    gamma = zeros(p.nv)
+    γ = zeros(p.nv)
     for i in 1:p.ndoc
-        gamma[i] = acos(sqrt(2.0*0.999-1.0))
+        γ[i] = acos(sqrt(2.0*0.999-1.0))
+        ll = p.ndoc + (p.ndoc-i) + 1
+        ul = ll + p.ndoc*(p.ncwo-2)
+        γ_coupled = @view γ[ll:p.ndoc:ul]
         for j in 1:p.ncwo-1
-            ig = p.ndoc+(i-1)*(p.ncwo-1)+j
-            gamma[ig] = asin(sqrt(1.0/(p.ncwo-j+1)))
+            γ_coupled[j] = asin(sqrt(1.0/(p.ncwo-j+1)))
         end
     end
-    return gamma
+    return γ
 end

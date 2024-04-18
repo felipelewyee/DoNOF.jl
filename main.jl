@@ -15,5 +15,6 @@ p.RI = true
 p.gpu = false
 
 p.orb_method = "Rotations"
+p.occ_method = "Trigonometric"
 
 DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true)

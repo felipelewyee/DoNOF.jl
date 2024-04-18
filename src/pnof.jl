@@ -48,19 +48,19 @@ function CJCKD5(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
     for l in 1:ndoc
         ldx = no1 + l
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = no1 + ndns + ncwo*(ndoc - l) + 1
-        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+        ll = no1 + ndns + (ndoc-l) + 1
+        ul = ll + ndoc*(ncwo-1)
 
-        cj12[ldx,ll:ul] .= 0
-        cj12[ll:ul,ldx] .= 0
+        cj12[ldx,ll:ndoc:ul] .= 0
+        cj12[ll:ndoc:ul,ldx] .= 0
 
-        cj12[ll:ul,ll:ul] .= 0
+        cj12[ll:ndoc:ul,ll:ndoc:ul] .= 0
 
-        ck12[ldx,ll:ul] .= sqrt.(n[ldx]*n[ll:ul])
-        ck12[ll:ul,ldx] .= sqrt.(n[ldx]*n[ll:ul])
+        ck12[ldx,ll:ndoc:ul] .= sqrt.(n[ldx]*n[ll:ndoc:ul])
+        ck12[ll:ndoc:ul,ldx] .= sqrt.(n[ldx]*n[ll:ndoc:ul])
 
-        ck12_ww = view(ck12,ll:ul,ll:ul)
-        n_ww = view(n,ll:ul)
+        ck12_ww = view(ck12,ll:ndoc:ul,ll:ndoc:ul)
+        n_ww = view(n,ll:ndoc:ul)
         @tullio ck12_ww[i,j] = -sqrt(n_ww[i]*n_ww[j])
     end
 
@@ -81,25 +81,25 @@ function der_CJCKD5(n,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
         ldx = no1 + l
 
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = no1 + ndns + ncwo*(ndoc - l) + 1
-        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+        ll = no1 + ndns + (ndoc-l) + 1
+        ul = ll + ndoc*(ncwo-1)
+        
+        Dcj12r[ldx,ll:ndoc:ul,1:nv] .= 0
+        Dcj12r[ll:ndoc:ul,ldx,1:nv] .= 0
 
-        Dcj12r[ldx,ll:ul,1:nv] .= 0
-        Dcj12r[ll:ul,ldx,1:nv] .= 0
-
-        Dcj12r[ll:ul,ll:ul,1:nv] .= 0
+        Dcj12r[ll:ndoc:ul,ll:ndoc:ul,1:nv] .= 0
 
         a = max(n[ldx],10^-15)
-        b = n[ll:ul]
+        b = n[ll:ndoc:ul]
         b[b.<10^-15] .= 10^-15
 
-        Dck12r_occ_cwo = view(Dck12r,ldx,ll:ul,1:nv)
-        Dck12r_cwo_occ = view(Dck12r,ll:ul,ldx,1:nv)
-        Dck12r_cwo_cwo = view(Dck12r,ll:ul,ll:ul,1:nv)
-        n_cwo = view(n,ll:ul)
+        Dck12r_occ_cwo = view(Dck12r,ldx,ll:ndoc:ul,1:nv)
+        Dck12r_cwo_occ = view(Dck12r,ll:ndoc:ul,ldx,1:nv)
+        Dck12r_cwo_cwo = view(Dck12r,ll:ndoc:ul,ll:ndoc:ul,1:nv)
+        n_cwo = view(n,ll:ndoc:ul)
         n_occ = n[ldx]
         dn_dgamma_occ = view(dn_dgamma,ldx,1:nv)
-        dn_dgamma_cwo = view(dn_dgamma,ll:ul,1:nv)
+        dn_dgamma_cwo = view(dn_dgamma,ll:ndoc:ul,1:nv)
         @tullio Dck12r_occ_cwo[i,j] = 1/2 * 1/sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
         @tullio Dck12r_cwo_occ[i,j] = 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,j] * sqrt(n_occ)
         @tullio Dck12r_cwo_cwo[i,j,k] = - 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,k] * sqrt(n_cwo[j])
@@ -135,19 +135,19 @@ function CJCKD7(n,ista,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
     for l in 1:ndoc
         ldx = no1 + l
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = no1 + ndns + ncwo*(ndoc - l) + 1
-        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+        ll = no1 + ndns + (ndoc-l) + 1
+        ul = ll + ndoc*(ncwo-1)        
 
-        cj12[ldx,ll:ul] .= 0
-        cj12[ll:ul,ldx] .= 0
+        cj12[ldx,ll:ndoc:ul] .= 0
+        cj12[ll:ndoc:ul,ldx] .= 0
 
-        cj12[ll:ul,ll:ul] .= 0
+        cj12[ll:ndoc:ul,ll:ndoc:ul] .= 0
 
-        ck12[ldx,ll:ul] .= sqrt.(n[ldx]*n[ll:ul])
-        ck12[ll:ul,ldx] .= sqrt.(n[ldx]*n[ll:ul])
+        ck12[ldx,ll:ndoc:ul] .= sqrt.(n[ldx]*n[ll:ndoc:ul])
+        ck12[ll:ndoc:ul,ldx] .= sqrt.(n[ldx]*n[ll:ndoc:ul])
 
-	ck12_ww = view(ck12,ll:ul,ll:ul)
-	n_ww = view(n,ll:ul)
+	ck12_ww = view(ck12,ll:ndoc:ul,ll:ndoc:ul)
+	n_ww = view(n,ll:ndoc:ul)
 	@tullio ck12_ww[i,j] = -sqrt(n_ww[i]*n_ww[j])
     end
 
@@ -188,25 +188,25 @@ function der_CJCKD7(n,ista,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
         ldx = no1 + l
 
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-	ll = no1 + ndns + ncwo*(ndoc - l) + 1
-        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+        ll = no1 + ndns + (ndoc-l) + 1
+        ul = ll + ndoc*(ncwo-1)
 
-        Dcj12r[ldx,ll:ul,1:nv] .= 0
-        Dcj12r[ll:ul,ldx,1:nv] .= 0
+        Dcj12r[ldx,ll:ndoc:ul,1:nv] .= 0
+        Dcj12r[ll:ndoc:ul,ldx,1:nv] .= 0
 
-        Dcj12r[ll:ul,ll:ul,1:nv] .= 0
+        Dcj12r[ll:ndoc:ul,ll:ndoc:ul,1:nv] .= 0
 
         a = max(n[ldx],10^-15)
-        b = n[ll:ul]
+        b = n[ll:ndoc:ul]
         b[b.<10^-15] .= 10^-15
 
-	Dck12r_occ_cwo = view(Dck12r,ldx,ll:ul,1:nv)
-	Dck12r_cwo_occ = view(Dck12r,ll:ul,ldx,1:nv)
-	Dck12r_cwo_cwo = view(Dck12r,ll:ul,ll:ul,1:nv)
-	n_cwo = view(n,ll:ul)
+	Dck12r_occ_cwo = view(Dck12r,ldx,ll:ndoc:ul,1:nv)
+	Dck12r_cwo_occ = view(Dck12r,ll:ndoc:ul,ldx,1:nv)
+	Dck12r_cwo_cwo = view(Dck12r,ll:ndoc:ul,ll:ndoc:ul,1:nv)
+	n_cwo = view(n,ll:ndoc:ul)
 	n_occ = n[ldx]
 	dn_dgamma_occ = view(dn_dgamma,ldx,1:nv)
-	dn_dgamma_cwo = view(dn_dgamma,ll:ul,1:nv)
+	dn_dgamma_cwo = view(dn_dgamma,ll:ndoc:ul,1:nv)
 	@tullio Dck12r_occ_cwo[i,j] = 1/2 * 1/sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
 	@tullio Dck12r_cwo_occ[i,j] = 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,j] * sqrt(n_occ)
 	@tullio Dck12r_cwo_cwo[i,j,k] = - 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,k] * sqrt(n_cwo[j])
@@ -226,14 +226,15 @@ function CJCKD8(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin,h_cut)
     for i in 1:ndoc
         idx = no1 + i
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-	ll = no1 + ndns + ncwo*(ndoc - i) + 1
-        ul = no1 + ndns + ncwo*(ndoc - i + 1)
+        ll = no1 + ndns + (ndoc-i) + 1
+        ul = ll + ndoc*(ncwo-1)
+
         h = 1.0 - n[idx]
         coc = h / h_cut
         arg = -coc^2
         F = exp(arg)  # ! Hd/Hole
         n_d[idx] = n[idx] * F
-        n_d[ll:ul] = n[ll:ul] * F  # ROd = RO*Hd/Hole
+        n_d[ll:ndoc:ul] = n[ll:ndoc:ul] * F  # ROd = RO*Hd/Hole
 
     end
 
@@ -280,19 +281,19 @@ function CJCKD8(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin,h_cut)
     for l in 1:ndoc
         ldx = no1 + l
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = no1 + ndns + ncwo*(ndoc - l) + 1
-        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+        ll = no1 + ndns + (ndoc-l) + 1
+        ul = ll + ndoc*(ncwo-1)
 
-        cj12[ldx,ll:ul] .= 0
-        cj12[ll:ul,ldx] .= 0
+        cj12[ldx,ll:ndoc:ul] .= 0
+        cj12[ll:ndoc:ul,ldx] .= 0
 
-        cj12[ll:ul,ll:ul] .= 0
+        cj12[ll:ndoc:ul,ll:ndoc:ul] .= 0
 
-        ck12[ldx,ll:ul] .= sqrt.(n[ldx]*n[ll:ul])
-        ck12[ll:ul,ldx] .= sqrt.(n[ldx]*n[ll:ul])
+        ck12[ldx,ll:ndoc:ul] .= sqrt.(n[ldx]*n[ll:ndoc:ul])
+        ck12[ll:ndoc:ul,ldx] .= sqrt.(n[ldx]*n[ll:ndoc:ul])
 
-        ck12_ww = view(ck12,ll:ul,ll:ul)
-        n_ww = view(n,ll:ul)
+        ck12_ww = view(ck12,ll:ndoc:ul,ll:ndoc:ul)
+        n_ww = view(n,ll:ndoc:ul)
         @tullio ck12_ww[i,j] = -sqrt(n_ww[i]*n_ww[j])
     end
 
@@ -312,19 +313,20 @@ function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,ns
     for i in 1:ndoc
         idx = no1 + i
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = no1 + ndns + ncwo*(ndoc - i) + 1
-        ul = no1 + ndns + ncwo*(ndoc - i + 1)
+        ll = no1 + ndns + (ndoc-i) + 1
+        ul = ll + ndoc*(ncwo-1)
+
         h_idx = 1.0-n[idx]
         coc = h_idx/h_cut
         arg = -coc^2
         F_idx = exp(arg)                # Hd/Hole
         n_d[idx] = n[idx] * F_idx
-        n_d[ll:ul] = n[ll:ul] * F_idx      # n_d = RO*Hd/Hole
+        n_d[ll:ndoc:ul] = n[ll:ndoc:ul] * F_idx      # n_d = RO*Hd/Hole
         dn_d_dgamma[idx,1:nv] .= F_idx*dn_dgamma[idx,1:nv] .* (1-n[idx]*(- 2*coc/h_cut))
-        dn_d_dgamma[ll:ul,1:nv] .= F_idx*dn_dgamma[ll:ul,1:nv]
-	dn_d_dgamma_cwo_v = view(dn_d_dgamma,ll:ul,1:nv)
+        dn_d_dgamma[ll:ndoc:ul,1:nv] .= F_idx*dn_dgamma[ll:ndoc:ul,1:nv]
+	dn_d_dgamma_cwo_v = view(dn_d_dgamma,ll:ndoc:ul,1:nv)
 	dn_dgamma_v = view(dn_dgamma,idx,1:nv)
-	n_cwo = view(n,ll:ul)
+	n_cwo = view(n,ll:ndoc:ul)
 	@tullio dn_d_dgamma_cwo_v[i,j] += F_idx*(2*coc/h_cut) * n_cwo[i] * dn_dgamma_v[j]
     end
 
@@ -390,25 +392,25 @@ function der_CJCKD8(n,dn_dgamma,no1,ndoc,nalpha,nbeta,nv,nbf5,ndns,ncwo,MSpin,ns
         ldx = no1 + l
 
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = no1 + ndns + ncwo*(ndoc - l) + 1
-        ul = no1 + ndns + ncwo*(ndoc - l + 1)
+        ll = no1 + ndns + (ndoc-l) + 1
+        ul = ll + ndoc*(ncwo-1)
 
-        Dcj12r[ldx,ll:ul,1:nv] .= 0
-        Dcj12r[ll:ul,ldx,1:nv] .= 0
+        Dcj12r[ldx,ll:ndoc:ul,1:nv] .= 0
+        Dcj12r[ll:ndoc:ul,ldx,1:nv] .= 0
 
-        Dcj12r[ll:ul,ll:ul,1:nv] .= 0
+        Dcj12r[ll:ndoc:ul,ll:ndoc:ul,1:nv] .= 0
 
         a = max(n[ldx],10^-15)
-        b = n[ll:ul]
+        b = n[ll:ndoc:ul]
         b[b.<10^-15] .= 10^-15
 
-        Dck12r_occ_cwo = view(Dck12r,ldx,ll:ul,1:nv)
-        Dck12r_cwo_occ = view(Dck12r,ll:ul,ldx,1:nv)
-        Dck12r_cwo_cwo = view(Dck12r,ll:ul,ll:ul,1:nv)
-        n_cwo = view(n,ll:ul)
+        Dck12r_occ_cwo = view(Dck12r,ldx,ll:ndoc:ul,1:nv)
+        Dck12r_cwo_occ = view(Dck12r,ll:ndoc:ul,ldx,1:nv)
+        Dck12r_cwo_cwo = view(Dck12r,ll:ndoc:ul,ll:ndoc:ul,1:nv)
+        n_cwo = view(n,ll:ndoc:ul)
         n_occ = n[ldx]
         dn_dgamma_occ = view(dn_dgamma,ldx,1:nv)
-        dn_dgamma_cwo = view(dn_dgamma,ll:ul,1:nv)
+        dn_dgamma_cwo = view(dn_dgamma,ll:ndoc:ul,1:nv)
         @tullio Dck12r_occ_cwo[i,j] = 1/2 * 1/sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
         @tullio Dck12r_cwo_occ[i,j] = 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,j] * sqrt(n_occ)
         @tullio Dck12r_cwo_cwo[i,j,k] = - 1/2 * 1/sqrt(b[i]) * dn_dgamma_cwo[i,k] * sqrt(n_cwo[j])
@@ -434,70 +436,69 @@ function ocupacion_trigonometric(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpi
     dni_dgammai = zeros(nbf5)
     dn_dgamma = zeros(nbf5,nv)
 
-    n[1:no1] .= 1                                              # [1,no1]
+    n[1:no1] .= 1
 
-    n[no1+1:no1+ndoc] .= 1/2 * (1 .+ (cos.(gamma[1:ndoc])).^2)     # (no1,no1+ndoc]
+    n[no1+1:no1+ndoc] .= 1/2 * (1 .+ (cos.(gamma[1:ndoc])).^2)
     dni_dgammai[no1+1:no1+ndoc] .= - 1/2 * sin.(2*gamma[1:ndoc])
 
     if !HighSpin
-        n[no1+ndoc+1:no1+ndns] .= 0.5   # (no1+ndoc,no1+ndns]
+        n[no1+ndoc+1:no1+ndns] .= 0.5
     elseif HighSpin
-        n[no1+ndoc+1:no1+ndns] .= 1.0   # (no1+ndoc,no1+ndns]
+        n[no1+ndoc+1:no1+ndns] .= 1.0
     end
 
     dn_dgamma = zeros(nbf5,nv)
     h = 1 .- n
 
     for i in 1:ndoc
-        ll = no1 + ndns + ncwo*(ndoc - i) + 1
-        ul = no1 + ndns + ncwo*(ndoc - i + 1)
-        n[ll:ul] .= h[no1+i]
-        for iw in 1:ncwo-1
-            n[ll+iw-1] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-            n[ll+iw:ul] .*= cos(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-        end
-    end
+        ll_n = no1 + ndns + (ndoc-i) + 1
+        ul_n = ll_n + ndoc*(ncwo-1)
+        n_pi = @view n[ll_n:ndoc:ul_n]
 
-    for i in 1:ndoc
+        ll_gamma = ndoc + (ndoc-i) + 1
+        ul_gamma = ll_gamma + ndoc*(ncwo-2)
+        gamma_pi = @view gamma[ll_gamma:ndoc:ul_gamma]
+
+        n_pi .= h[no1+i]
+        for kw in 1:ncwo-1
+            n_pi[kw] *= sin(gamma_pi[kw])^2
+            n_pi[kw+1:end] .*= cos(gamma_pi[kw])^2
+        end 
+
         # dn_g/dgamma_g
         dn_dgamma[no1+i,i] = dni_dgammai[no1+i]
 
         # dn_pi/dgamma_g
-        ll = no1 + ndns + ncwo*(ndoc - i) + 1
-        ul = no1 + ndns + ncwo*(ndoc - i + 1)
-        dn_dgamma[ll:ul,i] .= -dni_dgammai[no1+i]
-        for iw in 1:ncwo-1
-            dn_dgamma[ll+iw-1,i] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
-    	dn_dgamma[ll+iw:ul,i] .*= cos(gamma[ndoc+(ncwo-1)*(i-1)+iw])^2
+        dn_pi_dgamma_g = @view dn_dgamma[ll_n:ndoc:ul_n,i] 
+        dn_pi_dgamma_g .= -dni_dgammai[no1+i]
+        for kw in 1:ncwo-1
+            dn_pi_dgamma_g[kw] *= sin(gamma_pi[kw])^2
+            dn_pi_dgamma_g[kw+1:end] .*= cos(gamma_pi[kw])^2
         end
 
         # dn_pi/dgamma_pj (j<i)
-        for iw in 1:ncwo-1
-    	dn_dgamma[ll+iw:ul,ndoc+(ncwo-1)*(i-1)+iw] .= n[no1+i] - 1
-            for ip in ll+iw:ul
-                for jw in 1:ip-ll
-                    if jw==iw
-                        dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
-                    else
-    		    dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
-                    end
-                end
-                if ip-ll+1<=ncwo-1
-                    dn_dgamma[ip,ndoc+(ncwo-1)*(i-1)+iw] *= sin(gamma[ndoc+(ncwo-1)*(i-1)+(ip-ll+1)])^2
-                end
+        dn_pi_dgamma_pj = @view dn_dgamma[ll_n:ndoc:ul_n,ll_gamma:ndoc:ul_gamma]
+        for jw in 1:ncwo-1
+            dn_pi_dgamma_pj[jw+1:end,jw] .= n[no1+i] - 1
+            for kw in 1:jw-1
+                dn_pi_dgamma_pj[jw+1:end,jw] .*= cos(gamma_pi[kw])^2
+            end
+            dn_pi_dgamma_pj[jw+1:end,jw] .*= sin(2*gamma_pi[jw])
+            for kw in jw+1:ncwo-1
+                dn_pi_dgamma_pj[kw,jw] *= sin(gamma_pi[kw])^2             
+                dn_pi_dgamma_pj[kw+1:end,jw] .*= cos(gamma_pi[kw])^2
             end
         end
-
-        # dn_pi/dgamma_i
-        for iw in 1:ncwo-1
-            dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] = 1 - n[no1+i]
-            for jw in 1:iw
-                if jw==iw
-                    dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] *= sin(2*gamma[ndoc+(ncwo-1)*(i-1)+jw])
-                else
-                    dn_dgamma[ll+iw-1,ndoc+(ncwo-1)*(i-1)+iw] *= cos(gamma[ndoc+(ncwo-1)*(i-1)+jw])^2
-    	    end
-    	end
+ 
+        # dn_pi/dgamma_pi
+        for jw in 1:ncwo-1
+            dn_pi_dgamma_pj[jw,jw] = 1 - n[no1+i]
+        end
+        for kw in 1:ncwo-1
+            dn_pi_dgamma_pj[kw,kw] *= sin(2*gamma_pi[kw])
+            for lw in kw+1:ncwo-1
+                dn_pi_dgamma_pj[lw,lw] *= cos(gamma_pi[kw])^2
+            end
         end
     end
 
@@ -520,36 +521,33 @@ function ocupacion_softmax(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
 
     for i in 1:ndoc
 
-        ll = no1 + ndns + ncwo*(ndoc - i) + 1
-        ul = no1 + ndns + ncwo*(ndoc - i + 1)
-        llg = ndoc + ncwo*(ndoc - i) + 1
-        ulg = ndoc + ncwo*(ndoc - i + 1)
+        ll = no1 + ndns + (ndoc-i) + 1
+        ul = ll + ndoc*(ncwo-1)
+        n_pi = @view n[ll:ndoc:ul]
+ 
+        llg = ndoc + (ndoc-i) + 1
+        ulg = llg + ndoc*(ncwo-1)
+        exp_gamma_pi = @view exp_gamma[llg:ndoc:ulg]
 
-        sum_exp = exp_gamma[i] + sum(exp_gamma[llg:ulg])
+        sum_exp = exp_gamma[i] + sum(exp_gamma_pi)
 	
         n[i] = exp_gamma[i] / sum_exp 
-        n[ll:ul] .= exp_gamma[llg:ulg] ./ sum_exp 
+        n_pi .= exp_gamma_pi ./ sum_exp
 
-        for j in ll:ul
-            for k in llg:ulg
-                jg = j - no1 - ndns + ndoc
-                dn_dgamma[j,k] = -exp_gamma[jg]*exp_gamma[k]/sum_exp^2
-            end
-        end
-        for jg in llg:ulg
-            dn_dgamma[i,jg] = -exp_gamma[i]*exp_gamma[jg]/sum_exp^2
-        end
-        for j in ll:ul
-            jg = j - no1 - ndns + ndoc
-            dn_dgamma[j,i] = -exp_gamma[i]*exp_gamma[jg]/sum_exp^2
-        end
+        dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul,llg:ndoc:ulg]
+        dn_pi_dgamma_pi .= -exp_gamma_pi*exp_gamma_pi' ./ sum_exp^2
+
+        dn_g_dgamma_pi = @view dn_dgamma[i,llg:ndoc:ulg]
+        dn_g_dgamma_pi .= -exp_gamma[i] .* exp_gamma_pi ./ sum_exp^2
+
+        dn_pi_dgamma_g = @view dn_dgamma[ll:ndoc:ul,i]
+        dn_pi_dgamma_g .= -exp_gamma[i] .* exp_gamma_pi ./ sum_exp^2
 
         dn_dgamma[i,i] = exp_gamma[i]*(sum_exp - exp_gamma[i])/sum_exp ^2
-        for j in ll:ul
-            jg = j - no1 - ndns + ndoc
-            dn_dgamma[j,jg] = exp_gamma[jg]*(sum_exp - exp_gamma[jg])/sum_exp ^2
-        end
+        dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul,llg:ndoc:ulg]
+        dn_pi_dgamma_pi[diagind(dn_pi_dgamma_pi)] .= exp_gamma_pi .* (sum_exp .- exp_gamma_pi) ./ sum_exp^2
     end
+
     return n,dn_dgamma
 end
 
@@ -904,20 +902,20 @@ function compute_2RDM(pp,n)
     for l in 1:pp.ndoc
         ldx = pp.no1 + l
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-        ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l) + 1
-        ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l + 1)
+        ll = pp.no1 + pp.ndns + (pp.ndoc-l) + 1
+        ul = ll + pp.ndoc*(pp.ncwo-1)
 
         inter[ldx,ldx] = 0
-        inter[ldx,ll:ul] .= 0
-        inter[ll:ul,ldx] .= 0
-        inter[ll:ul,ll:ul] .= 0
+        inter[ldx,ll:pp.ndoc:ul] .= 0
+        inter[ll:pp.ndoc:ul,ldx] .= 0
+        inter[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
 
         intra[ldx,ldx] = sqrt(n[ldx]*n[ldx])
-        intra[ldx,ll:ul] .= -sqrt.(n[ldx]*n[ll:ul])
-        intra[ll:ul,ldx] .= -sqrt.(n[ldx]*n[ll:ul])
+        intra[ldx,ll:pp.ndoc:ul] .= -sqrt.(n[ldx]*n[ll:pp.ndoc:ul])
+        intra[ll:pp.ndoc:ul,ldx] .= -sqrt.(n[ldx]*n[ll:pp.ndoc:ul])
 
-        intra_ww = view(intra,ll:ul,ll:ul)
-        n_ww = view(n,ll:ul)
+        intra_ww = view(intra,ll:pp.ndoc:ul,ll:pp.ndoc:ul)
+        n_ww = view(n,ll:pp.ndoc:ul)
         @tullio intra_ww[i,j] = sqrt(n_ww[i]*n_ww[j])
     end
 
@@ -940,13 +938,13 @@ function compute_2RDM(pp,n)
         for l in 1:pp.ndoc
             ldx = pp.no1 + l
             # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-            ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l) + 1
-            ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l + 1)
+            ll = pp.no1 + pp.ndns + (pp.ndoc-l) + 1
+            ul = ll + pp.ndoc*(pp.ncwo-1)
 
             Pi_s[ldx,ldx] = 0
-            Pi_s[ldx,ll:ul] .= 0
-            Pi_s[ll:ul,ldx] .= 0
-            Pi_s[ll:ul,ll:ul] .= 0
+            Pi_s[ldx,ll:pp.ndoc:ul] .= 0
+            Pi_s[ll:pp.ndoc:ul,ldx] .= 0
+            Pi_s[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
 	end
         for i in pp.nbeta+1:pp.nalpha
             Pi_s[i,i] = 0
@@ -974,15 +972,15 @@ function compute_2RDM(pp,n)
             for i in 1:pp.ndoc
                 idx = pp.no1 + i
                 # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-                ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - i) + 1
-                ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - i + 1)
+                ll = pp.no1 + pp.ndns + (pp.ndoc-i) + 1
+                ul = ll + pp.ndoc*(pp.ncwo-1)
 
                 h = 1.0 - n[idx]
                 coc = h / h_cut
                 arg = -coc^2
                 F = exp(arg)  # ! Hd/Hole
                 n_d[idx] = n[idx] * F
-                n_d[ll:ul] = n[ll:ul] * F  # ROd = RO*Hd/Hole
+                n_d[ll:pp.ndoc:ul] = n[ll:pp.ndoc:ul] * F  # ROd = RO*Hd/Hole
             end
 
             n_d12 = sqrt.(n_d)
@@ -993,17 +991,17 @@ function compute_2RDM(pp,n)
             for l in 1:pp.ndoc
                 ldx = pp.no1 + l
                 # inicio y fin de los orbitales acoplados a los fuertemente ocupados
-                ll = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l) + 1
-                ul = pp.no1 + pp.ndns + pp.ncwo*(pp.ndoc - l + 1)
+                ll = pp.no1 + pp.ndns + (pp.ndoc-l) + 1
+                ul = ll + pp.ndoc*(pp.ncwo-1)
 
                 inter[ldx,ldx] = 0
-                inter[ldx,ll:ul] .= 0
-                inter[ll:ul,ldx] .= 0
-                inter[ll:ul,ll:ul] .= 0
+                inter[ldx,ll:pp.ndoc:ul] .= 0
+                inter[ll:pp.ndoc:ul,ldx] .= 0
+                inter[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
                 inter2[ldx,ldx] = 0
-                inter2[ldx,ll:ul] .= 0
-                inter2[ll:ul,ldx] .= 0
-                inter2[ll:ul,ll:ul] .= 0
+                inter2[ldx,ll:pp.ndoc:ul] .= 0
+                inter2[ll:pp.ndoc:ul,ldx] .= 0
+                inter2[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
             end
 
 	    inter[pp.nbeta+1:end,pp.nbeta+1:end] .= 0

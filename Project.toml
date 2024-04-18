@@ -4,6 +4,8 @@ authors = ["Juan Felipe Huan Lew Yee <felipe.lew.yee@quimica.unam.mx>", "Jorge M
 version = "0.1.1"
 
 [deps]
+FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 GaussianBasis = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"
 JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

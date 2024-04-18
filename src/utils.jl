@@ -451,26 +451,24 @@ function n_to_gammas_softmax(n,p)
 
     for i in 1:p.ndoc
 
-        ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
-        ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
-        llg = ll - p.ndns + p.ndoc - p.no1
-        ulg = ul - p.ndns + p.ndoc - p.no1
+        ll = p.no1 + p.ndns + (p.ndoc-i) + 1
+        ul = ll + p.ndoc*(p.ncwo-1)
+        n_pi = @view n[ll:p.ndoc:ul]
+ 
+        llg = p.ndoc + (p.ndoc-i) + 1
+        ulg = llg + p.ndoc*(p.ncwo-1)
+        gamma_pi = @view gamma[llg:p.ndoc:ulg]
 
-	ns = n[ll:ul]
-
-	A = zeros(p.ncwo,p.ncwo)
-	b = zeros(p.ncwo)
+        A = zeros(p.ncwo,p.ncwo)
+	    b = zeros(p.ncwo)
 
         for j in 1:p.ncwo
-	    A[j,:] .= ns[j]
-	    A[j,j] = ns[j]-1
-	    b[j] = -ns[j]
-	end
+	        A[j,:] .= n_pi[j]
+	        A[j,j] = n_pi[j]-1
+	        b[j] = -n_pi[j]
+	    end
 
-	x = log.(A\b)
-
-	gamma[llg:ulg] .= x
-
+	    gamma_pi .= log.(A\b)
     end
 
     return gamma
@@ -480,14 +478,21 @@ end
 function n_to_gammas_trigonometric(n,p)
     gamma = zeros(p.nv)
     for i in 1:p.ndoc
-	idx = p.no1 + i
-	gamma[i] = acos(sqrt(2.0*n[idx]-1.0))
-	prefactor = max(1-n[idx],1e-14)
+        idx = p.no1 + i
+        gamma[i] = acos(sqrt(2.0*n[idx]-1.0))
+	    prefactor = max(1-n[idx],1e-14)
+
+        ll_n = p.no1 + p.ndns + (p.ndoc-i) + 1
+        ul_n = ll_n + p.ndoc*(p.ncwo-1)
+        n_pi = @view n[ll_n:p.ndoc:ul_n]
+
+        ll_gamma = p.ndoc + (p.ndoc-i) + 1
+        ul_gamma = ll_gamma + p.ndoc*(p.ncwo-2)
+        gamma_pi = @view gamma[ll_gamma:p.ndoc:ul_gamma]
+
         for j in 1:p.ncwo-1
-            jg = p.ndoc+(i-1)*(p.ncwo-1)+j
-            ig = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + j
-	    gamma[jg] = asin(sqrt(n[ig]/prefactor))
-	    prefactor = prefactor * (cos(gamma[jg]))^2
+            gamma_pi[j] = asin(sqrt(n_pi[j]/prefactor)) 
+            prefactor = prefactor * (cos(gamma_pi[j]))^2
         end
     end
     return gamma
@@ -502,24 +507,26 @@ function order_occupations_softmax(old_C,old_gamma,H,I,b_mnl,p)
     gamma_tmp = zeros(1+p.ncwo)
     C_tmp = zeros(p.nbf,1+p.ncwo)
     for i in 1:p.ndoc
-        old_ll = p.no1 + p.ndns + p.ncwo*(p.ndoc - i) + 1
-        old_ul = p.no1 + p.ndns + p.ncwo*(p.ndoc - i + 1)
-        C_tmp[:,1] = old_C[:,p.no1+i]
-        C_tmp[:,2:end] = old_C[:,old_ll:old_ul]
+        old_ll = p.no1 + p.ndns + (p.ndoc-i) + 1
+        old_ul = old_ll + p.ndoc*(p.ncwo-1)
 
-        old_ll_x = old_ll - p.ndns + p.ndoc - p.no1
-        old_ul_x = old_ul - p.ndns + p.ndoc - p.no1
+        C_tmp[:,1] = old_C[:,p.no1+i]
+        C_tmp[:,2:end] = old_C[:,old_ll:p.ndoc:old_ul]
+
+        old_ll_x = p.ndoc + (p.ndoc-i) + 1
+        old_ul_x = old_ll_x + p.ndoc*(p.ncwo-1)
+
         gamma_tmp[1] = old_gamma[i]
-        gamma_tmp[2:end] = old_gamma[old_ll_x:old_ul_x]
+        gamma_tmp[2:end] = old_gamma[old_ll_x:p.ndoc:old_ul_x]
 
         sort_idx = sortperm(gamma_tmp)[end:-1:1]
         gamma_tmp = gamma_tmp[sort_idx]
         C_tmp = C_tmp[:,sort_idx]
 
         gamma[i] = gamma_tmp[1]
-        gamma[old_ll_x:old_ul_x] = gamma_tmp[2:end]
+        gamma[old_ll_x:p.ndoc:old_ul_x] = gamma_tmp[2:end]
         C[:,p.no1+i] = C_tmp[:,1]
-        C[:,old_ll:old_ul] = C_tmp[:,2:end]
+        C[:,old_ll:p.ndoc:old_ul] = C_tmp[:,2:end]
     end
 
     return C,gamma

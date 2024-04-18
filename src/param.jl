@@ -149,7 +149,7 @@ function Param(bset,mul,charge)
     perdiis = true      # Aplica DIIS cada NDIIS (true) o después de NDIIS (false)
     ncwo = ncwo         # Número de orbitales débilmente ocupados acoplados a cada orbital fueremtente ocupado
     noptorb = noptorb   # Número de orbitales a optimizar Nbf5 <= Noptorb <= Nbf
-    nv = nbf5 - no1 - nsoc #ncwo*ndoc
+    nv = ncwo*ndoc
     gpu = false
     RI = false
 
