@@ -4,8 +4,6 @@ authors = ["Juan Felipe Huan Lew Yee <felipe.lew.yee@quimica.unam.mx>", "Jorge M
 version = "0.1.1"
 
 [deps]
-FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
-FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 GaussianBasis = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"
 JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -16,7 +14,6 @@ Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
-cuTENSOR = "011b41b2-24ef-40a8-b3eb-fa098493e9e1"
 
 [weakdeps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
