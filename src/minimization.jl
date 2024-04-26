@@ -172,7 +172,7 @@ function orbopt_rotations(gamma,C,H,I,b_mnl,p)
         nit = res.iterations
         success = res.g_converged
 
-    elseif p.orb_method=="Rotations_Experimental"  
+    elseif p.orb_method=="ADAM"  
         E,C,nit,success = experimental_minimize_rotations(n,cj12,ck12,C,H,I,b_mnl,p)
     end
 
@@ -195,7 +195,8 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
     alpha = p.alpha
     m = 0.0 .* y
     v = 0.0 .* y
-    beta1 = 0.8
+    vhat_max = 0.0 .* y
+    beta1 = 0.7
     beta2 = 0.999
     improved = false
     for i in 1:p.maxloop
@@ -211,7 +212,6 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 	    improved = true
         end
 
-        #println(E," ", E <= best_E)
         E_old = E
         C = C_new
 
@@ -224,6 +224,7 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
                 nn += 1
             end
         end
+	println(i," ",E," ", E <= best_E, " ", maximum(abs.(grads)), " ", norm(grads))
         if norm(grads) < p.threshgorb
             success = true
             break
@@ -233,12 +234,15 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 	v = beta2 .* v + (1 - beta2) .* (grads .^ 2)
 	mhat = m ./ (1.0 - beta1^i)
 	vhat = v ./ (1.0 - beta2^i)
-	y = - alpha * mhat ./ (sqrt.(vhat .+ 10^-8))
+	vhat_max = max.(vhat_max, vhat)
+	y = - alpha * mhat ./ (sqrt.(vhat_max .+ 10^-8)) #AMSgrad
+	#y = - alpha * mhat ./ (sqrt.(vhat .+ 10^-8))
 
     end
 
     if !improved
-        p.alpha = p.alpha/1.1
+        #p.alpha = p.alpha/2
+        p.maxloop = 2*p.maxloop
 	println("      alpha ",p.alpha)
     end
 
