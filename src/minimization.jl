@@ -224,7 +224,7 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
                 nn += 1
             end
         end
-	println(i," ",E," ", E <= best_E, " ", maximum(abs.(grads)), " ", norm(grads))
+	#println(i," ",E," ", E <= best_E, " ", maximum(abs.(grads)), " ", norm(grads))
         if norm(grads) < p.threshgorb
             success = true
             break
