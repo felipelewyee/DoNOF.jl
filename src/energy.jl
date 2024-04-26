@@ -97,7 +97,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 	ta1 = time()
         if p.orb_method == "ID"
             E_orb,C,nit_orb,success_orb,itlim,fmiug0 = orboptr(C,n,H,I,b_mnl,cj12,ck12,i_ext,itlim,fmiug0,p,printmode)
-        elseif occursin("Rotations", p.orb_method)
+        else
             E_orb,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
         end
 	ta2 = time()
