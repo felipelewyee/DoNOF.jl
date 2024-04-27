@@ -225,7 +225,7 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
             end
         end
 	#println(i," ",E," ", E <= best_E, " ", maximum(abs.(grads)), " ", norm(grads))
-        if norm(grads) < p.threshgorb
+        if norm(grads) < p.threshgorb && improved
             success = true
             break
         end
@@ -243,7 +243,7 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
     if !improved
         #p.alpha = p.alpha/2
         p.maxloop = 2*p.maxloop
-	println("      alpha ",p.alpha)
+	#println("      alpha ",p.alpha)
     end
 
     elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
