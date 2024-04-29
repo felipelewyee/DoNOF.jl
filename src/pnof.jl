@@ -1008,7 +1008,6 @@ function compute_2RDM(pp,n)
             inter[1:pp.nalpha,1:pp.nalpha] .= 0
             inter2[1:pp.nalpha,:] .= 0
             inter2[:,1:pp.nalpha] .= 0
-            println(inter2)
 
             Pi_d = inter - inter2
 
