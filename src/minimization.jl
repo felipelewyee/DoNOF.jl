@@ -213,9 +213,9 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
             end
         end
 
-	if(i>1)
-	  println(maximum(abs.(grads)), " ", norm(grads))
-        end
+	#if(i>1)
+	#  println(maximum(abs.(grads)), " ", norm(grads))
+        #end
 
         if norm(grads) < p.threshgorb && improved
             success = true
@@ -232,7 +232,7 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 
         elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
         E = computeE_elec(Hmat,n,elag,p)
-	println(i," ",E," ", E < best_E)
+	#println(i," ",E," ", E < best_E)
         if E < best_E
             best_C = C
             best_E = E
