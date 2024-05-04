@@ -183,37 +183,25 @@ end
 # ADAM
 function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 
-    best_C = C
 
-    y = zeros(p.nvar)
-    nit = 0
     elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
     E = computeE_elec(Hmat,n,elag,p)
-    E_old = E
-    best_E = E
-    success = false
+
     alpha = p.alpha
+    beta1 = 0.7
+    beta2 = 0.999
+
+    y = zeros(p.nvar)
     m = 0.0 .* y
     v = 0.0 .* y
     vhat_max = 0.0 .* y
-    beta1 = 0.7
-    beta2 = 0.999
+
     improved = false
+    success = false
+    best_E, best_C = E, C
+    nit = 0
     for i in 1:p.maxloop
         nit = nit + 1
-        C_new = rotate_orbital(y,C,p)
-
-        elag,Hmat = compute_Lagrange2(C_new,n,H,I_AO,b_mnl,cj12,ck12,p)
-
-        E = computeE_elec(Hmat,n,elag,p)
-        if E < best_E
-            best_C = C_new
-            best_E = E
-	    improved = true
-        end
-
-        E_old = E
-        C = C_new
 
         grad = 4*elag - 4*elag'
         grads = zeros(p.nvar)
@@ -224,7 +212,11 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
                 nn += 1
             end
         end
-	#println(i," ",E," ", E <= best_E, " ", maximum(abs.(grads)), " ", norm(grads))
+
+	if(i>1)
+	  println(maximum(abs.(grads)), " ", norm(grads))
+        end
+
         if norm(grads) < p.threshgorb && improved
             success = true
             break
@@ -236,18 +228,25 @@ function experimental_minimize_rotations(n,cj12,ck12,C,H,I_AO,b_mnl,p)
 	vhat = v ./ (1.0 - beta2^i)
 	vhat_max = max.(vhat_max, vhat)
 	y = - alpha * mhat ./ (sqrt.(vhat_max .+ 10^-8)) #AMSgrad
-	#y = - alpha * mhat ./ (sqrt.(vhat .+ 10^-8))
+        C = rotate_orbital(y,C,p)
+
+        elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+        E = computeE_elec(Hmat,n,elag,p)
+	println(i," ",E," ", E < best_E)
+        if E < best_E
+            best_C = C
+            best_E = E
+	    improved = true
+        end
 
     end
 
     if !improved
-        #p.alpha = p.alpha/2
-        p.maxloop = 2*p.maxloop
+        p.alpha = p.alpha/10
+        p.maxloop = p.maxloop + 30
 	#println("      alpha ",p.alpha)
     end
 
-    elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
-    E = computeE_elec(Hmat,n,elag,p)
     return best_E,best_C,nit,success
 end
 
