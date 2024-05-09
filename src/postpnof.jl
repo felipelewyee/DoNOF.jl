@@ -1179,12 +1179,14 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     #if(pp.gpu):
     #    I = I.get()
     end
+    GC.gc()
 
     c = sqrt.(n_nbf5)
     c[pp.no1+pp.ndns+1:end] *= -1
 
     @tullio I_MO[r,p,s,q] := Iijkr[r,s,p,q]
     Iijkr = nothing
+    GC.gc()
 
     A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
     Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
@@ -1226,6 +1228,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     I_MO = nothing
     D_aa = nothing
     D_ab = nothing
+    GC.gc()
 
     println("Building M")
     flush(stdout)
@@ -1303,6 +1306,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     AmB = AA .- BB
     AA = nothing
     BB = nothing
+    GC.gc()
 
     dN = v[1:dd] #Diagonal(v[1:dd])
     dNm1 = 1 ./ dN #inv(dN)
@@ -1316,8 +1320,10 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     @tullio dNm1ApBdNm1[i,j] := dNm1[i]*ApB[i,j]*dNm1[j]
     @tullio MM[i,k] := dNm1ApBdNm1[i,j]*AmB[j,k]
     dNm1ApBdNm1 = nothing
+    GC.gc()
     vals = eigvals!(MM)
     MM = nothing
+    GC.gc()
     
     vals = real.(vals)
     vals_neg = vals[vals.<=0.04]
@@ -1342,25 +1348,32 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     EE = M[2*dd+1:2*dd+pp.nbf5,1:dd]
     FF = M[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
     M = nothing
+    GC.gc()
 
     FFm1 = pinv(FF)
     FF = nothing
+    GC.gc()
 
     @tullio CCFFm1[i,k] := CC[i,j]*FFm1[j,k]
     FFm1 = nothing
     CC = nothing
+    GC.gc()
     @tullio tmpMat[i,k] := 2*CCFFm1[i,j]*EE[j,k]
     EE = nothing
     CCFFm1 = nothing
+    GC.gc()
 
     @tullio dNm1ApBdNm1[i,j] := dNm1[i]*(ApB[i,j]-tmpMat[i,j])*dNm1[j]
     ApB = nothing
     tmpMat = nothing
+    GC.gc()
     @tullio MM[i,k] := dNm1ApBdNm1[i,j]*AmB[j,k]
     AmB = nothing
     dNm1ApBdNm1 = nothing
+    GC.gc()
     vals = eigvals!(MM)
     MM = nothing
+    GC.gc()
 
     vals = real.(vals)
     vals_neg = vals[vals.<0.04]
@@ -1390,6 +1403,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     v[Int64(pp.nbf5*(pp.nbf5-1)+1):end] .= 1
 
     A = nothing
+    GC.gc()
 
     sort_idx = sortperm(abs.(dN),rev=true)
     idx = length(dN)
@@ -1437,6 +1451,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     M_ERPA2 = M[1:dim,1:dim]
     M = nothing
+    GC.gc()
 
     for i in 1:dim
         M_ERPA2[i,:] = M_ERPA2[i,:] ./ v[i] 
