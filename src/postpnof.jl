@@ -1194,27 +1194,22 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     println("Building A")
     flush(stdout)
 
-    @tullio A[r,s,p,q] +=  h[s,q]*Id[p,r]*n_nbf5[p]
-    @tullio A[r,s,p,q] += -h[s,q]*Id[p,r]*n_nbf5[s]
-    @tullio A[r,s,p,q] +=  h[p,r]*Id[s,q]*n_nbf5[q]
-    @tullio A[r,s,p,q] += -h[p,r]*Id[s,q]*n_nbf5[r]
+
+    @tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
+    @tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
 
     Daa, Dab = compute_2RDM(pp,n_nbf5)
 
-    @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * Daa[p,u,r,t]
-    @tullio A[r,s,p,q] += -I_MO[s,t,u,q] * Daa[p,u,r,t]
-    @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * Dab[p,u,r,t]
-    @tullio A[r,s,p,q] +=  I_MO[s,t,u,q] * Dab[p,u,t,r]
-    @tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * Daa[s,t,q,u]
-    @tullio A[r,s,p,q] += -I_MO[u,p,r,t] * Daa[s,t,q,u]
-    @tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * Dab[s,t,q,u]
-    @tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * Dab[s,t,u,q]
+    @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * (Daa[p,u,r,t] + Dab[p,u,r,t])
+    @tullio A[r,s,p,q] +=  I_MO[s,t,u,q] * (Dab[p,u,t,r] - Daa[p,u,r,t])
+    @tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * (Daa[s,t,q,u] + Dab[s,t,q,u])
+    @tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * (Dab[s,t,u,q] - Daa[s,t,q,u])
 
    ####
-    @tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * Daa[t,u,r,q]
-    @tullio A[r,s,p,q] += -I_MO[p,s,t,u] * Dab[u,t,r,q]
-    @tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * Daa[s,p,t,u]
-    @tullio A[r,s,p,q] += -I_MO[t,u,q,r] * Dab[p,s,t,u]
+    @tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
+    #@tullio A[r,s,p,q] += -I_MO[p,s,t,u] * Dab[u,t,r,q]
+    @tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
+    #@tullio A[r,s,p,q] += -I_MO[t,u,q,r] * Dab[p,s,t,u]
     ####
     @tullio tmp[r,p] := I_MO[t,p,w,u] * Daa[w,u,r,t]
     @tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
