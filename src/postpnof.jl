@@ -1207,9 +1207,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
    ####
     @tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
-    #@tullio A[r,s,p,q] += -I_MO[p,s,t,u] * Dab[u,t,r,q]
     @tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
-    #@tullio A[r,s,p,q] += -I_MO[t,u,q,r] * Dab[p,s,t,u]
     ####
     @tullio tmp[r,p] := I_MO[t,p,w,u] * Daa[w,u,r,t]
     @tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
