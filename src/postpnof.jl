@@ -1737,7 +1737,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     vals_complex = imag.(vals)
     n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 1e-5])[1]
     vals_real = vals_real[abs.(vals_complex) .< 1e-5]
-    vals = vals_real[vals_real .> 0.02]
+    vals = vals_real[vals_real .> 0.04]
     vals = vals*27.2114
 
     @printf("  Excitation energies ERPA2/PNOF%i (eV)\n",pp.ipnof)
