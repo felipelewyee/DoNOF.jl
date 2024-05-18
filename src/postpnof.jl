@@ -1473,7 +1473,6 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     println("Building A")
     flush(stdout)
 
-
     #@tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
     #@tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
 
@@ -1484,7 +1483,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     #@tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * (Daa[s,t,q,u] + Dab[s,t,q,u])
     #@tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * (Dab[s,t,u,q] - Daa[s,t,q,u])
 
-   #####
+    #####
     #@tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
     #@tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
     #####
@@ -1500,8 +1499,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     A = build_A_from_pnof(h,n,I_MO,pp)
 
     I_MO = nothing
-    D_aa = nothing
-    D_ab = nothing
+    #D_aa = nothing
+    #D_ab = nothing
     GC.gc()
 
     println("Building M")
@@ -1573,16 +1572,14 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     ######## ERPA0 ########
 
     dd = Int64(dim/2)
-    AA = M[1:dd,1:dd]
-    BB = M[1:dd,dd+1:2*dd]
+    AA = @view M[1:dd,1:dd]
+    BB = @view M[1:dd,dd+1:2*dd]
 
     ApB = AA .+ BB
     AmB = AA .- BB
-    AA = nothing
-    BB = nothing
     GC.gc()
 
-    dN = v[1:dd] #Diagonal(v[1:dd])
+    dN = @view v[1:dd] #Diagonal(v[1:dd])
     dNm1 = 1 ./ dN #inv(dN)
 
     maxApBsym = maximum(abs.(ApB .- ApB'))
@@ -1618,10 +1615,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ######## ERPA  ########
   
-    CC = M[1:dd,2*dd+1:2*dd+pp.nbf5]
-    EE = M[2*dd+1:2*dd+pp.nbf5,1:dd]
-    FF = M[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
-    M = nothing
+    CC = @view M[1:dd,2*dd+1:2*dd+pp.nbf5]
+    EE = @view M[2*dd+1:2*dd+pp.nbf5,1:dd]
+    FF = @view M[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
     GC.gc()
 
     FFm1 = pinv(FF)
@@ -1634,6 +1630,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     GC.gc()
     @tullio tmpMat[i,k] := 2*CCFFm1[i,j]*EE[j,k]
     EE = nothing
+    M = nothing
     CCFFm1 = nothing
     GC.gc()
 
@@ -1650,8 +1647,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     GC.gc()
 
     vals = real.(vals)
-    vals_neg = vals[vals.<0.00]
-    vals_pos = vals[vals.>=0.00]
+    vals_neg = vals[vals.<=0.00]
+    vals_pos = vals[vals.>0.00]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
@@ -1735,8 +1732,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     vals_real = real.(vals)
     vals_complex = imag.(vals)
-    n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 1e-5])[1]
-    vals_real = vals_real[abs.(vals_complex) .< 1e-5]
+    n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 1e-7])[1]
+    vals_real = vals_real[abs.(vals_complex) .< 1e-7]
     vals = vals_real[vals_real .> 0.04]
     vals = vals*27.2114
 
