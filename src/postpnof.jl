@@ -1186,10 +1186,7 @@ function build_A_from_pnof(h,n,I_MO,pp)
     @tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
     @tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
 
-    Daa, Dab = compute_2RDM(pp,n_nbf5)
-
     ######
-    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
 
     inter = n .* n'
     intra = zeros(pp.nbf5,pp.nbf5)
@@ -1268,7 +1265,6 @@ function build_A_from_pnof(h,n,I_MO,pp)
 
     ######################
 
-    # PNOF7
     if(pp.ipnof == 7 || pp.ipnof==8)
         fi = n .* (1 .- n)
         fi[fi .<= 0] .= 0
