@@ -1144,6 +1144,291 @@ function build_M_ERPA2(nbf5,A,c)
     return M
 end
 
+function build_A_from_D(h,n_nbf5,I_MO,pp)
+
+    A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
+    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
+
+    @tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
+    @tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
+
+    Daa, Dab = compute_2RDM(pp,n_nbf5)
+
+    @tullio A[r,s,p,q] +=  I_MO[s,q,t,u] * (Daa[p,u,r,t] + Dab[p,u,r,t])
+    @tullio A[r,s,p,q] +=  I_MO[s,u,t,q] * (Dab[p,u,t,r] - Daa[p,u,r,t])
+    @tullio A[r,s,p,q] +=  I_MO[u,t,p,r] * (Daa[s,t,q,u] + Dab[s,t,q,u])
+    @tullio A[r,s,p,q] +=  I_MO[u,r,p,t] * (Dab[s,t,u,q] - Daa[s,t,q,u])
+
+   ####
+    @tullio A[r,s,p,q] +=  I_MO[p,t,s,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
+    @tullio A[r,s,p,q] +=  I_MO[t,q,u,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
+    ####
+    @tullio tmp[r,p] := I_MO[t,w,p,u] * Daa[w,u,r,t]
+    @tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
+    @tullio tmp[r,p] := I_MO[t,w,p,u] * Dab[u,w,r,t]
+    @tullio A[r,s,p,q] += -Id[s,q]*tmp[r,p]
+    @tullio tmp[s,q] :=  I_MO[t,w,u,q] * Daa[s,w,t,u]
+    @tullio A[r,s,p,q] +=  Id[p,r]*tmp[s,q]
+    @tullio tmp[s,q] :=  I_MO[t,w,u,q] * Dab[w,s,t,u]
+    @tullio A[r,s,p,q] += -Id[p,r]*tmp[s,q]
+
+    return A
+
+end
+
+function build_A_from_pnof(h,n,I_MO,pp)
+
+    n_nbf5 = view(n,1:pp.nbf5)
+
+    A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
+    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
+
+    @tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
+    @tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
+
+    Daa, Dab = compute_2RDM(pp,n_nbf5)
+
+    ######
+    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
+
+    inter = n .* n'
+    intra = zeros(pp.nbf5,pp.nbf5)
+
+    # Intrapair Electron Correlation
+    for l in 1:pp.ndoc
+        ldx = pp.no1 + l
+        # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+        ll = pp.no1 + pp.ndns + (pp.ndoc-l) + 1
+        ul = ll + pp.ndoc*(pp.ncwo-1)
+
+        inter[ldx,ldx] = 0
+        inter[ldx,ll:pp.ndoc:ul] .= 0
+        inter[ll:pp.ndoc:ul,ldx] .= 0
+        inter[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
+
+        intra[ldx,ldx] = sqrt(n[ldx]*n[ldx])
+        intra[ldx,ll:pp.ndoc:ul] .= -sqrt.(n[ldx]*n[ll:pp.ndoc:ul])
+        intra[ll:pp.ndoc:ul,ldx] .= -sqrt.(n[ldx]*n[ll:pp.ndoc:ul])
+
+        intra_ww = view(intra,ll:pp.ndoc:ul,ll:pp.ndoc:ul)
+        n_ww = view(n,ll:pp.ndoc:ul)
+        @tullio intra_ww[i,j] = sqrt(n_ww[i]*n_ww[j])
+    end
+
+    for i in pp.nbeta+1:pp.nalpha
+        inter[i,i] = 0
+    end
+
+    #@tullio Daa[p,q,r,t] :=  inter[p,q]*Id[p,r]*Id[q,t]
+    #@tullio Daa[p,q,r,t] += -inter[p,q]*Id[p,t]*Id[q,r]
+    #@tullio Dab[p,q,r,t] :=  inter[p,q]*Id[p,r]*Id[q,t]
+    #@tullio Dab[p,q,r,t] +=  intra[p,r]*Id[p,q]*Id[r,t]
+
+    #######################
+
+    @tullio A[p,s,p,q] +=  I_MO[s,q,u,u] * inter[p,u]#*Id[p,r]*Id[u,t]#Daa[p,u,r,t] pqrt->purt
+    @tullio A[r,s,p,q] += -I_MO[s,q,p,r] * inter[p,r]#*Id[p,t]*Id[u,r]#Daa[p,u,r,t] pqrt->purt
+    @tullio A[p,s,p,q] +=  I_MO[s,q,u,u] * inter[p,u]#*Id[p,r]*Id[u,t]#Dab[p,u,r,t]
+    @tullio A[r,s,p,q] +=  I_MO[s,q,r,p] * intra[p,r]#*Id[p,u]*Id[r,t]#Dab[p,u,r,t]
+    @tullio A[r,s,p,q] +=  I_MO[s,r,p,q] * inter[p,r]#*Id[p,t]*Id[u,r]#Dab[p,u,t,r]
+    @tullio A[r,s,p,q] +=  I_MO[s,p,r,q] * intra[p,r]#*Id[p,u]*Id[t,r]#Dab[p,u,t,r]
+    @tullio A[p,s,p,q] += -I_MO[s,u,u,q] * inter[p,u]#*Id[p,r]*Id[u,t]#Daa[p,u,r,t] pqrt->purt
+    @tullio A[r,s,p,q] +=  I_MO[s,r,p,q] * inter[p,r]#*Id[p,t]*Id[u,r]#Daa[p,u,r,t] pqrt->purt
+    @tullio A[r,q,p,q] +=  I_MO[u,u,p,r] * inter[q,u]#*Id[s,q]*Id[t,u]#Daa[s,t,q,u] pqrt->stqu
+    @tullio A[r,s,p,q] += -I_MO[s,q,p,r] * inter[s,q]#*Id[s,u]*Id[t,q]#Daa[s,t,q,u] pqrt->stqu
+    @tullio A[r,q,p,q] +=  I_MO[u,u,p,r] * inter[q,u]#*Id[s,q]*Id[t,u]#Dab[s,t,q,u]
+    @tullio A[r,s,p,q] +=  I_MO[q,s,p,r] * intra[s,q]#*Id[s,t]*Id[q,u]#Dab[s,t,q,u]
+    @tullio A[r,s,p,q] +=  I_MO[s,r,p,q] * inter[s,q]#*Id[s,u]*Id[t,q]#Dab[s,t,u,q]
+    @tullio A[r,s,p,q] +=  I_MO[q,r,p,s] * intra[s,q]#*Id[s,t]*Id[u,q]#Dab[s,t,u,q]
+    @tullio A[r,q,p,q] += -I_MO[u,r,p,u] * inter[q,u]#*Id[s,q]*Id[t,u]#Daa[s,t,q,u] pqrt->stqu
+    @tullio A[r,s,p,q] +=  I_MO[s,r,p,q] * inter[s,q]#*Id[s,u]*Id[t,q]#Daa[s,t,q,u] pqrt->stqu
+
+    ####
+    @tullio A[r,s,p,q] +=  I_MO[p,r,s,q] * inter[r,q]#*Id[t,r]*Id[u,q]#Daa[t,u,r,q] pqrt->turq
+    @tullio A[r,s,p,q] += -I_MO[p,q,s,r] * inter[q,r]#*Id[t,q]*Id[u,r]#Daa[t,u,r,q] pqrt->turq
+    @tullio A[r,s,p,q] += -I_MO[p,q,s,r] * inter[r,q]#*Id[u,r]*Id[t,q]#Dab[u,t,r,q]
+    @tullio A[q,s,p,q] += -I_MO[p,u,s,u] * intra[q,u]#*Id[u,t]*Id[r,q]#Dab[u,t,r,q]
+    @tullio A[r,s,p,q] +=  I_MO[s,q,p,r] * inter[s,p]#*Id[s,t]*Id[p,u]#Daa[s,p,t,u] pqrt->sptu
+    @tullio A[r,s,p,q] += -I_MO[p,q,s,r] * inter[s,p]#*Id[s,u]*Id[p,t]#Daa[s,p,t,u] pqrt->sptu
+    @tullio A[r,s,p,q] += -I_MO[p,q,s,r] * inter[p,s]#*Id[p,t]*Id[s,u]#Dab[p,s,t,u]
+    @tullio A[r,p,p,q] += -I_MO[u,q,u,r] * intra[p,u]#*Id[p,s]*Id[t,u]#Dab[p,s,t,u]
+    ####
+    @tullio tmp[r,p] :=  I_MO[u,r,p,u] * inter[r,u]#*Id[w,r]*Id[u,t]#Daa[w,u,r,t] pqrt->wurt
+    @tullio tmp[r,p] += -I_MO[u,u,p,r] * inter[u,r]#*Id[w,t]*Id[u,r]#Daa[w,u,r,t] pqrt->wurt
+    @tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
+    @tullio tmp[r,p] := I_MO[p,r,u,u] * inter[r,u]#*Id[u,r]*Id[w,t]#Dab[u,w,r,t]
+    @tullio tmp[r,p] += I_MO[r,u,p,u] * intra[r,u]#*Id[u,w]*Id[r,t]#Dab[u,w,r,t]
+    @tullio A[r,s,p,q] += -Id[s,q]*tmp[r,p]
+    @tullio tmp[s,q] :=  I_MO[s,u,u,q] * inter[s,u]#*Id[s,t]*Id[w,u]#Daa[s,w,t,u] pqrt->swtu
+    @tullio tmp[s,q] += -I_MO[u,u,s,q] * inter[s,u]#*Id[s,u]*Id[w,t]#Daa[s,w,t,u] pqrt->swtu
+    @tullio A[r,s,p,q] +=  Id[p,r]*tmp[s,q]
+    @tullio tmp[s,q] :=  I_MO[u,u,s,q] * inter[s,u]#*Id[w,t]*Id[s,u]#Dab[w,s,t,u]
+    @tullio tmp[s,q] +=  I_MO[u,s,u,q] * intra[s,u]#*Id[w,s]*Id[t,u]#Dab[w,s,t,u]
+    @tullio A[r,s,p,q] += -Id[p,r]*tmp[s,q]
+
+    ######################
+
+    # PNOF7
+    if(pp.ipnof == 7 || pp.ipnof==8)
+        fi = n .* (1 .- n)
+        fi[fi .<= 0] .= 0
+        fi = sqrt.(fi)
+        Pi_s = fi .* fi'
+        # Intrapair Electron Correlation
+        for l in 1:pp.ndoc
+            ldx = pp.no1 + l
+            # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+            ll = pp.no1 + pp.ndns + (pp.ndoc-l) + 1
+            ul = ll + pp.ndoc*(pp.ncwo-1)
+
+            Pi_s[ldx,ldx] = 0
+            Pi_s[ldx,ll:pp.ndoc:ul] .= 0
+            Pi_s[ll:pp.ndoc:ul,ldx] .= 0
+            Pi_s[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
+        end
+        for i in pp.nbeta+1:pp.nalpha
+            Pi_s[i,i] = 0
+        end
+
+        inter2 = 0*Pi_s
+        inter2[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha] = Pi_s[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha]
+        Pi_s[pp.nbeta+1:pp.nalpha,pp.nbeta+1:pp.nalpha] .= 0
+
+        #@tullio Dab[p,q,r,t] += -inter2[p,q]*Id[p,t]*Id[q,r]
+
+        @tullio A[r,s,p,q] +=  -I_MO[s,q,p,r] * inter2[p,r]#*Id[p,t]*Id[u,r]#Dab[p,u,r,t]
+        @tullio A[p,s,p,q] +=  -I_MO[s,u,u,q] * inter2[p,u]#*Id[p,r]*Id[u,t]#Dab[p,u,t,r]
+        @tullio A[r,s,p,q] +=  -I_MO[s,q,p,r] * inter2[s,q]#*Id[s,u]*Id[t,q]#Dab[s,t,q,u]
+        @tullio A[r,q,p,q] +=  -I_MO[u,r,p,u] * inter2[q,u]#*Id[s,q]*Id[t,u]#Dab[s,t,u,q]
+
+        #####
+        @tullio A[r,s,p,q] += I_MO[p,r,s,q] * inter2[q,r]#*Id[u,q]*Id[t,r]#Dab[u,t,r,q]
+        @tullio A[r,s,p,q] += I_MO[s,q,p,r] * inter2[p,s]#*Id[p,u]*Id[s,t]#Dab[p,s,t,u]
+        #####
+        @tullio tmp[r,p] := I_MO[u,r,p,u] * inter2[r,u]#*Id[u,t]*Id[w,r]#Dab[u,w,r,t]
+        @tullio A[r,s,p,q] += Id[s,q]*tmp[r,p]
+        @tullio tmp[s,q] :=  I_MO[s,u,u,q] * inter2[s,u]#*Id[w,u]*Id[s,t]#Dab[w,s,t,u]
+        @tullio A[r,s,p,q] += Id[p,r]*tmp[s,q]
+
+        if(pp.ipnof==8)
+            Pi_s[1:pp.nbeta,1:pp.nbeta] .= 0
+            Pi_s[1:pp.nbeta,pp.nbeta+1:pp.nalpha] *= 0.5
+            Pi_s[pp.nbeta+1:pp.nalpha,1:pp.nbeta] *= 0.5
+        end
+
+        #@tullio Dab[p,q,r,t] += -Pi_s[p,r]*Id[p,q]*Id[r,t]
+
+        @tullio A[r,s,p,q] +=  -I_MO[s,q,p,r] * Pi_s[p,r]#*Id[p,u]*Id[r,t]#Dab[p,u,r,t]
+        @tullio A[r,s,p,q] +=  -I_MO[s,p,r,q] * Pi_s[p,r]#*Id[p,u]*Id[t,r]#Dab[p,u,t,r]
+        @tullio A[r,s,p,q] +=  -I_MO[s,q,p,r] * Pi_s[s,q]#*Id[s,t]*Id[q,u]#Dab[s,t,q,u]
+        @tullio A[r,s,p,q] +=  -I_MO[q,r,p,s] * Pi_s[s,q]#*Id[s,t]*Id[u,q]#Dab[s,t,u,q]
+        ####
+        @tullio A[q,s,p,q] += I_MO[p,u,s,u] * Pi_s[q,u]#*Id[u,t]*Id[r,q]#Dab[u,t,r,q]
+        @tullio A[r,p,p,q] += I_MO[q,u,r,u] * Pi_s[p,u]#*Id[p,s]*Id[t,u]#Dab[p,s,t,u]
+        ####
+        @tullio tmp[r,p] := I_MO[r,u,p,u] * Pi_s[r,u]#*Id[u,w]*Id[r,t]#Dab[u,w,r,t]
+        @tullio A[r,s,p,q] += Id[s,q]*tmp[r,p]
+        @tullio tmp[s,q] :=  I_MO[s,u,q,u] * Pi_s[s,u]#*Id[w,s]*Id[t,u]#Dab[w,s,t,u]
+        @tullio A[r,s,p,q] += Id[p,r]*tmp[s,q]
+
+        if(pp.ipnof==8)
+
+            h_cut = 0.02*sqrt(2.0)
+            n_d = zeros(size(n)[1])
+
+            for i in 1:pp.ndoc
+                idx = pp.no1 + i
+                # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+                ll = pp.no1 + pp.ndns + (pp.ndoc-i) + 1
+                ul = ll + pp.ndoc*(pp.ncwo-1)
+
+                h = 1.0 - n[idx]
+                coc = h / h_cut
+                arg = -coc^2
+                F = exp(arg)  # ! Hd/Hole
+                n_d[idx] = n[idx] * F
+                n_d[ll:pp.ndoc:ul] = n[ll:pp.ndoc:ul] * F  # ROd = RO*Hd/Hole
+            end
+
+            n_d12 = sqrt.(n_d)
+
+            inter = n_d12 .* n_d12' - n_d .* n_d'
+            inter2 = n_d12 .* n_d12' + n_d .* n_d'
+            # Intrapair Electron Correlation
+            for l in 1:pp.ndoc
+                ldx = pp.no1 + l
+                # inicio y fin de los orbitales acoplados a los fuertemente ocupados
+                ll = pp.no1 + pp.ndns + (pp.ndoc-l) + 1
+                ul = ll + pp.ndoc*(pp.ncwo-1)
+
+                inter[ldx,ldx] = 0
+                inter[ldx,ll:pp.ndoc:ul] .= 0
+                inter[ll:pp.ndoc:ul,ldx] .= 0
+                inter[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
+                inter2[ldx,ldx] = 0
+                inter2[ldx,ll:pp.ndoc:ul] .= 0
+                inter2[ll:pp.ndoc:ul,ldx] .= 0
+                inter2[ll:pp.ndoc:ul,ll:pp.ndoc:ul] .= 0
+            end
+
+            inter[pp.nbeta+1:end,pp.nbeta+1:end] .= 0
+            inter[1:pp.nalpha,1:pp.nalpha] .= 0
+            inter2[1:pp.nalpha,:] .= 0
+            inter2[:,1:pp.nalpha] .= 0
+
+            Pi_d = inter - inter2
+
+            #@tullio Dab[p,q,r,t] += -Pi_d[p,r]*Id[p,q]*Id[r,t]
+
+            @tullio A[r,s,p,q] +=  -I_MO[r,p,s,q] * Pi_d[p,r]#*Id[p,u]*Id[r,t]#Dab[p,u,r,t]
+            @tullio A[r,s,p,q] +=  -I_MO[r,q,s,p] * Pi_d[p,r]#*Id[p,u]*Id[t,r]#Dab[p,u,t,r]
+            @tullio A[r,s,p,q] +=  -I_MO[r,p,s,q] * Pi_d[s,q]#*Id[s,t]*Id[q,u]#Dab[s,t,q,u]
+            @tullio A[r,s,p,q] +=  -I_MO[r,q,s,p] * Pi_d[s,q]#*Id[s,t]*Id[u,q]#Dab[s,t,u,q]
+            ####
+            @tullio A[q,s,p,q] += I_MO[s,u,p,u] * Pi_d[q,u]#*Id[u,t]*Id[r,q]#Dab[u,t,r,q]
+            @tullio A[r,p,p,q] += I_MO[r,u,q,u] * Pi_d[p,u]#*Id[p,s]*Id[t,u]#Dab[p,s,t,u]
+            ####
+            @tullio tmp[r,p] := I_MO[r,u,p,u] * Pi_d[r,u]#*Id[u,w]*Id[r,t]#Dab[u,w,r,t]
+            @tullio A[r,s,p,q] += Id[s,q]*tmp[r,p]
+            @tullio tmp[s,q] :=  I_MO[s,u,q,u] * Pi_d[s,u]#*Id[w,s]*Id[t,u]#Dab[w,s,t,u]
+            @tullio A[r,s,p,q] += Id[p,r]*tmp[s,q]
+        end
+
+    end
+
+    #########################
+
+    #@tullio A[r,s,p,q] +=  I_MO[s,q,t,u] * Daa[p,u,r,t]
+    #@tullio A[r,s,p,q] +=  I_MO[s,q,t,u] * Dab[p,u,r,t]
+    #@tullio A[r,s,p,q] +=  I_MO[s,u,t,q] * Dab[p,u,t,r]
+    #@tullio A[r,s,p,q] += -I_MO[s,u,t,q] * Daa[p,u,r,t]
+    #@tullio A[r,s,p,q] +=  I_MO[u,t,p,r] * Daa[s,t,q,u]
+    #@tullio A[r,s,p,q] +=  I_MO[u,t,p,r] * Dab[s,t,q,u]
+    #@tullio A[r,s,p,q] +=  I_MO[u,r,p,t] * Dab[s,t,u,q]
+    #@tullio A[r,s,p,q] += -I_MO[u,r,p,t] * Daa[s,t,q,u]
+
+    #####
+    #@tullio A[r,s,p,q] +=  I_MO[p,t,s,u] * Daa[t,u,r,q]
+    #@tullio A[r,s,p,q] += -I_MO[p,t,s,u] * Dab[u,t,r,q]
+    #@tullio A[r,s,p,q] +=  I_MO[t,q,u,r] * Daa[s,p,t,u]
+    #@tullio A[r,s,p,q] += -I_MO[t,q,u,r] * Dab[p,s,t,u]
+    #####
+    #@tullio tmp[r,p] := I_MO[t,w,p,u] * Daa[w,u,r,t]
+    #@tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
+    #@tullio tmp[r,p] := I_MO[t,w,p,u] * Dab[u,w,r,t]
+    #@tullio A[r,s,p,q] += -Id[s,q]*tmp[r,p]
+    #@tullio tmp[s,q] :=  I_MO[t,w,u,q] * Daa[s,w,t,u]
+    #@tullio A[r,s,p,q] +=  Id[p,r]*tmp[s,q]
+    #@tullio tmp[s,q] :=  I_MO[t,w,u,q] * Dab[w,s,t,u]
+    #@tullio A[r,s,p,q] += -Id[p,r]*tmp[s,q]
+
+    #########################
+
+    return A
+
+end
+
+
 function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     println("\n---------------")
@@ -1166,7 +1451,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
         @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
         @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
 	b_pnl = nothing
-	@tullio Iijkr[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
+	@tullio I_MO[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
 	b_pql = nothing
     else
         @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
@@ -1174,7 +1459,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 	Iinsl = nothing
         @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
 	Iijsl = nothing
-        @tullio Iijkr[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
+        @tullio I_MO[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
 	Iijkl = nothing
     #if(pp.gpu):
     #    I = I.get()
@@ -1184,39 +1469,39 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     c = sqrt.(n_nbf5)
     c[pp.no1+pp.ndns+1:end] *= -1
 
-    @tullio I_MO[r,p,s,q] := Iijkr[r,s,p,q]
-    Iijkr = nothing
+    #@tullio I_MO[r,p,s,q] := Iijkr[r,s,p,q]
+    #Iijkr = nothing
     GC.gc()
 
-    A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
-    Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
 
     println("Building A")
     flush(stdout)
 
 
-    @tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
-    @tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
+    #@tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
+    #@tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
 
-    Daa, Dab = compute_2RDM(pp,n_nbf5)
+    #Daa, Dab = compute_2RDM(pp,n_nbf5)
 
-    @tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * (Daa[p,u,r,t] + Dab[p,u,r,t])
-    @tullio A[r,s,p,q] +=  I_MO[s,t,u,q] * (Dab[p,u,t,r] - Daa[p,u,r,t])
-    @tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * (Daa[s,t,q,u] + Dab[s,t,q,u])
-    @tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * (Dab[s,t,u,q] - Daa[s,t,q,u])
+    #@tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * (Daa[p,u,r,t] + Dab[p,u,r,t])
+    #@tullio A[r,s,p,q] +=  I_MO[s,t,u,q] * (Dab[p,u,t,r] - Daa[p,u,r,t])
+    #@tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * (Daa[s,t,q,u] + Dab[s,t,q,u])
+    #@tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * (Dab[s,t,u,q] - Daa[s,t,q,u])
 
-   ####
-    @tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
-    @tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
-    ####
-    @tullio tmp[r,p] := I_MO[t,p,w,u] * Daa[w,u,r,t]
-    @tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
-    @tullio tmp[r,p] := I_MO[t,p,w,u] * Dab[u,w,r,t]
-    @tullio A[r,s,p,q] += -Id[s,q]*tmp[r,p]
-    @tullio tmp[s,q] :=  I_MO[t,u,w,q] * Daa[s,w,t,u]
-    @tullio A[r,s,p,q] +=  Id[p,r]*tmp[s,q]
-    @tullio tmp[s,q] :=  I_MO[t,u,w,q] * Dab[w,s,t,u]
-    @tullio A[r,s,p,q] += -Id[p,r]*tmp[s,q]
+   #####
+    #@tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
+    #@tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
+    #####
+    #@tullio tmp[r,p] := I_MO[t,p,w,u] * Daa[w,u,r,t]
+    #@tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
+    #@tullio tmp[r,p] := I_MO[t,p,w,u] * Dab[u,w,r,t]
+    #@tullio A[r,s,p,q] += -Id[s,q]*tmp[r,p]
+    #@tullio tmp[s,q] :=  I_MO[t,u,w,q] * Daa[s,w,t,u]
+    #@tullio A[r,s,p,q] +=  Id[p,r]*tmp[s,q]
+    #@tullio tmp[s,q] :=  I_MO[t,u,w,q] * Dab[w,s,t,u]
+    #@tullio A[r,s,p,q] += -Id[p,r]*tmp[s,q]
+
+    A = build_A_from_pnof(h,n,I_MO,pp)
 
     I_MO = nothing
     D_aa = nothing
@@ -1319,8 +1604,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     GC.gc()
     
     vals = real.(vals)
-    vals_neg = vals[vals.<=0.04]
-    vals_pos = vals[vals.>0.04]
+    vals_neg = vals[vals.<=0.00]
+    vals_pos = vals[vals.>0.00]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
@@ -1369,8 +1654,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     GC.gc()
 
     vals = real.(vals)
-    vals_neg = vals[vals.<0.04]
-    vals_pos = vals[vals.>=0.04]
+    vals_neg = vals[vals.<0.00]
+    vals_pos = vals[vals.>=0.00]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
@@ -1454,9 +1739,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     vals_real = real.(vals)
     vals_complex = imag.(vals)
-    n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 0.04])[1]
-    vals_real = vals_real[abs.(vals_complex) .< 0.04]
-    vals = vals_real[vals_real .> 0.04]
+    n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 1e-5])[1]
+    vals_real = vals_real[abs.(vals_complex) .< 1e-5]
+    vals = vals_real[vals_real .> 0.02]
     vals = vals*27.2114
 
     @printf("  Excitation energies ERPA2/PNOF%i (eV)\n",pp.ipnof)
