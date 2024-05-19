@@ -206,3 +206,28 @@ function iajb_Full(C,I,no1,nalpha,nbf,nbf5)
     return iajb
 
 end
+
+function compute_eris_full(b_mnl, I_AO, C, nbf5)
+
+    C_nbf5 = @view C[1:end,1:nbf5]
+
+    if isnothing(b_mnl)
+        @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
+        @tullio Iijsl[i,j,s,l] := Iinsl[i,n,s,l] * C_nbf5[n,j]
+        Iinsl = nothing
+        @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
+        Iijsl = nothing
+        @tullio I_MO[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
+        Iijkl = nothing
+    #if(pp.gpu):
+    #    I = I.get()
+    else
+        @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
+        @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
+        b_pnl = nothing
+        @tullio I_MO[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
+        b_pql = nothing
+    end
+
+    return I_MO
+end

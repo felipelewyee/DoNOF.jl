@@ -1176,9 +1176,14 @@ function build_A_from_D(h,n_nbf5,I_MO,pp)
 
 end
 
-function build_A_from_pnof(h,n,I_MO,pp)
+function build_A_from_pnof(n,C,H,b_mnl,I_AO,pp)
 
     n_nbf5 = view(n,1:pp.nbf5)
+    C_nbf5 = view(C,1:pp.nbf,1:pp.nbf5)
+    @tullio h_nbf5[m,j] := H[m,n]*C_nbf5[n,j]
+    @tullio h[i,j] := C_nbf5[m,i]*h_nbf5[m,j]
+
+    I_MO = compute_eris_full(b_mnl, I_AO, C, pp.nbf5)
 
     A = zeros(pp.nbf5,pp.nbf5,pp.nbf5,pp.nbf5)
     Id = 1. * Matrix(I, pp.nbf5, pp.nbf5)
@@ -1420,10 +1425,12 @@ function build_A_from_pnof(h,n,I_MO,pp)
 
     #########################
 
+    I_MO = nothing
+    GC.gc()
+
     return A
 
 end
-
 
 function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
@@ -1434,39 +1441,10 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     tol_dn = 10^-3
 
-    println("Transforming Integrals")
-    flush(stdout)
-
-    C_nbf5 = view(C,1:pp.nbf,1:pp.nbf5)
-    n_nbf5 = view(n,1:pp.nbf5)
-    @tullio h_nbf5[m,j] := H[m,n]*C_nbf5[n,j]
-    @tullio h[i,j] := C_nbf5[m,i]*h_nbf5[m,j]
-
-    if(pp.RI)
-        @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
-        @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
-	b_pnl = nothing
-	@tullio I_MO[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
-	b_pql = nothing
-    else
-        @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
-        @tullio Iijsl[i,j,s,l] := Iinsl[i,n,s,l] * C_nbf5[n,j]
-	Iinsl = nothing
-        @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
-	Iijsl = nothing
-        @tullio I_MO[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
-	Iijkl = nothing
-    #if(pp.gpu):
-    #    I = I.get()
-    end
-    GC.gc()
-
     println("Building A")
     flush(stdout)
 
-    A = build_A_from_pnof(h,n,I_MO,pp)
-
-    I_MO = nothing
+    A = build_A_from_pnof(n,C,H,b_mnl,I_AO,pp)
     GC.gc()
 
     println("Building M")
@@ -1560,8 +1538,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ######## ERPA  ########
   
-    CC = M_sorted[1:dd,2*dd+1:2*dd+pp.nbf5]
-    EE = M_sorted[2*dd+1:2*dd+pp.nbf5,1:dd]
+    CC = @view M_sorted[1:dd,2*dd+1:2*dd+pp.nbf5]
+    EE = @view M_sorted[2*dd+1:2*dd+pp.nbf5,1:dd]
     FF = @view M_sorted[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
     GC.gc()
 
@@ -1569,11 +1547,11 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     FF = nothing
     GC.gc()
 
-    @tullio CCFFm1[i,k] := CC[i,j]*FFm1[j,k]
+    CCFFm1 = CC*FFm1
     FFm1 = nothing
     CC = nothing
     GC.gc()
-    @tullio tmpMat[i,k] := 2*CCFFm1[i,j]*EE[j,k]
+    tmpMat = 2*CCFFm1*EE
     EE = nothing
     M_sorted = nothing
     M = nothing
@@ -1610,26 +1588,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     flush(stdout)
 
     ######## ERPA2 ########
-
-    if(pp.RI)
-        @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
-        @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
-        b_pnl = nothing
-        @tullio I_MO[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
-        b_pql = nothing
-    else
-        @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
-        @tullio Iijsl[i,j,s,l] := Iinsl[i,n,s,l] * C_nbf5[n,j]
-        Iinsl = nothing
-        @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
-        Iijsl = nothing
-        @tullio I_MO[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
-        Iijkl = nothing
-    #if(pp.gpu):
-    #    I = I.get()
-    end
-    GC.gc()
-
+    n_nbf5 = view(n,1:pp.nbf5)
     c = sqrt.(n_nbf5)
     c[pp.no1+pp.ndns+1:end] *= -1
 
@@ -1637,10 +1596,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     println("Building A")
     flush(stdout)
-
-    A = build_A_from_pnof(h,n,I_MO,pp)
-
-    I_MO = nothing
+    A = build_A_from_pnof(n,C,H,b_mnl,I_AO,pp)
     GC.gc()
 
     M = build_M_ERPA2(pp.nbf5,A,c)
