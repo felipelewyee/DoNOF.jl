@@ -1442,7 +1442,6 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     @tullio h_nbf5[m,j] := H[m,n]*C_nbf5[n,j]
     @tullio h[i,j] := C_nbf5[m,i]*h_nbf5[m,j]
 
-
     if(pp.RI)
         @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
         @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
@@ -1462,45 +1461,12 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     end
     GC.gc()
 
-    c = sqrt.(n_nbf5)
-    c[pp.no1+pp.ndns+1:end] *= -1
-
-    #@tullio I_MO[r,p,s,q] := Iijkr[r,s,p,q]
-    #Iijkr = nothing
-    GC.gc()
-
-
     println("Building A")
     flush(stdout)
-
-    #@tullio A[p,s,p,q] +=  h[s,q]*(n_nbf5[p] - n_nbf5[s])
-    #@tullio A[r,q,p,q] +=  h[p,r]*(n_nbf5[q] - n_nbf5[r])
-
-    #Daa, Dab = compute_2RDM(pp,n_nbf5)
-
-    #@tullio A[r,s,p,q] +=  I_MO[s,t,q,u] * (Daa[p,u,r,t] + Dab[p,u,r,t])
-    #@tullio A[r,s,p,q] +=  I_MO[s,t,u,q] * (Dab[p,u,t,r] - Daa[p,u,r,t])
-    #@tullio A[r,s,p,q] +=  I_MO[u,p,t,r] * (Daa[s,t,q,u] + Dab[s,t,q,u])
-    #@tullio A[r,s,p,q] +=  I_MO[u,p,r,t] * (Dab[s,t,u,q] - Daa[s,t,q,u])
-
-    #####
-    #@tullio A[r,s,p,q] +=  I_MO[p,s,t,u] * (Daa[t,u,r,q] - Dab[u,t,r,q])
-    #@tullio A[r,s,p,q] +=  I_MO[t,u,q,r] * (Daa[s,p,t,u] - Dab[p,s,t,u])
-    #####
-    #@tullio tmp[r,p] := I_MO[t,p,w,u] * Daa[w,u,r,t]
-    #@tullio A[r,s,p,q] +=  Id[s,q]*tmp[r,p]
-    #@tullio tmp[r,p] := I_MO[t,p,w,u] * Dab[u,w,r,t]
-    #@tullio A[r,s,p,q] += -Id[s,q]*tmp[r,p]
-    #@tullio tmp[s,q] :=  I_MO[t,u,w,q] * Daa[s,w,t,u]
-    #@tullio A[r,s,p,q] +=  Id[p,r]*tmp[s,q]
-    #@tullio tmp[s,q] :=  I_MO[t,u,w,q] * Dab[w,s,t,u]
-    #@tullio A[r,s,p,q] += -Id[p,r]*tmp[s,q]
 
     A = build_A_from_pnof(h,n,I_MO,pp)
 
     I_MO = nothing
-    #D_aa = nothing
-    #D_ab = nothing
     GC.gc()
 
     println("Building M")
@@ -1512,6 +1478,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     v = zeros(pp.nbf5*(pp.nbf5-1))
     v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
     v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
+
+    A = nothing
+    GC.gc()
 
     println("Sorting M")
     flush(stdout)
@@ -1538,33 +1507,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     new_idx = vcat(new_idx,empt)
     new_idx = vcat(new_idx,no_significant)
     new_idx = vcat(new_idx,length(dN) .+ no_significant)
-    M = M[new_idx,new_idx]
+    M_sorted = @view M[new_idx,new_idx]
 
     dim = 2*length(significant)
-
-#    idx = []
-#    for (i,vi) in enumerate(v)
-#        if(abs(vi) < tol_dn)
-#            push!(idx,i)
-#        end
-#    end
-#
-#    println("Sorting M")
-#    flush(stdout)
-#    dim = (pp.nbf5)*(pp.nbf5-1) - size(idx)[1]
-#    
-#    for (i,j) in enumerate(idx)
-#        tmp = v[j-(i-1)]
-#        v[j-(i-1):end-1] = v[j-(i-1)+1:end]
-#        v[end] = tmp
-#
-#        tmp = M[j-(i-1),:]
-#        M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
-#        M[end,:] = tmp
-#        tmp = M[:,j-(i-1)]
-#        M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
-#        M[:,end] = tmp
-#    end
 
     @printf("M_ERPA Orig dim: %i New dim: %i Elements below tol_dN: %i \n", (pp.nbf5)*(pp.nbf5-1), dim, 2*length(no_significant))
     flush(stdout)
@@ -1572,8 +1517,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     ######## ERPA0 ########
 
     dd = Int64(dim/2)
-    AA = @view M[1:dd,1:dd]
-    BB = @view M[1:dd,dd+1:2*dd]
+    AA = @view M_sorted[1:dd,1:dd]
+    BB = @view M_sorted[1:dd,dd+1:2*dd]
 
     ApB = AA .+ BB
     AmB = AA .- BB
@@ -1615,9 +1560,9 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ######## ERPA  ########
   
-    CC = @view M[1:dd,2*dd+1:2*dd+pp.nbf5]
-    EE = @view M[2*dd+1:2*dd+pp.nbf5,1:dd]
-    FF = @view M[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
+    CC = M_sorted[1:dd,2*dd+1:2*dd+pp.nbf5]
+    EE = M_sorted[2*dd+1:2*dd+pp.nbf5,1:dd]
+    FF = @view M_sorted[2*dd+1:2*dd+pp.nbf5,2*dd+1:2*dd+pp.nbf5]
     GC.gc()
 
     FFm1 = pinv(FF)
@@ -1630,6 +1575,7 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     GC.gc()
     @tullio tmpMat[i,k] := 2*CCFFm1[i,j]*EE[j,k]
     EE = nothing
+    M_sorted = nothing
     M = nothing
     CCFFm1 = nothing
     GC.gc()
@@ -1665,6 +1611,38 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
 
     ######## ERPA2 ########
 
+    if(pp.RI)
+        @tullio b_pnl[p,n,l] := C_nbf5[m,p] * b_mnl[m,n,l]
+        @tullio b_pql[p,q,l] := C_nbf5[n,q] * b_pnl[p,n,l]
+        b_pnl = nothing
+        @tullio I_MO[p,q,s,l] := b_pql[p,q,R]*b_pql[s,l,R]
+        b_pql = nothing
+    else
+        @tullio Iinsl[i,n,s,l] := I_AO[m,n,s,l] * C_nbf5[m,i]
+        @tullio Iijsl[i,j,s,l] := Iinsl[i,n,s,l] * C_nbf5[n,j]
+        Iinsl = nothing
+        @tullio Iijkl[i,j,k,l] := Iijsl[i,j,s,l] * C_nbf5[s,k]
+        Iijsl = nothing
+        @tullio I_MO[i,j,k,r] := Iijkl[i,j,k,l] * C_nbf5[l,r]
+        Iijkl = nothing
+    #if(pp.gpu):
+    #    I = I.get()
+    end
+    GC.gc()
+
+    c = sqrt.(n_nbf5)
+    c[pp.no1+pp.ndns+1:end] *= -1
+
+    GC.gc()
+
+    println("Building A")
+    flush(stdout)
+
+    A = build_A_from_pnof(h,n,I_MO,pp)
+
+    I_MO = nothing
+    GC.gc()
+
     M = build_M_ERPA2(pp.nbf5,A,c)
     dN = build_dN_ERPA(pp.nbf5,n)
 
@@ -1694,33 +1672,12 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     new_idx = vcat(new_idx,no_significant)
     new_idx = vcat(new_idx,length(dN) .+ no_significant)
     v = v[new_idx]
-    M = M[new_idx,new_idx]
+    M_sorted = @view M[new_idx,new_idx]
 
     dim = 2*length(significant) + length(empt)
 
-    #idx = []
-    #for (i,vi) in enumerate(v)
-    #    if(abs(vi) < tol_dn)
-    #        push!(idx,i)
-    #    end
-    #end
-
-    #dim = pp.nbf5^2 - size(idx)[1]
-
-    #for (i,j) in enumerate(idx)
-    #    tmp = v[j-(i-1)]
-    #    v[j-(i-1):end-1] = v[j-(i-1)+1:end]
-    #    v[end] = tmp
-
-    #    tmp = M[j-(i-1),:]
-    #    M[j-(i-1):end-1,:] = M[j-(i-1)+1:end,:]
-    #    M[end,:] = tmp
-    #    tmp = M[:,j-(i-1)]
-    #    M[:,j-(i-1):end-1] = M[:,j-(i-1)+1:end]
-    #    M[:,end] = tmp
-    #end
-
-    M_ERPA2 = M[1:dim,1:dim]
+    M_ERPA2 = M_sorted[1:dim,1:dim]
+    M_sorted = nothing
     M = nothing
     GC.gc()
 
@@ -1729,6 +1686,8 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     end
 
     vals = eigvals!(M_ERPA2)
+    M_ERPA2 = nothing
+    GC.gc()
 
     vals_real = real.(vals)
     vals_complex = imag.(vals)
