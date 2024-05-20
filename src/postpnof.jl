@@ -1610,18 +1610,18 @@ function erpa(n,C,H,I_AO,b_mnl,E_nuc,E_elec,pp)
     A = nothing
     GC.gc()
 
-    sort_idx = sortperm(abs.(dN),rev=true)
-    idx = length(dN)
-    for (count,i) in enumerate(sort_idx)
-        if(abs(dN[i]) < tol_dn)
-            idx = count-1
-            break
-        end
-    end
+    #sort_idx = sortperm(abs.(dN),rev=true)
+    #idx = length(dN)
+    #for (count,i) in enumerate(sort_idx)
+    #    if(abs(dN[i]) < tol_dn)
+    #        idx = count-1
+    #        break
+    #    end
+    #end
 
-    significant = sort_idx[1:idx]
-    no_significant = sort_idx[idx+1:end]
-    empt = collect(pp.nbf5*(pp.nbf5-1)+1:pp.nbf5^2)
+    #significant = sort_idx[1:idx]
+    #no_significant = sort_idx[idx+1:end]
+    #empt = collect(pp.nbf5*(pp.nbf5-1)+1:pp.nbf5^2)
 
     new_idx = vcat(significant,length(dN) .+ significant)
     new_idx = vcat(new_idx,empt)
