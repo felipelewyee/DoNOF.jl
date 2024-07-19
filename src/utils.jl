@@ -423,19 +423,19 @@ end
 
 function rotate_orbital(y,C,p)
 
-    #ynew = zeros(p.nbf,p.nbf)
+    ynew = zeros(p.nbf,p.nbf)
 
-    #n = 1
-    #for i in 1:p.nbf5
-    #    for j in i+1:p.nbf
-    #        ynew[i,j] =  y[n]
-    #        ynew[j,i] = -y[n]
-    #        n += 1
-    #    end
-    #end
+    n = 1
+    for i in 1:p.nbf5
+        for j in i+1:p.nbf
+            ynew[i,j] =  y[n]
+            ynew[j,i] = -y[n]
+            n += 1
+        end
+    end
 
-    tmp = [i<j&&i<=p.nbf5 ? y[Int64((2*p.nbf*i - i^2 - i)/2 + j - p.nbf)] : 0 for i in 1:p.nbf, j in 1:p.nbf]
-    ynew = tmp .- tmp'
+    #tmp = [i<j&&i<=p.nbf5 ? y[Int64((2*p.nbf*i - i^2 - i)/2 + j - p.nbf)] : 0 for i in 1:p.nbf, j in 1:p.nbf]
+    #ynew = tmp .- tmp'
 
     U = exp(ynew)
     U = real.(U)

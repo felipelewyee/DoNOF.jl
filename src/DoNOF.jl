@@ -1,5 +1,7 @@
 module DoNOF
 
+using Plots
+
 using LoopVectorization
 using Tullio
 using TensorOperations

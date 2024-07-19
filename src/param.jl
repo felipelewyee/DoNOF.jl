@@ -128,17 +128,17 @@ function Param(bset,mul,charge)
     maxit = 1000  # Número máximo de iteraciones de Occ-SCF
     thresheid = 10^-6#8 # Convergencia de la energía total
     maxitid = 30  # Número máximo de iteraciones externas en HF
-    maxloop = 30  # Iteraciones internas en optimización orbital
+    maxloop = 10  # Iteraciones internas en optimización orbital
     ipnof = 7     # PNOFi a calcular
     ista = 0     # PNOFi a calcular
     threshl = 10^-4   # Convergencia de los multiplicadores de Lagrange
     threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
     threshen = 10^-4 # Convergencia  de la energía en optimización de ocupaciones
-    threshgorb = 10^-3   # Convergencia del gradiente orbital
+    threshgorb = 10^-4   # Convergencia del gradiente orbital
     threshgocc = 10^-3   # Convergencia del gradiente de numeros de ocupacion
     scaling = true     # Scaling for f
-    alpha = 0.02
+    alpha = 0.01
     nzeros = 0
     nzerosm = 5
     nzerosr = 2
@@ -238,9 +238,9 @@ function autozeros(p;restart=false)
 end
 
 function set_ncwo(p,ncwo)
-    if p.ne==2
-        ncwo= -1
-    end
+    #if p.ne==2
+    #    ncwo= -1
+    #end
     if p.ndns!=0
         if p.ndoc>0
             if ncwo!=1

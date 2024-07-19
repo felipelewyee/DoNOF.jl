@@ -2,16 +2,26 @@ using DoNOF
 
 mol = """
 0 1
- O  0.0000   0.000   0.121
- H  0.0000   0.751  -0.485
- H  0.0000  -0.751  -0.485
+  C    1.2116068   -0.6995215    0.0000000
+  C    1.2116068    0.6995215    0.0000000
+  C   -0.0000000    1.3990430    0.0000000
+  C   -1.2116068    0.6995215    0.0000000
+  C   -1.2116068   -0.6995215    0.0000000
+  C    0.0000000   -1.3990430   -0.0000000
+  H    2.1489399   -1.2406910    0.0000000
+  H    2.1489399    1.2406910    0.0000000
+  H   -0.0000000    2.4813820    0.0000000
+  H   -2.1489399    1.2406910    0.0000000
+  H   -2.1489399   -1.2406910    0.0000000
+  H   -0.0000000   -2.4813820    0.0000000
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
+bset,p = DoNOF.molecule(mol,"def2-tzvpd",spherical=true)
 
-p.ipnof = 8
+p.ipnof = 7
 
 p.RI = true
 p.gpu = false
 
-DoNOF.energy(bset,p,do_hfidr=true,do_m_diagnostic=true)
+p.maxit = 100
+DoNOF.energy(bset,p,do_hfidr=false,do_m_diagnostic=true)

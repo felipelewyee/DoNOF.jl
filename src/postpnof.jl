@@ -1270,7 +1270,7 @@ function build_A_from_pnof(n,C,H,b_mnl,I_AO,pp)
 
     ######################
 
-    if(pp.ipnof == 7 || pp.ipnof==8)
+    if(pp.ipnof == 7 || pp.ipnof==8 || pp.ipnof==9)
         fi = n .* (1 .- n)
         fi[fi .<= 0] .= 0
         fi = sqrt.(fi)
@@ -1332,7 +1332,7 @@ function build_A_from_pnof(n,C,H,b_mnl,I_AO,pp)
         @tullio tmp[s,q] :=  I_MO[s,u,q,u] * Pi_s[s,u]#*Id[w,s]*Id[t,u]#Dab[w,s,t,u]
         @tullio A[r,s,p,q] += Id[p,r]*tmp[s,q]
 
-        if(pp.ipnof==8)
+        if(pp.ipnof==8 || pp.ipnof==9)
 
             h_cut = 0.02*sqrt(2.0)
             n_d = zeros(size(n)[1])
