@@ -60,18 +60,28 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     C = check_ortho(C,S,p)
 
     if isnothing(n)
-        gamma = guess_gamma_trigonometric(p)
-        n,dn_dgamma = ocupacion_trigonometric(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin)
-        if p.occ_method == "Softmax"
+        if p.occ_method == "Trigonometric"
+            gamma = guess_gamma_trigonometric(p.ndoc,p.ncwo)
+        elseif p.occ_method == "Softmax"
 	    p.nv = p.nbf5 - p.no1 - p.nsoc
-	    gamma = n_to_gammas_softmax(n,p)
-        end
+            gamma = guess_gamma_softmax(p.ndoc,p.ncwo)
+        elseif p.occ_method == "EBI"
+	    p.nbf5 = p.nbf
+            p.nvar = round(Int,p.nbf*(p.nbf-1)/2)
+	    p.nv = p.nbf
+            gamma = guess_gamma_ebi(p.ndoc,p.nbf)
+	end
     else
         if p.occ_method == "Trigonometric"
             gamma = n_to_gammas_trigonometric(n,p)
         elseif p.occ_method == "Softmax"
 	    p.nv = p.nbf5 - p.no1 - p.nsoc
 	    gamma = n_to_gammas_softmax(n,p)
+        elseif p.occ_method == "EBI"
+	    p.nbf5 = p.nbf
+            p.nvar = round(Int,p.nbf*(p.nbf-1)/2)
+	    p.nv = p.nbf
+	    gamma = n_to_gammas_ebi(n)
 	end
     end
 
@@ -79,8 +89,8 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     #E_occ,nit_occ,success_occ,gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
     itlim = 1
-    E = 9999#EHF
-    E_old = 9999#EHF
+    E = 9999
+    E_old = 9999
     E_diff = 9999
     sumdiff_old = 0
 
@@ -100,11 +110,17 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 	ta1 = time()
         if p.orb_method == "ID"
             E_orb,C,nit_orb,success_orb,itlim,fmiug0 = orboptr(C,n,H,I,b_mnl,cj12,ck12,i_ext,itlim,fmiug0,p,printmode)
-        else
-            E_orb,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p,i_ext)
+        elseif p.orb_method=="Rotations"
+            E_orb,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
+        elseif p.orb_method=="ADAM"  
+            E_orb,C,nit_orb,success_orb = orbopt_adam(gamma,C,H,I,b_mnl,p)
+        elseif p.orb_method=="Demon"  
+            E_orb,C,nit_orb,success_orb = orbopt_demon(gamma,C,H,I,b_mnl,p)
+        elseif p.orb_method=="YOGI" 
+            E_orb,C,nit_orb,success_orb = orbopt_yogi(gamma,C,H,I,b_mnl,p)
         end
 	ta2 = time()
-    
+
         E_occ,nit_occ,success_occ,gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 	if(p.occ_method=="Softmax")
             C,gamma = order_occupations_softmax(C,gamma,H,I,b_mnl,p)
@@ -143,7 +159,9 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
 
     end
 
-    C,n,elag = order_subspaces(C,n,elag,H,I,b_mnl,p)
+    if(p.ipnof > 4)
+        C,n,elag = order_subspaces(C,n,elag,H,I,b_mnl,p)
+    end
     if isnothing(fmiug0)
         save(p.title*".jld", "C", C,"n",n)
     else
@@ -450,79 +468,79 @@ function energy2(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofm
 
 end
 
-using Plots
+#using Plots
 #using PythonPlots
 #pythonplot()
-function plotter_C(bset,p;C=nothing,n=nothing)
-
-    t0 = time()
-    println("Computing Integrals")
-    flush(stdout)
-
-    if p.gpu
-        S,T,V,H,I,b_mnl = compute_integrals(bset,p,true)
-    else
-        S,T,V,H,I,b_mnl = compute_integrals(bset,p)
-    end
-
-    t1 = time()
-    @printf("Elapsed time: %7.2f Seconds\n\n", t1-t0)
-    flush(stdout)
-
-    println("Number of basis functions                   (NBF)    = ",p.nbf)
-    if(p.RI)
-        println("Number of auxiliary basis functions         (NBFAUX) = ",p.nbfaux)
-    end
-    println("Inactive Doubly occupied orbitals up to     (NO1)    = ",p.no1)
-    println("No. considered Strongly Doubly occupied MOs (NDOC)   = ",p.ndoc)
-    println("No. considered Strongly Singly occupied MOs (NSOC)   = ",p.nsoc)
-    println("NO. of Weakly occ. per St. Doubly occ.  MOs (NCWO)   = ",p.ncwo)
-    println("Dimension of the Nat. Orb. subspace         (NBF5)   = ",p.nbf5)
-    println("No. of electrons                                     = ",p.ne)
-    println("    No. of alpha electrons                           = ",p.nalpha)
-    println("    No. of beta electrons                            = ",p.nbeta)
-    println("Multiplicity                                         = ",p.mul)
-    println("")
-    
-    flush(stdout)
-
-    println("Geometry")
-    println("========")
-    for i in 1:bset.natoms
-	    @printf("%2s %15.7f %15.7f %15.7f\n",Z_to_symbol(bset.atoms[i].Z),bset.atoms[i].xyz[1],bset.atoms[i].xyz[2],bset.atoms[i].xyz[3])
-    end
-    println("")
-
-    E_nuc = compute_E_nuc(bset,p)
-
-    if p.occ_method == "Trigonometric"
-        gamma = n_to_gammas_trigonometric(n,p)
-    elseif p.occ_method == "Softmax"
-        p.nv = p.nbf5 - p.no1 - p.nsoc
-	gamma = n_to_gammas_softmax(n,p)
-    end
-
-    J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
-    cj12,ck12 = PNOFi_selector(n,p)
-
-    xs = collect(0.0:0.1:10.0)
-    ys = collect(0.0:0.1:10.0)
-    X = [x for x = xs for _ = ys]
-    Y = [y for _ = xs for y = ys]
-    y_ref = zeros(p.nvar)
-    Z = ((x, y)->begin
-            y_vec = zeros(p.nvar)
-	    y_vec[1:2] .= x
-	    y_vec[3:4] .= y+x
-            calcorbe(y_vec,n,cj12,ck12,C,H,I,b_mnl,p)
-    end)
-#        push!(Es,E)
-#        print(E)
+#function plotter_C(bset,p;C=nothing,n=nothing)
+#
+#    t0 = time()
+#    println("Computing Integrals")
+#    flush(stdout)
+#
+#    if p.gpu
+#        S,T,V,H,I,b_mnl = compute_integrals(bset,p,true)
+#    else
+#        S,T,V,H,I,b_mnl = compute_integrals(bset,p)
 #    end
-#    plot(ys,Es)
-
-    plot(X, Y, Z.(X, Y), st=[:surface], xlabel = "Param. A", ylabel = "Param. B", zlabel = "E (Ha)",camera=(50,50))
-    #surface(X, Y, Z.(X, Y), xlabel = "Param. 1", ylabel = "Param. 2", zlabel = "E (Ha)")
-
-end
+#
+#    t1 = time()
+#    @printf("Elapsed time: %7.2f Seconds\n\n", t1-t0)
+#    flush(stdout)
+#
+#    println("Number of basis functions                   (NBF)    = ",p.nbf)
+#    if(p.RI)
+#        println("Number of auxiliary basis functions         (NBFAUX) = ",p.nbfaux)
+#    end
+#    println("Inactive Doubly occupied orbitals up to     (NO1)    = ",p.no1)
+#    println("No. considered Strongly Doubly occupied MOs (NDOC)   = ",p.ndoc)
+#    println("No. considered Strongly Singly occupied MOs (NSOC)   = ",p.nsoc)
+#    println("NO. of Weakly occ. per St. Doubly occ.  MOs (NCWO)   = ",p.ncwo)
+#    println("Dimension of the Nat. Orb. subspace         (NBF5)   = ",p.nbf5)
+#    println("No. of electrons                                     = ",p.ne)
+#    println("    No. of alpha electrons                           = ",p.nalpha)
+#    println("    No. of beta electrons                            = ",p.nbeta)
+#    println("Multiplicity                                         = ",p.mul)
+#    println("")
+#    
+#    flush(stdout)
+#
+#    println("Geometry")
+#    println("========")
+#    for i in 1:bset.natoms
+#	    @printf("%2s %15.7f %15.7f %15.7f\n",Z_to_symbol(bset.atoms[i].Z),bset.atoms[i].xyz[1],bset.atoms[i].xyz[2],bset.atoms[i].xyz[3])
+#    end
+#    println("")
+#
+#    E_nuc = compute_E_nuc(bset,p)
+#
+#    if p.occ_method == "Trigonometric"
+#        gamma = n_to_gammas_trigonometric(n,p)
+#    elseif p.occ_method == "Softmax"
+#        p.nv = p.nbf5 - p.no1 - p.nsoc
+#	gamma = n_to_gammas_softmax(n,p)
+#    end
+#
+#    J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
+#    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
+#    cj12,ck12 = PNOFi_selector(n,p)
+#
+#    xs = collect(0.0:0.1:10.0)
+#    ys = collect(0.0:0.1:10.0)
+#    X = [x for x = xs for _ = ys]
+#    Y = [y for _ = xs for y = ys]
+#    y_ref = zeros(p.nvar)
+#    Z = ((x, y)->begin
+#            y_vec = zeros(p.nvar)
+#	    y_vec[1:2] .= x
+#	    y_vec[3:4] .= y+x
+#            calcorbe(y_vec,n,cj12,ck12,C,H,I,b_mnl,p)
+#    end)
+##        push!(Es,E)
+##        print(E)
+##    end
+##    plot(ys,Es)
+#
+#    plot(X, Y, Z.(X, Y), st=[:surface], xlabel = "Param. A", ylabel = "Param. B", zlabel = "E (Ha)",camera=(50,50))
+#    #surface(X, Y, Z.(X, Y), xlabel = "Param. 1", ylabel = "Param. 2", zlabel = "E (Ha)")
+#
+#end

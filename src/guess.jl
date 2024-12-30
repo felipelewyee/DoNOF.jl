@@ -1,20 +1,36 @@
 function read_C(;title = "donof")
 
-    C = load(title*".jld")["C"]
+    C = nothing
+    try
+        C = load(title*".jld")["C"]
+    catch
+        println(title*"_C.jld not found")
+    end
     return C
 
 end
 
 function read_n(;title = "donof")
 
-    n = load(title*".jld")["n"]
+    n = nothing
+    try
+        n = load(title*".jld")["n"]
+    catch
+        println(title*"_n.jld not found")
+    end
     return n
 
 end
 
 function read_fmiug0(;title = "donof")
-   
-    fmiug0 = load(title*".jld")["fmiug0"]
+
+    fmiug0 = nothing
+    try
+        fmiug0 = load(title*".jld")["fmiug0"]
+    catch
+        println(title*"_fmiug0.jld not found")
+        n = nothing
+    end
     return fmiug0
 
 end
@@ -147,16 +163,52 @@ function write_to_DoNOFsw(p,bset,n,C,elag,fmiug0,it,E)
 
 end
 
-function guess_gamma_trigonometric(p)
-    γ = zeros(p.nv)
-    for i in 1:p.ndoc
+function guess_gamma_trigonometric(ndoc,ncwo)
+    
+    nv = (ncwo)*ndoc
+    γ = zeros(nv)
+    for i in 1:ndoc
         γ[i] = acos(sqrt(2.0*0.999-1.0))
-        ll = p.ndoc + (p.ndoc-i) + 1
-        ul = ll + p.ndoc*(p.ncwo-2)
-        γ_coupled = @view γ[ll:p.ndoc:ul]
-        for j in 1:p.ncwo-1
-            γ_coupled[j] = asin(sqrt(1.0/(p.ncwo-j+1)))
+        ll = ndoc + (ndoc-i) + 1
+        ul = ll + ndoc*(ncwo-2)
+        γ_coupled = @view γ[ll:ndoc:ul]
+        for j in 1:ncwo-1
+            γ_coupled[j] = asin(sqrt(1.0/(ncwo-j+1)))
         end
+    end
+    return γ
+end
+
+function guess_gamma_softmax(ndoc,ncwo)
+
+    nv = (ncwo+1)*ndoc
+    γ = zeros(nv)
+    for i in 1:ndoc
+        γ[i] = log(0.999)
+        ll = ndoc + (ndoc-i) + 1
+        ul = ll + ndoc*(ncwo-1)
+        γ_coupled = @view γ[ll:ndoc:ul]
+        for j in 1:ncwo
+            γ_coupled[j] = log(0.001/ncwo)
+        end
+    end
+    return γ
+end
+
+function guess_gamma_ebi(ndoc,nbf)
+    """Compute a guess for gammas in the softmax parameterization
+    of the occupation numbers"""
+
+    #TODO: Add equations and look to reduce a variable
+
+    nv = nbf
+    γ = zeros(nv)
+    for i in 1:ndoc
+        γ[i] = erfinv(2*0.999-1)
+    end
+    val = ndoc*(1.0 - 0.999)
+    for i in ndoc+1:nv
+        γ[i] = erfinv(2*val/nv-1)
     end
     return γ
 end

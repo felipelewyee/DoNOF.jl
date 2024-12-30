@@ -1,6 +1,6 @@
 module DoNOF
 
-using Plots
+#using Plots
 
 using LoopVectorization
 using Tullio
@@ -8,9 +8,10 @@ using TensorOperations
 
 using LinearAlgebra
 using Printf
+using SpecialFunctions
 
 using Optim
-using SparseArrays
+#using SparseArrays
 using GaussianBasis
 using JLD
 

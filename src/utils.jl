@@ -403,9 +403,9 @@ function orthonormalize(C,S,p)
 
     @tullio S_12[i,j] := evecs[i,j]*evals[j]
 
-    @tullio Cnew[i,j] := S[i,k]*C[k,j] #np.einsum('ik,kj->ij',S,C,optimize=True)
+    @tullio Cnew[i,j] := S[i,k]*C[k,j]
 
-    @tullio Cnew2[i,j] := S_12[k,i]*Cnew[k,j]  #np.einsum('ki,kj->ij',S_12,Cnew)
+    @tullio Cnew2[i,j] := S_12[k,i]*Cnew[k,j]
 
     for i in 1:size(Cnew2)[2]
 	Cnew2[1:p.nbf,i] = Cnew2[1:p.nbf,i]/norm(Cnew2[1:p.nbf,i])
@@ -442,6 +442,22 @@ function rotate_orbital(y,C,p)
     @tullio Cnew[m,p] := C[m,r]*U[r,p]
 
     return Cnew
+
+end
+
+function n_to_gammas_ebi(n)
+    """Transform n to gammas in the ebi encoding
+
+    x_p = erf^-1 (2n_p - 1)
+
+    """
+
+    nv = size(n)[1]
+    gamma = zeros(nv)
+    for i in 1:nv
+        gamma[i] = erfinv(2*n[i]-1)
+    end
+    return gamma
 
 end
 

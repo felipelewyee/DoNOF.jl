@@ -157,7 +157,7 @@ function Param(bset,mul,charge)
     MSpin = 0
 
     occ_method = "Softmax"
-    orb_method = "ADAM"
+    orb_method = "YOGI"
     nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
 
     spherical = false

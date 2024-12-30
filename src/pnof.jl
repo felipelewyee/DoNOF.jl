@@ -1,5 +1,7 @@
 function PNOFi_selector(n,p)
-    if p.ipnof==5
+    if p.ipnof==4
+        cj12,ck12 = CJCKD4(n,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
+    elseif p.ipnof==5
         cj12,ck12 = CJCKD5(n,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
     elseif p.ipnof==7
         cj12,ck12 = CJCKD7(n,p.ista,p.no1,p.ndoc,p.nsoc,p.nbeta,p.nalpha,p.ndns,p.ncwo,p.MSpin)
@@ -15,7 +17,9 @@ function PNOFi_selector(n,p)
 end
 
 function der_PNOFi_selector(n,dn_dgamma,p)
-    if p.ipnof==5
+    if p.ipnof==4
+        Dcj12r,Dck12r = der_CJCKD4(n,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo)
+    elseif p.ipnof==5
         Dcj12r,Dck12r = der_CJCKD5(n,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo)
     elseif p.ipnof==7
         Dcj12r,Dck12r = der_CJCKD7(n,p.ista,dn_dgamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo)
@@ -29,6 +33,135 @@ function der_PNOFi_selector(n,dn_dgamma,p)
             Dcj12r[j,j,i] = 0
             Dck12r[j,j,i] = 0
         end
+    end
+
+    return Dcj12r,Dck12r
+end
+
+function CJCKD4(n,no1,ndoc,nsoc,nbeta,nalpha,ndns,ncwo,MSpin)
+    """PNOF4 coefficients C^J and C^K that multiply J and K integrals
+
+    E = 2sum_p n_pH_p + sum_{pq}' C^J_{pq}J_{qp} - sum_{pq}' C^K_{pq}K_{qp}
+
+    T = (1-S_F)/S_F
+    R_pq = h_p n_q/S_F; p in occ, q in vir
+
+    Delta_{pq} = begin{cases}
+                 h_p h_q   & if p in occ, q in occ
+                 T h_p n_q & if p in occ, q in vir
+                 T n_p h_q & if p in vir, q in occ
+                 n_p n_q   & if p in vir, q in vir
+               end{cases}
+
+    Pi_{pq} = begin{cases}
+                -sqrt{h_p h_q}                     & if p in occ, q in occ
+                -sqrt{R_pq} sqrt{n_p - n_q + R_pq} & if p in occ, q in vir
+                -sqrt{R_qp} sqrt{n_q - n_p + R_qp} & if p in vir, q in occ
+                 sqrt{n_p n_q}                     & if p in vir, q in vir
+               end{cases}
+
+    C^J = 2(n_pn_q - Delta_pq)
+    C^K = n_pn_q - Delta_pq - Pi_pq
+    """
+
+    nbf5 = size(n)[1]
+
+    h = 1 .- n
+    S_F = sum(h[1:ndoc])
+
+    T = (1 - S_F)/S_F
+    R = (h[1:ndoc] * n[ndoc+1:end]')/S_F
+
+    Delta = zeros(nbf5, nbf5)
+    Delta[1:ndoc, 1:ndoc] = h[1:ndoc] * h[1:ndoc]'
+    Delta[1:ndoc, ndoc+1:end] = (1-S_F)/S_F * h[1:ndoc] * n[ndoc+1:end]'
+    Delta[ndoc+1:end, 1:ndoc] = (1-S_F)/S_F * n[ndoc+1:end] * h[1:ndoc]'
+    Delta[ndoc+1:end, ndoc+1:end] = n[ndoc+1:end] * n[ndoc+1:end]'
+
+    Pi = zeros(nbf5, nbf5)
+    Pi[1:ndoc, 1:ndoc] = -sqrt.(h[1:ndoc] * h[1:ndoc]')
+    Pi[1:ndoc, ndoc+1:end] = -sqrt.((h[1:ndoc] * n[ndoc+1:end]')/S_F) .* sqrt.( (n[1:ndoc] .- n[ndoc+1:end]') .+ R)
+    Pi[ndoc+1:end, 1:ndoc] = -sqrt.((n[ndoc+1:end] * h[1:ndoc]')/S_F) .* sqrt.(-(n[ndoc+1:end] .- n[1:ndoc]') .+ R')
+    Pi[ndoc+1:end, ndoc+1:end] =  sqrt.(n[ndoc+1:end] * n[ndoc+1:end]')
+
+    cj12 = 2 * ( (n * n') - Delta )
+    ck12 = (n * n') - Delta - Pi
+
+    return cj12,ck12
+end
+
+function der_CJCKD4(n,dn_dgamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo)
+    """PNOF4 coefficients DC^J and DC^K that multiply J and K integrals
+
+    dE/dgamma_g = 2sum_p dn_p/dgamma_g H_p 
+                  +sum_{pq} dC^J_{pq}/dgamma_g J_{qp}
+                  -sum_{pq} dC^K_{pq}/dgamma_g K_{qp}
+
+    T = (1-S_F)/S_F
+    R_pq = h_p n_q/S_F; p in occ, q in vir
+
+    dS_F/dx_g = - sum_p^F dn_p/dx_g
+    dT/dx_g = -(dS_F/dx_g)/S_F^2
+    dR_pq/dx_g = [(dh_p/dx_g n_q + h_p dn_q/dx_g) S_F - (h_p n_q) dS_F/dx_g ] / S_F^2
+
+    dDelta_{pq}/dx_g = begin{cases}
+                 dh_p/dx_g h_q + h_p dh_q/dx_g                       & if p in occ, q in occ
+                 dT/dx_g h_p n_q + T dh_p/dx_g n_q + T h_p dn_q/dx_g & if p in occ, q in vir
+                 dT/dx_g n_p h_q + T dn_p/dx_g h_q + T n_p dh_q/dx_g & if p in vir, q in occ
+                 dn_p/dx_g n_q + n_p dn_q/dx_g                       & if p in vir, q in vir
+               end{cases}
+
+    dPi_{pq}/dx_g = begin{cases}
+      -1/2*(1/sqrt{h_p} dh_p/dx_g sqrt{h_q} + sqrt{h_p} 1/sqrt{h_q} dh_q/dx_g )  & if p in occ, q in occ
+      -((1/2sqrt{R_pq}) dR_pq/dx_g sqrt{n_p - n_q + R_pq} + sqrt{R_pq}(dn_p/dx_g - dn_q/dx_g + dR_pq/dx_g)/(2sqrt{n_q-n_p+R_pq})) & if p in occ, q in vir
+      -((1/2sqrt{R_qp}) dR_qp/dx_g sqrt{n_q - n_p + R_pq} + sqrt{R_qp}(dn_q/dx_g - dn_p/dx_g + dR_qp/dx_g)/(2sqrt{n_p-n_q+R_qp})) & if p in vir, q in occ
+      1/2*(1/sqrt{n_p} dn_p/dx_g sqrt{n_q} + sqrt{n_p} 1/sqrt{n_q} dn_q/dx_g )  & if p in vir, q in vir
+      end{cases}
+
+    """
+
+    nbf5 = size(n)[1]
+
+    h = 1 .- n
+    dh_dgamma = -dn_dgamma
+
+    S_F = max(sum(h[1:ndoc]), 1e-7)
+    D_S_F = zeros(nv)
+    for k in 1:nv
+        D_S_F[k] = sum(dh_dgamma[1:ndoc,k])
+    end
+    T = (1 - S_F)/S_F
+    D_T = zeros(nv)
+    for k in 1:nv
+        D_T[k] = (-D_S_F[k]/S_F^2)
+    end
+
+    R = (h[1:ndoc] * n[ndoc+1:end]')/S_F
+    D_R = zeros(ndoc,nbf5-ndoc,nv)
+    for k in 1:nv
+        D_R[1:end,1:end,k] = ( ((dh_dgamma[1:ndoc,k] * n[ndoc+1:end]') .+ (h[1:ndoc] * dn_dgamma[ndoc+1:end,k]')) * S_F .- (h[1:ndoc] * n[ndoc+1:end]')*D_S_F[k] ) / S_F^2
+     end
+
+    D_Delta = zeros(nbf5,nbf5,nv)
+    for k in 1:nv
+        D_Delta[1:ndoc,1:ndoc,k] = dh_dgamma[1:ndoc,k] * h[1:ndoc]'
+        D_Delta[1:ndoc,ndoc+1:end,k] = D_T[k] .* (h[1:ndoc] * n[ndoc+1:end]') .+ T .* (dh_dgamma[1:ndoc,k] * n[ndoc+1:end]')
+        D_Delta[ndoc+1:end,1:ndoc,k] = T * (dn_dgamma[ndoc+1:end,k] * h[1:ndoc]')
+        D_Delta[ndoc+1:end,ndoc+1:end,k] = dn_dgamma[ndoc+1:end,k] * n[ndoc+1:end]'
+    end
+
+    D_Pi = zeros(nbf5,nbf5,nv)
+    for k in 1:nv
+        D_Pi[1:ndoc,1:ndoc,k] = -(1 ./max.(2*sqrt.(h[1:ndoc]),1e-7) .* dh_dgamma[1:ndoc,k]) * sqrt.(h[1:ndoc])'
+	D_Pi[1:ndoc,ndoc+1:end,k] = -( 1 ./max.(2*sqrt.(R),1e-7) .* D_R[1:end,1:end,k] .* sqrt.( (n[1:ndoc] .- n[ndoc+1:end]') .+ R ) .+ sqrt.(R) .* ( (dn_dgamma[1:ndoc,k] .- dn_dgamma[ndoc+1:end,k]') .+ D_R[1:end,1:end,k] ) ./ max.(2 * sqrt.( (n[1:ndoc] * n[ndoc+1:end]') .+ R ), 1e-7) )
+        D_Pi[ndoc+1:end,ndoc+1:end,k] =  (1 ./max.(2*sqrt.(n[ndoc+1:end]),1e-7) .* dn_dgamma[ndoc+1:end,k]) * (sqrt.(n[ndoc+1:end]))'
+    end
+
+    Dcj12r = zeros(nbf5,nbf5,nv)
+    Dck12r = zeros(nbf5,nbf5,nv)
+    for k in 1:nv
+        Dcj12r[1:end,1:end,k] = 2*((dn_dgamma[1:end,k] * n') - D_Delta[1:end,1:end,k])
+        Dck12r[1:end,1:end,k] = (dn_dgamma[1:end,k] * n') - D_Delta[1:end,1:end,k] - D_Pi[1:end,1:end,k]
     end
 
     return Dcj12r,Dck12r
@@ -637,6 +770,8 @@ function ocupacion(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin,occ_method)
         n,dn_dgamma = ocupacion_trigonometric(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
     elseif occ_method == "Softmax"
         n,dn_dgamma = ocupacion_softmax(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
+    elseif occ_method == "EBI"
+        n,dn_dgamma = ocupacion_ebi(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
     end
     return n,dn_dgamma
 end
@@ -760,6 +895,108 @@ function ocupacion_softmax(gamma,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
     end
 
     return n,dn_dgamma
+end
+
+function ocupacion_ebi(x,no1,ndoc,nalpha,nv,nbf5,ndns,ncwo,HighSpin)
+    """Transform gammas to n according to the ebi
+    parameterization of the occupation numbers
+
+    n_p = (1 + erf(x_p + mu)) / 2
+
+    dn_p/dx_p = erf'(x_p + mu) * (1 + dmu/dx_p) / 2
+    dn_p/dx_q = erf'(x_p + mu) * dmu/dx_q / 2
+
+    dmu/dx_p = - erf'(x_p + mu)/(sum_q erf'(x_q + mu)) 
+    """
+
+    nv = size(x)[1]
+
+    mu = [0.0]
+    N = ndoc
+    res = optimize(mu->deviation_ebi(mu,x,N), mu->D_deviation_ebi(mu,x,N), mu, ConjugateGradient(), inplace=false)
+    #res = optimize(mu->deviation_ebi(mu,x,N), mu->D_deviation_ebi(mu,x,N), mu, SimulatedAnnealing(), inplace=false)
+    mu = res.minimizer
+
+    # n_p
+    n = zeros(nv)
+    for (i,xi) in enumerate(x)
+        n[i] = (1. +erf(xi+mu[1]))/2
+    end
+
+    #println("sum n")
+    #println((n))
+    #println(sum(n))
+
+    # dmu/dx_p
+    den = 0
+    for i in 1:nv
+        den += exp(-(x[i]+mu[1])^2)
+    end
+    D_mu_x = zeros(nv)
+    for i in 1:nv
+        D_mu_x[i] = -exp(-(x[i]+mu[1])^2)/den
+    end
+
+    # dn_p/dx_
+    D_n_x = zeros(nv,nv)
+    for i in 1:nv
+        for j in 1:nv
+            if i==j
+	        D_n_x[i,j] = 1/sqrt(pi)*exp(-(x[i]+mu[1])^2)*(1+D_mu_x[j])
+            else
+                D_n_x[i,j] = 1/sqrt(pi)*exp(-(x[i]+mu[1])^2)*D_mu_x[j]
+	    end
+	end
+    end
+
+    return n, D_n_x
+end
+
+function deviation_ebi(mu,x,N)
+    """Loss function used in ebi: Squared deviation from N/2 of the
+    occupation numbers
+
+    f = (N - sum_i n_i)^2
+
+    """
+
+    nv = size(x)[1]
+
+    n = zeros(nv)
+    for i in 1:nv
+        n[i] += ( 1 + erf(x[i]+mu[1]) ) / 2
+    end
+    sum_n = sum(n)
+
+    dev = (N - sum_n)^2
+
+    return dev
+end
+
+function D_deviation_ebi(mu,x,N)
+    """Derivative from gamma of the loss function used in ebi
+    
+    df/dmu = 2 * (N- sum_p n_p) * (-sum_p dn_p/dmu)
+
+    """
+
+    nv = size(x)[1]
+
+    # n_p
+    sum_n = 0
+    for i in 1:nv
+        sum_n += (1 + erf(x[i]+mu[1]) )/2
+    end
+
+    # dn_p/dmu = 1/sqrt(pi) * exp(-(x_p + mu)^2)
+    sum_dn = 0.0
+    for i in 1:nv
+        sum_dn += 1 / sqrt(pi) * exp(-(x[i]+mu[1])^2)
+    end
+
+    D_dev = -2 *(N-sum_n)*sum_dn# + 0.1*(N-sum_n)
+
+    return D_dev
 end
 
 function calce(n,cj12,ck12,J_MO,K_MO,H_core,p)
