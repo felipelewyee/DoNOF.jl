@@ -487,15 +487,11 @@ function orbopt_yogi(gamma,C,H,I_AO,b_mnl,p)
 
 	#println(grads)
         m = beta1 .* m + (1.0 - beta1) .* grads
-        #v = v .- (1.0 - beta2) .* (v .- grads .^ 2)
         v = v .- (1.0 - beta2) .* sign.(v .- grads .^ 2) .* grads .^ 2
-        y = - alpha * m ./ (sqrt.(v .+ 10^-16))
-
-        #mhat = m ./ (1.0 - beta1^i)
-        #vhat = v ./ (1.0 - beta2^i)
-        #vhat_max = max.(vhat_max, vhat)
-        #y = - alpha * mhat ./ (sqrt.(vhat_max .+ 10^-16)) #AMSgrad
-	#println(y)
+        mhat = m ./ (1.0 - beta1^i)
+        vhat = v ./ (1.0 - beta2^i)
+        vhat_max = max.(vhat_max, vhat)
+        y = - alpha * mhat ./ (sqrt.(vhat_max .+ 10^-16))
         C = rotate_orbital(y,C,p)
 
         elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
