@@ -114,6 +114,8 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
             E_orb,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
         elseif p.orb_method=="ADAM"  
             E_orb,C,nit_orb,success_orb = orbopt_adam(gamma,C,H,I,b_mnl,p)
+        elseif p.orb_method=="ADABelief"  
+            E_orb,C,nit_orb,success_orb = orbopt_adabelief(gamma,C,H,I,b_mnl,p)
         elseif p.orb_method=="Demon"  
             E_orb,C,nit_orb,success_orb = orbopt_demon(gamma,C,H,I,b_mnl,p)
         elseif p.orb_method=="YOGI" 

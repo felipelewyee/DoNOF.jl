@@ -354,6 +354,89 @@ function orbopt_adam(gamma,C,H,I_AO,b_mnl,p)
     #return best_E,best_C,nit,success
 end
 
+# ADABelief
+function orbopt_adabelief(gamma,C,H,I_AO,b_mnl,p)
+
+    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
+    cj12,ck12 = PNOFi_selector(n,p)
+    elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+    E = computeE_elec(Hmat,n,elag,p)
+
+    alpha = p.alpha
+    beta1 = 0.5
+    beta2 = 0.9
+    grad = 4*elag - 4*elag'
+    grads = zeros(p.nvar)
+    nn = 1
+    for i in 1:p.nbf5
+        for j in i+1:p.nbf
+            grads[nn] = grad[i,j]
+            nn += 1
+        end
+    end
+
+    #alpha = max(min(0.01,maximum(abs.(grads))/4),0.0000001)
+    #println(alpha) 
+
+    y = zeros(p.nvar)
+    m = 0.0 .* y
+    s = 0.0 .* y
+    shat_max = 0.0 .* y
+
+    improved = false
+    success = false
+    best_E, best_C = E, C
+    nit = 0
+    for i in 1:p.maxloop
+        nit = nit + 1
+
+        grad = 4*elag - 4*elag'
+        grads = zeros(p.nvar)
+        nn = 1
+        for i in 1:p.nbf5
+            for j in i+1:p.nbf
+                grads[nn] = grad[i,j]
+                nn += 1
+            end
+        end
+
+	if maximum(abs.(grads))/4 < p.threshgorb && improved
+            success = true
+            break
+        end
+
+	#println(grads)
+        m = beta1 .* m + (1.0 - beta1) .* grads
+        s = beta2 .* s + (1.0 - beta2) .* ((grads .- m) .^ 2)
+        mhat = m ./ (1.0 - beta1^i)
+        shat = s ./ (1.0 - beta2^i)
+        shat_max = max.(shat_max, shat)
+        y = - alpha * mhat ./ (sqrt.(shat_max .+ 10^-16)) #AMSgrad
+	#println(y)
+        C = rotate_orbital(y,C,p)
+
+        elag,Hmat = compute_Lagrange2(C,n,H,I_AO,b_mnl,cj12,ck12,p)
+        E = computeE_elec(Hmat,n,elag,p)
+	#println(i," ",E," ", E < best_E," ",norm(grads)," ",maximum(abs.(grads)))
+        if E < best_E
+            best_C = C
+            best_E = E
+            improved = true
+        end
+
+    end
+
+    if !improved
+        p.alpha = 0.4*p.alpha
+        #p.alpha = p.alpha/10
+        p.maxloop = p.maxloop + 20
+    #println("      alpha ",p.alpha)
+    end
+
+    return E,C,nit,success
+    #return best_E,best_C,nit,success
+end
+
 # YOGI
 function orbopt_yogi(gamma,C,H,I_AO,b_mnl,p)
 
