@@ -41,8 +41,10 @@ function compute_Lagrange2(C,n,H,I,b_mnl,cj12,ck12,pa)
                 @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
 
                 # dJ_pp/dy_ab
-                @tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
-                @tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
+		if pa.nbeta > 0
+                    @tullio grad_nbeta[a,b] += n_beta[b]*b_nbf_beta[a,b,k]*b_nbeta_beta[b,b,k]
+                    @tullio grad_nalpha[a,b] += n_alpha[b]*b_nbf_alpha[a,b,k]*b_nalpha_alpha[b,b,k]
+                end
 
                 # C^J_pq dJ_pq/dy_ab 
                 @tullio tmp[b,k] := cj12[b,q]*b_nbf5_nbf5[q,q,k]
@@ -57,8 +59,10 @@ function compute_Lagrange2(C,n,H,I,b_mnl,cj12,ck12,pa)
                 @tullio grad_nbf5[a,b]  += n[b]*Hmat_nbf5[a,b]
 
                 # dJ_pp/dy_ab
-                @tullio grad_nbeta[a,b] += n_beta[b]*I_nb_nb_nb[a,b,b,b]
-                @tullio grad_nalpha[a,b] += n_alpha[b]*I_na_na_na[a,b,b,b]
+		if pa.nbeta > 0
+                    @tullio grad_nbeta[a,b] += n_beta[b]*I_nb_nb_nb[a,b,b,b]
+                    @tullio grad_nalpha[a,b] += n_alpha[b]*I_na_na_na[a,b,b,b]
+                end
 
                 # C^J_pq dJ_pq/dy_ab
                 @tullio grad_nbf5[a,b] += cj12[b,q]*I_nbf5_nbf5_nbf5[a,b,q,q]

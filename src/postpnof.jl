@@ -533,15 +533,17 @@ function M_diagnostic(p,n;get_value=false)
     m_diagnostic = 0
 
     m_vals[p.no1+1:p.nbeta] = 2.0 .- m_vals[p.no1+1:p.nbeta]
-    m_diagnostic += maximum(m_vals[p.no1+1:p.nbeta])
-
+    if p.nbeta > 0
+        m_diagnostic += maximum(m_vals[p.no1+1:p.nbeta])
+    end
     #if(p.nsoc!=0): #This is always zero
     #    m_vals[p.nbeta+1:p.nalpha] = 1.0 - m_vals[p.nbeta+1:p.nalpha]
     #    m_diagnostic += max(m_vals[p.nbeta+1:p.nalpha])
 
     m_vals[p.nalpha+1:p.nbf5] = m_vals[p.nalpha+1:p.nbf5] .- 0.0
-    m_diagnostic += maximum(m_vals[p.nalpha+1:p.nbf5])
-
+    if p.nalpha+1 <= p.nbf5
+        m_diagnostic += maximum(m_vals[p.nalpha+1:p.nbf5])
+    end
     m_diagnostic = 0.5 * m_diagnostic
 
     if(get_value)

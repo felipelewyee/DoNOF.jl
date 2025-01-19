@@ -75,22 +75,18 @@ end
 
 function occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
-    n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
-    n_old = n
-
     if p.ndoc>0 && !freeze_occ
         J_MO,K_MO,H_core = computeJKH_MO(C,H,I,b_mnl,p)
-	#res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p), gamma, ConjugateGradient(), Optim.Options(g_abstol = p.threshen), inplace=false)
 	res = optimize(gamma->calcocce(gamma,J_MO,K_MO,H_core,p), gamma->calcoccg(gamma,J_MO,K_MO,H_core,p), gamma, ConjugateGradient(), Optim.Options(g_abstol = p.threshen), inplace=false)
 	gamma = res.minimizer
+
+        if res.iterations < 1
+            p.maxloop = p.maxloop + 10
+        end
     end
 
     n,dn_dgamma = ocupacion(gamma,p.no1,p.ndoc,p.nalpha,p.nv,p.nbf5,p.ndns,p.ncwo,p.HighSpin,p.occ_method)
     cj12,ck12 = PNOFi_selector(n,p)
-
-    if res.iterations < 1
-        p.maxloop = p.maxloop + 10
-    end
 
     if p.ndoc>0 && !freeze_occ
         return res.minimum, res.iterations, res.ls_success, gamma, n, cj12, ck12
