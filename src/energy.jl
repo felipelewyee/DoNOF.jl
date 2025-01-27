@@ -463,7 +463,7 @@ function energy2(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofm
     end
 
     if(do_translate_to_donofsw)
-        write_to_DoNOFsw(p,bset,n,C,diag(elag), diag(elag).* 0,10,E_nuc + E)
+        write_to_DoNOFsw(p,bset,n,C,diag(elag), zeros(nbf), 10,E_nuc + E)
     end
 
     return E_nuc + E,C,n,fmiug0
