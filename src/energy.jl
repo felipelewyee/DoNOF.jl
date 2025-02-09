@@ -86,7 +86,7 @@ function energy(bset,p;C=nothing,fmiug0=nothing,n=nothing,do_hfidr=true,do_nofmp
     end
 
     elag = zeros(p.nbf,p.nbf)
-    #E_occ,nit_occ,success_occ,gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
+    E_occ,nit_occ,success_occ,gamma,n,cj12,ck12 = occoptr(gamma,C,H,I,b_mnl,freeze_occ,p)
 
     itlim = 1
     E = 9999
