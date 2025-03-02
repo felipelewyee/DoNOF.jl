@@ -56,7 +56,7 @@ mutable struct Param
     h_cut::Float64
 end
 
-function Param(bset,mul,charge)
+function Param(bset, mul, charge)
 
     mol = ""
     natoms = bset.natoms
@@ -64,14 +64,14 @@ function Param(bset,mul,charge)
 
     ne = 0
     for i in 1:natoms
-      ne += bset.atoms[i].Z
+        ne += bset.atoms[i].Z
     end
     ne -= charge
 
-    nalpha = (ne + mul - 1)/2
-    nbeta = (ne - mul + 1)/2
-   
-    nbfaux = 0	
+    nalpha = (ne + mul - 1) / 2
+    nbeta = (ne - mul + 1) / 2
+
+    nbfaux = 0
     no1 = 0
 
     #for i in 1:natoms
@@ -105,22 +105,22 @@ function Param(bset,mul,charge)
     nvir = nbf - nalpha
 
     ncwo = -1
-    if ndns!=0
-        if ndoc>0
-	    if ncwo!=1
-                if ncwo==-1 || ncwo > p.nvir/p.ndoc
-		    ncwo = trunc(Int, nvir/ndoc)
+    if ndns != 0
+        if ndoc > 0
+            if ncwo != 1
+                if ncwo == -1 || ncwo > p.nvir / p.ndoc
+                    ncwo = trunc(Int, nvir / ndoc)
                 end
-	    end
-	else
-	    ncwo = 0
+            end
+        else
+            ncwo = 0
         end
     end
 
-    closed = (nbeta == (ne+mul-1)/2 && nalpha == (ne-mul+1)/2)
+    closed = (nbeta == (ne + mul - 1) / 2 && nalpha == (ne - mul + 1) / 2)
 
     noptorb = nbf
-    nac = ndoc * (1+ncwo)
+    nac = ndoc * (1 + ncwo)
     nbf5 = no1 + nac + nsoc
     no0 = nbf - nbf5
 
@@ -149,7 +149,7 @@ function Param(bset,mul,charge)
     perdiis = true      # Aplica DIIS cada NDIIS (true) o después de NDIIS (false)
     ncwo = ncwo         # Número de orbitales débilmente ocupados acoplados a cada orbital fueremtente ocupado
     noptorb = noptorb   # Número de orbitales a optimizar Nbf5 <= Noptorb <= Nbf
-    nv = ncwo*ndoc
+    nv = ncwo * ndoc
     gpu = false
     RI = false
 
@@ -158,99 +158,99 @@ function Param(bset,mul,charge)
 
     occ_method = "Softmax"
     orb_method = "ADABelief"
-    nvar = round(Int,nbf*(nbf-1)/2 - no0*(no0-1)/2)
+    nvar = round(Int, nbf * (nbf - 1) / 2 - no0 * (no0 - 1) / 2)
 
     spherical = false
     gpu_bits = 64
-    h_cut = 0.02*sqrt(2.0)
+    h_cut = 0.02 * sqrt(2.0)
 
     return Param(mol,
-    natoms,
-    nbf,
-    nbfaux,
-    nalpha,
-    nbeta,
-    ne,
-    mul,
-    ndoc,
-    nsoc,
-    ndns,
-    nvir,
-    closed,
-    nac,
-    nbf5,
-    no0,
-    title,
-    maxit,
-    thresheid,
-    no1,
-    maxitid,
-    maxloop,
-    ipnof,
-    ista, 
-    threshl, 
-    threshe, 
-    threshec, 
-    threshen, 
-    threshgorb, 
-    threshgocc, 
-    scaling, 
-    alpha,
-    nzeros, 
-    nzerosm, 
-    nzerosr, 
-    itziter, 
-    diis, 
-    thdiis, 
-    ndiis, 
-    perdiis, 
-    ncwo, 
-    noptorb, 
-    nv, 
-    gpu,
-    RI,
-    HighSpin,
-    MSpin,
-    occ_method,
-    orb_method,
-    nvar,
-    spherical,
-    gpu_bits,
-    h_cut)
+        natoms,
+        nbf,
+        nbfaux,
+        nalpha,
+        nbeta,
+        ne,
+        mul,
+        ndoc,
+        nsoc,
+        ndns,
+        nvir,
+        closed,
+        nac,
+        nbf5,
+        no0,
+        title,
+        maxit,
+        thresheid,
+        no1,
+        maxitid,
+        maxloop,
+        ipnof,
+        ista,
+        threshl,
+        threshe,
+        threshec,
+        threshen,
+        threshgorb,
+        threshgocc,
+        scaling,
+        alpha,
+        nzeros,
+        nzerosm,
+        nzerosr,
+        itziter,
+        diis,
+        thdiis,
+        ndiis,
+        perdiis,
+        ncwo,
+        noptorb,
+        nv,
+        gpu,
+        RI,
+        HighSpin,
+        MSpin,
+        occ_method,
+        orb_method,
+        nvar,
+        spherical,
+        gpu_bits,
+        h_cut)
 end
 
-function autozeros(p;restart=false)
-    if(restart)
-	if(abs(trunc(Int,log10(p.threshl)))<=3)
+function autozeros(p; restart=false)
+    if (restart)
+        if (abs(trunc(Int, log10(p.threshl))) <= 3)
             p.nzeros = 2
             p.nzerosr = 2
             p.nzerosm = 5
-	else
-	    p.nzeros = abs(trunc(Int,log10(p.threshl))) - 1
+        else
+            p.nzeros = abs(trunc(Int, log10(p.threshl))) - 1
             p.nzerosr = p.nzeros
-            p.nzerosm = abs(trunc(Int,log10(p.threshl))) + 2
-	end
+            p.nzerosm = abs(trunc(Int, log10(p.threshl))) + 2
+        end
     else
         p.nzeros = 1
         p.nzerosr = 2
-        p.nzerosm = abs(trunc(Int,log10(p.threshl))) + 2
+        p.nzerosm = abs(trunc(Int, log10(p.threshl))) + 2
     end
 end
 
-function set_ncwo(p,ncwo)
+function set_ncwo(p, ncwo)
     #if p.ne==2
     #    ncwo= -1
     #end
-    if p.ndns!=0
-        if p.ndoc>0
-            if ncwo!=1
-                if ncwo==-1 || ncwo > p.nvir/p.ndoc
-                    ncwo = trunc(Int,p.nvir/p.ndoc)
-		end
-	    end
+    if p.ndns != 0
+        if p.ndoc > 0
+            if ncwo != 1
+                if ncwo == -1 || ncwo > p.nvir / p.ndoc
+                    ncwo = trunc(Int, p.nvir / p.ndoc)
+                end
+            end
         else
             ncwo = 0
-	end
+        end
     end
 
     p.ncwo = ncwo
@@ -258,36 +258,36 @@ function set_ncwo(p,ncwo)
     p.nac = p.ndoc * (1 + ncwo)
     p.nbf5 = p.no1 + p.nac + p.nsoc   #JFHLY warning: nbf must be >nbf5
     p.no0 = p.nbf - p.nbf5
-    p.nv = p.ncwo*p.ndoc
-    p.nvar = round(Int,p.nbf*(p.nbf-1)/2 - p.no0*(p.no0-1)/2)
+    p.nv = p.ncwo * p.ndoc
+    p.nvar = round(Int, p.nbf * (p.nbf - 1) / 2 - p.no0 * (p.no0 - 1) / 2)
 
 end
 
-function set_no1(p,bset;no1=-1) 
+function set_no1(p, bset; no1=-1)
 
-    if(no1==-1)
+    if (no1 == -1)
         no1 = 0
         for i in 1:p.natoms
             Z = bset.atoms[i].Z
-            if 1<=Z && Z<=  2
+            if 1 <= Z && Z <= 2
                 no1 += 0           # H-He
-            elseif 3<=Z && Z<= 10
-                no1 +=  1          # Li-Ne
-            elseif 11<=Z && Z<= 18
-                no1 +=  5          # Na-Ar
-            elseif 19<=Z && Z<= 36
-                no1 +=  9          # K-Kr
-            elseif 37<=Z && Z<= 49
+            elseif 3 <= Z && Z <= 10
+                no1 += 1          # Li-Ne
+            elseif 11 <= Z && Z <= 18
+                no1 += 5          # Na-Ar
+            elseif 19 <= Z && Z <= 36
+                no1 += 9          # K-Kr
+            elseif 37 <= Z && Z <= 49
                 no1 += 18          # Rb-In
-            elseif 50<=Z && Z<= 54
+            elseif 50 <= Z && Z <= 54
                 no1 += 23          # Sn-Xe
-            elseif 55<=Z && Z<= 71
+            elseif 55 <= Z && Z <= 71
                 no1 += 27          # Cs-Lu
-            elseif 72<=Z && Z<= 81
+            elseif 72 <= Z && Z <= 81
                 no1 += 30          # Hf-Tl
-            elseif 82<=Z && Z<= 86
+            elseif 82 <= Z && Z <= 86
                 no1 += 39          # Pb-Rn
-            elseif 87<=Z && Z<=109
+            elseif 87 <= Z && Z <= 109
                 no1 += 43          # Fr-Mt
             end
         end
@@ -300,10 +300,10 @@ function set_no1(p,bset;no1=-1)
     p.ndns = p.ndoc + p.nsoc
     p.nvir = p.nbf - p.nalpha
 
-    p.nac = p.ndoc * (1+p.ncwo)
+    p.nac = p.ndoc * (1 + p.ncwo)
     p.nbf5 = p.no1 + p.nac + p.nsoc
     p.no0 = p.nbf - p.nbf5
 
-    p.nv = p.ncwo*p.ndoc
-    p.nvar = round(Int,p.nbf*(p.nbf-1)/2 - p.no0*(p.no0-1)/2)
+    p.nv = p.ncwo * p.ndoc
+    p.nvar = round(Int, p.nbf * (p.nbf - 1) / 2 - p.no0 * (p.no0 - 1) / 2)
 end
