@@ -92,7 +92,6 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
     E = 9999
     E_old = 9999
     E_diff = 9999
-    sumdiff_old = 0
 
     if printmode
         println(" ")

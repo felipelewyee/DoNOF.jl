@@ -229,7 +229,7 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
             end
         end
 
-        if maximum(abs.(grads)) / 4 < p.threshgorb && improved
+        if 2 * maximum(abs.(grads)) < p.threshgorb && improved
             success = true
             break
         end
@@ -257,8 +257,8 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
     end
 
     if !improved
-        p.alpha = 0.4 * p.alpha
-        p.maxloop = p.maxloop + 20
+        p.alpha = 0.3 * p.alpha
+        p.maxloop = p.maxloop + 10
         #println("      alpha ",p.alpha)
     end
 
@@ -313,7 +313,7 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
             end
         end
 
-        if maximum(abs.(grads)) / 4 < p.threshgorb && improved
+        if 2 * maximum(abs.(grads)) < p.threshgorb && improved
             success = true
             break
         end
@@ -340,9 +340,9 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
     end
 
     if !improved
-        p.alpha = 0.4 * p.alpha
+        p.alpha = 0.3 * p.alpha
         #p.alpha = p.alpha/10
-        p.maxloop = p.maxloop + 20
+        p.maxloop = p.maxloop + 10
         #println("      alpha ",p.alpha)
     end
 
@@ -396,7 +396,7 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
             end
         end
 
-        if maximum(abs.(grads)) / 4 < p.threshgorb && improved
+        if 2 * maximum(abs.(grads)) < p.threshgorb && improved
             success = true
             break
         end
@@ -423,9 +423,9 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
     end
 
     if !improved
-        p.alpha = 0.4 * p.alpha
+        p.alpha = 0.3 * p.alpha
         #p.alpha = p.alpha/10
-        p.maxloop = p.maxloop + 20
+        p.maxloop = p.maxloop + 10
         #println("      alpha ",p.alpha)
     end
 
@@ -476,7 +476,7 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
             end
         end
 
-        if maximum(abs.(grads)) / 4 < p.threshgorb && improved
+        if 2 * maximum(abs.(grads)) < p.threshgorb && improved
             success = true
             break
         end
@@ -502,9 +502,9 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
     end
 
     if !improved
-        p.alpha = 0.4 * p.alpha
+        p.alpha = 0.3 * p.alpha
         #p.alpha = p.alpha/10
-        p.maxloop = p.maxloop + 20
+        p.maxloop = p.maxloop + 10
         #println("      alpha ",p.alpha)
     end
 
@@ -699,7 +699,7 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
         #  println(maximum(abs.(grads)), " ", norm(grads))
         #end
 
-        if maximum(abs.(grads)) / 4 < p.threshgorb && improved
+        if 2 * maximum(abs.(grads)) < p.threshgorb && improved
             success = true
             break
         end
@@ -733,7 +733,7 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
 
     if !improved
         #p.alpha = p.alpha/10
-        p.maxloop = p.maxloop + 20
+        p.maxloop = p.maxloop + 10
         #println("      alpha ",p.alpha)
     end
 
