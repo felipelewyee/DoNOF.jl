@@ -14,5 +14,6 @@ p.ipnof = 7
 p.RI = true
 p.gpu = false
 
+p.orb_method = "ADABelief"
 p.maxit = 100
 DoNOF.energy(bset,p,do_hfidr=false)
