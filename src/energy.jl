@@ -385,10 +385,10 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
     end
 
     C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
-    if isnothing(fmiug0)
-        save(p.title * ".jld2", "C", C, "n", n)
-    else
-        save(p.title * ".jld2", "C", C, "n", n, "fmiug0", fmiug0)
+    jldopen(p.title * ".jld2", "w"; compress = true) do file
+        file["C"] = C
+        file["n"] = n
+        file["fmiug0"] = fmiug0
     end
 
     if printmode
