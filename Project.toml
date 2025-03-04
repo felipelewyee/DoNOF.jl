@@ -4,8 +4,9 @@ authors = ["Juan Felipe Huan Lew Yee <felipe.lew.yee@quimica.unam.mx>", "Jorge M
 version = "0.1.1"
 
 [deps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 GaussianBasis = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"
-JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
@@ -27,8 +28,9 @@ DoNOFGPUExt = ["CUDA", "KernelAbstractions", "NNlibCUDA", "cuTENSOR"]
 
 [compat]
 CUDA = "5"
+FileIO = "1.17.0"
 GaussianBasis = "0.4.0"
-JLD = "0.12.5"
+JLD2 = "0.5.11"
 KernelAbstractions = "0.9.33"
 LoopVectorization = "0.12.150"
 NNlibCUDA = "0.2.7"

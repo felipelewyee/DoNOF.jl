@@ -148,9 +148,9 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n", i_ext, nit_orb, ta2 - ta1, nit_occ, ta3 - ta2, E, E + E_nuc, E_diff, maxdiff, maximum(abs.(grad_orb)), norm(grad_occ), M)
 
         if isnothing(fmiug0)
-            save(p.title * ".jld", "E", Etmp, "C", C, "n", n)
+            save(p.title * ".jld2", "E", Etmp, "C", C, "n", n)
         else
-            save(p.title * ".jld", "E", Etmp, "C", C, "n", n, "fmiug0", fmiug0)
+            save(p.title * ".jld2", "E", Etmp, "C", C, "n", n, "fmiug0", fmiug0)
         end
         flush(stdout)
 
@@ -164,9 +164,9 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
     end
     if isnothing(fmiug0)
-        save(p.title * ".jld", "C", C, "n", n)
+        save(p.title * ".jld2", "C", C, "n", n)
     else
-        save(p.title * ".jld", "C", C, "n", n, "fmiug0", fmiug0)
+        save(p.title * ".jld2", "C", C, "n", n, "fmiug0", fmiug0)
     end
 
     if printmode
@@ -372,9 +372,9 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
         @printf("%6i %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n", i_ext, E, E + E_nuc, E_diff, maxdiff, norm(grad_orb), norm(grad_occ), M)
 
         #    if isnothing(fmiug0)
-        #        save(p.title*".jld", "E", Etmp, "C", C,"n",n)
+        #        save(p.title*".jld2", "E", Etmp, "C", C,"n",n)
         #    else
-        #        save(p.title*".jld", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
+        #        save(p.title*".jld2", "E", Etmp, "C", C,"n",n,"fmiug0",fmiug0)
         #    end
         #    flush(stdout)
 
@@ -386,9 +386,9 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
 
     C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
     if isnothing(fmiug0)
-        save(p.title * ".jld", "C", C, "n", n)
+        save(p.title * ".jld2", "C", C, "n", n)
     else
-        save(p.title * ".jld", "C", C, "n", n, "fmiug0", fmiug0)
+        save(p.title * ".jld2", "C", C, "n", n, "fmiug0", fmiug0)
     end
 
     if printmode

@@ -13,7 +13,7 @@ using SpecialFunctions
 using Optim
 #using SparseArrays
 using GaussianBasis
-using JLD
+using FileIO, JLD2
 
 include("io.jl")
 include("param.jl")

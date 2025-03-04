@@ -2,9 +2,13 @@ function read_C(; title="donof")
 
     C = nothing
     try
-        C = load(title * ".jld")["C"]
+        C = load(title * ".jld2")["C"]
     catch
-        println(title * "_C.jld not found")
+        try
+            C = load(title * ".jld")["C"]
+        catch
+            println(title * "_C.jld2 not found")
+        end
     end
     return C
 
@@ -14,9 +18,13 @@ function read_n(; title="donof")
 
     n = nothing
     try
-        n = load(title * ".jld")["n"]
+        n = load(title * ".jld2")["n"]
     catch
-        println(title * "_n.jld not found")
+        try
+            n = load(title * ".jld")["n"]
+        catch
+            println(title * "_n.jld2 not found")
+        end
     end
     return n
 
@@ -26,10 +34,13 @@ function read_fmiug0(; title="donof")
 
     fmiug0 = nothing
     try
-        fmiug0 = load(title * ".jld")["fmiug0"]
+        fmiug0 = load(title * ".jld2")["fmiug0"]
     catch
-        println(title * "_fmiug0.jld not found")
-        n = nothing
+        try
+            fmiug0 = load(title * ".jld")["fmiug0"]
+        catch
+            println(title * "_fmiug0.jld2 not found")
+        end
     end
     return fmiug0
 
