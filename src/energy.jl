@@ -163,10 +163,13 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
     if (p.ipnof > 4)
         C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
     end
-    if isnothing(fmiug0)
-        save(p.title * ".jld2", "C", C, "n", n)
-    else
-        save(p.title * ".jld2", "C", C, "n", n, "fmiug0", fmiug0)
+
+    jldopen(p.title * ".jld2", "w"; compress = true) do file
+        file["C"] = C
+        file["n"] = n
+        if !isnothing(fmiug0)
+            file["fmiug0"] = fmiug0
+	end
     end
 
     if printmode
