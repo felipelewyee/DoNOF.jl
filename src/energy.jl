@@ -164,7 +164,7 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
     end
 
-    jldopen(p.title * ".jld2", "w"; compress = true) do file
+    jldopen(p.title * ".jld2", "w") do file
         file["C"] = C
         file["n"] = n
         if !isnothing(fmiug0)
@@ -388,10 +388,12 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
     end
 
     C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
-    jldopen(p.title * ".jld2", "w"; compress = true) do file
+    jldopen(p.title * ".jld2", "w") do file
         file["C"] = C
         file["n"] = n
-        file["fmiug0"] = fmiug0
+        if isnothing(fmiug0)
+            file["fmiug0"] = fmiug0
+        end
     end
 
     if printmode
