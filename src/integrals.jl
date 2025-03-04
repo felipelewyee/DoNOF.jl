@@ -2,8 +2,11 @@ function compute_integrals(bset, p)
 
     # Overlap, Kinetics, Potential
     S = overlap(bset)
+    S = (S .+ S') ./ 2 
     T = kinetic(bset)
+    T = (T .+ T') ./ 2 
     V = nuclear(bset)
+    V = (V .+ V') ./ 2 
     H = T + V
     I = Float64[]
     b_mnl = Float64[]
@@ -18,6 +21,7 @@ function compute_integrals(bset, p)
         end
         Iaux = ERI_2e3c(bset, aux)
         G = ERI_2e2c(aux)
+	G = (G .+ G') ./ 2 
 
         evals, evecs = eigen(G)
         sqrtinv = Float64[]

@@ -295,8 +295,10 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 version = "1.11.0"
 
 [[deps.GaussianBasis]]
-deps = ["Combinatorics", "Formatting", "HDF5", "LinearAlgebra", "Molecules", "SpecialFunctions", "StaticArrays", "Test", "libcint_jll"]
-git-tree-sha1 = "18a4d30e256a76046aa818dfbb770f18e942947c"
+deps = ["Combinatorics", "Formatting", "LinearAlgebra", "Molecules", "SpecialFunctions", "StaticArrays", "libcint_jll"]
+git-tree-sha1 = "177a978a22d1dcde29b1d8785ccc2d3735cbb895"
+repo-rev = "main"
+repo-url = "https://github.com/FermiQC/GaussianBasis.jl"
 uuid = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"
 version = "0.4.0"
 
