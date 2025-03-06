@@ -38,6 +38,11 @@ function compute_integrals(bset, p)
         p.nbfaux = size(b_mnl)[3]
     end
 
+    ext = Base.get_extension(@__MODULE__, :DoNOFGPU)
+    if !isnothing(ext)
+        I, b_mnl = ext.eris_to_gpu(I, b_mnl)
+    end
+	
     return S, T, V, H, I, b_mnl
 
 end

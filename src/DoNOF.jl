@@ -1,7 +1,5 @@
 module DoNOF
 
-#using Plots
-
 using LoopVectorization
 using Tullio
 using TensorOperations
@@ -11,7 +9,6 @@ using Printf
 using SpecialFunctions
 
 using Optim
-#using SparseArrays
 using GaussianBasis
 using FileIO, JLD2
 

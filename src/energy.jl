@@ -6,11 +6,7 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
     println("Computing Integrals")
     flush(stdout)
 
-    if p.gpu
-        S, T, V, H, I, b_mnl = compute_integrals(bset, p, true)
-    else
-        S, T, V, H, I, b_mnl = compute_integrals(bset, p)
-    end
+    S, T, V, H, I, b_mnl = compute_integrals(bset, p)
 
     t1 = time()
     @printf("Elapsed time: %7.2f Seconds\n\n", t1 - t0)

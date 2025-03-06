@@ -7,21 +7,34 @@ version = "0.1.1"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 GaussianBasis = "9bb1a3dc-0d1c-467e-84f5-0c4ef701360a"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
+cuTENSOR = "011b41b2-24ef-40a8-b3eb-fa098493e9e1"
+
+[weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+
+[extensions]
+DoNOFGPU = ["CUDA", "KernelAbstractions", "cuTENSOR"]
 
 [compat]
+CUDA = "5.6.1"
 FileIO = "1.17.0"
 JLD2 = "0.5.11"
+KernelAbstractions = "0.9.34"
 LinearAlgebra = "1.11.0"
 LoopVectorization = "0.12.171"
 Optim = "1.11.0"
 Printf = "1.11.0"
+Revise = "3.7.2"
 SpecialFunctions = "2.5.0"
 TensorOperations = "5.1.4"
 Tullio = "0.3.8"
+cuTENSOR = "2.2.1"
