@@ -7,7 +7,9 @@ using CUDA, KernelAbstractions, cuTENSOR
 
 function eris_to_gpu(I, b_mnl)
     
-    println(CUDA.device())
+    device = CUDA.device()
+    gpu_name = CUDA.name(device)
+    println(gpu_name)
 
     I_gpu = CuArray{Float64}(I)
     b_mnl_gpu = CuArray{Float64}(b_mnl)
