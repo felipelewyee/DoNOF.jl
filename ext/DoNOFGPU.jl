@@ -6,8 +6,8 @@ using Tullio
 using CUDA, KernelAbstractions, cuTENSOR
 
 function eris_to_gpu(I, b_mnl)
-    I_gpu = cu(I)
-    b_mnl_gpu = cu(b_mnl)
+    I_gpu = CuArray{Float64}(I)
+    b_mnl_gpu = CuArray{Float64}(b_mnl)
 
     return I_gpu, b_mnl_gpu
 end
