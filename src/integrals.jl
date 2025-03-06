@@ -2,11 +2,11 @@ function compute_integrals(bset, p)
 
     # Overlap, Kinetics, Potential
     S = overlap(bset)
-    S = (S .+ S') ./ 2 
+    S = (S .+ S') ./ 2
     T = kinetic(bset)
-    T = (T .+ T') ./ 2 
+    T = (T .+ T') ./ 2
     V = nuclear(bset)
-    V = (V .+ V') ./ 2 
+    V = (V .+ V') ./ 2
     H = T + V
     I = Float64[]
     b_mnl = Float64[]
@@ -17,15 +17,16 @@ function compute_integrals(bset, p)
         if p.spherical
             aux = BasisSet(bset.name * "-jkfit", bset.atoms)
         else
-            aux = BasisSet(bset.name * "-jkfit", bset.atoms, spherical=false, lib=:acsint)
+            aux =
+                BasisSet(bset.name * "-jkfit", bset.atoms, spherical = false, lib = :acsint)
         end
         Iaux = ERI_2e3c(bset, aux)
         G = ERI_2e2c(aux)
-	G = (G .+ G') ./ 2 
+        G = (G .+ G') ./ 2
 
         evals, evecs = eigen(G)
         sqrtinv = Float64[]
-        for i in 1:size(evals)[1]
+        for i = 1:size(evals)[1]
             if (evals[i] < 0.0)
                 append!(sqrtinv, 0.0)
             else
@@ -42,7 +43,7 @@ function compute_integrals(bset, p)
     if !isnothing(ext)
         I, b_mnl = ext.eris_to_gpu(I, b_mnl)
     end
-	
+
     return S, T, V, H, I, b_mnl
 
 end
@@ -210,7 +211,8 @@ function iajb_Full(C, I, no1, nalpha, nbf, nbf5)
     Cocc = view(C, :, no1+1:nalpha)
     Ccwo = view(C, :, nalpha+1:nbf)
 
-    @tullio iajb[i, a, j, b] := ((Ccwo[n, a] * ((Cocc[m, i] * I[m, n, s, l]) * Cocc[s, j])) * Ccwo[l, b])
+    @tullio iajb[i, a, j, b] :=
+        ((Ccwo[n, a] * ((Cocc[m, i] * I[m, n, s, l]) * Cocc[s, j])) * Ccwo[l, b])
 
     return iajb
 

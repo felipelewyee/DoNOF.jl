@@ -31,7 +31,13 @@ function compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, pa)
         b_nbf5_nbf5 = view(b_MO, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbfaux)
     else
         I_nb_nb_nb = view(I_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbeta)
-        I_na_na_na = view(I_MO, 1:pa.nbf, pa.nalpha+1:pa.nbf5, pa.nalpha+1:pa.nbf5, pa.nalpha+1:pa.nbf5)
+        I_na_na_na = view(
+            I_MO,
+            1:pa.nbf,
+            pa.nalpha+1:pa.nbf5,
+            pa.nalpha+1:pa.nbf5,
+            pa.nalpha+1:pa.nbf5,
+        )
         I_nbf5_nbf5_nbf5 = view(I_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbf5)
     end
 
@@ -42,8 +48,10 @@ function compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, pa)
 
             # dJ_pp/dy_ab
             if pa.nbeta > 0
-                @tullio grad_nbeta[a, b] += n_beta[b] * b_nbf_beta[a, b, k] * b_nbeta_beta[b, b, k]
-                @tullio grad_nalpha[a, b] += n_alpha[b] * b_nbf_alpha[a, b, k] * b_nalpha_alpha[b, b, k]
+                @tullio grad_nbeta[a, b] +=
+                    n_beta[b] * b_nbf_beta[a, b, k] * b_nbeta_beta[b, b, k]
+                @tullio grad_nalpha[a, b] +=
+                    n_alpha[b] * b_nbf_alpha[a, b, k] * b_nalpha_alpha[b, b, k]
             end
 
             # C^J_pq dJ_pq/dy_ab 
@@ -51,7 +59,8 @@ function compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, pa)
             @tullio grad_nbf5[a, b] += b_nbf_nbf5[a, b, k] * tmp[b, k]
 
             # -C^K_pq dK_pq/dy_ab 
-            @tullio grad_nbf5[a, b] += -ck12[b, q] * b_nbf_nbf5[a, q, k] * b_nbf5_nbf5[b, q, k]
+            @tullio grad_nbf5[a, b] +=
+                -ck12[b, q] * b_nbf_nbf5[a, q, k] * b_nbf5_nbf5[b, q, k]
         end
     else
         if (pa.MSpin == 0)
@@ -218,7 +227,8 @@ function computeF_RO(J, K, n, H, cj12, ck12, p)
     @tullio F_beta[i, m, n] += -0.5 * n_beta[i] * K_alpha[j, m, n]
     @tullio avx = false F_alpha[i, m, n] += 0.5 * J_alpha[j, m, n]
     @tullio avx = false F_alpha[i, m, n] += -0.5 * K_alpha[j, m, n]
-    F[p.nbeta+1:p.nalpha, :, :] -= 0.5 * (J[p.nbeta+1:p.nalpha, :, :] - K[p.nbeta+1:p.nalpha, :, :]) #Remove diag.
+    F[p.nbeta+1:p.nalpha, :, :] -=
+        0.5 * (J[p.nbeta+1:p.nalpha, :, :] - K[p.nbeta+1:p.nalpha, :, :]) #Remove diag.
     @tullio F_nbf5[i, m, n] += n_nbf5[i] * J_alpha[j, m, n]
     @tullio F_nbf5[i, m, n] += -0.5 * n_nbf5[i] * K_alpha[j, m, n]
 
@@ -242,7 +252,8 @@ function computeE_elec(H, C, n, elag, p)
     if (!p.HighSpin)
         n_beta_alpha = view(n, p.nbeta+1:p.nalpha)
         C_beta_alpha = view(C, :, p.nbeta+1:p.nalpha)
-        @tullio avx = false E += n_beta_alpha[i] * C_beta_alpha[m, i] * H[m, n] * C_beta_alpha[n, i]
+        @tullio avx = false E +=
+            n_beta_alpha[i] * C_beta_alpha[m, i] * H[m, n] * C_beta_alpha[n, i]
     elseif (p.HighSpin)
         C_beta_alpha = view(C, :, p.nbeta+1:p.nalpha)
         @tullio avx = false E += 0.5 * C_beta_alpha[m, i] * H[m, n] * C_beta_alpha[n, i]
@@ -287,7 +298,7 @@ function fmiug_scaling(fmiug0, elag, i_ext, nzeros, nbf, noptorb)
     else
         @tullio fmiug[i, j] = (elag[i, j] - elag[j, i])
         fmiug = tril(fmiug, -1) + Transpose(tril(fmiug, -1))
-        for k in 0:nzeros+9
+        for k = 0:nzeros+9
             fmiug[10.0^(9-k).<abs.(fmiug).<10.0^(10-k)] .*= 0.1
         end
         fmiug[diagind(fmiug)] .= fmiug0
@@ -301,10 +312,10 @@ function fmiug_diis(fk, fmiug, idiis, bdiis, cdiis, maxdiff, p)
 
     idiis = idiis + 1
     fk[idiis, 1:p.noptorb, 1:p.noptorb] = fmiug[1:p.noptorb, 1:p.noptorb]
-    for m in 1:idiis
+    for m = 1:idiis
         bdiis[m, idiis] = 0
-        for i in 1:p.noptorb
-            for j in 1:i
+        for i = 1:p.noptorb
+            for j = 1:i
                 bdiis[m, idiis] += fk[m, i, j] * fk[idiis, j, i]
             end
         end
@@ -320,10 +331,10 @@ function fmiug_diis(fk, fmiug, idiis, bdiis, cdiis, maxdiff, p)
         cdiis[idiis+1] .= -1
         x = bdiis[1:idiis+1, 1:idiis+1] \ cdiis[1:idiis+1]
 
-        for i in 1:p.noptorb
-            for j in 1:i
+        for i = 1:p.noptorb
+            for j = 1:i
                 fmiug[i, j] = 0
-                for k in 1:idiis+1
+                for k = 1:idiis+1
                     fmiug[i, j] += x[k] * fk[k, i, j]
                 end
                 fmiug[j, i] = fmiug[i, j]
@@ -341,9 +352,11 @@ end
 function compute_E_nuc(bset, p)
 
     E_nuc = 0.0
-    for i in 1:p.natoms
-        for j in i+1:p.natoms
-            E_nuc += bset.atoms[i].Z * bset.atoms[j].Z / (norm(bset.atoms[i].xyz - bset.atoms[j].xyz) * 1.88973)
+    for i = 1:p.natoms
+        for j = i+1:p.natoms
+            E_nuc +=
+                bset.atoms[i].Z * bset.atoms[j].Z /
+                (norm(bset.atoms[i].xyz - bset.atoms[j].xyz) * 1.88973)
         end
     end
 
@@ -352,12 +365,63 @@ function compute_E_nuc(bset, p)
 end
 
 function Z_to_symbol(Z)
-    dict = Dict(1 => "H", 2 => "He", 3 => "Li",
-        4 => "Be", 5 => "B", 6 => "C", 7 => "N", 8 => "O", 9 => "F", 10 => "Ne",
-        11 => "Na", 12 => "Mg", 13 => "Al", 14 => "Si", 15 => "P", 16 => "S", 17 => "Cl", 18 => "Ar",
-        19 => "K", 20 => "Ca", 21 => "Sc", 22 => "Ti", 23 => "V", 24 => "Cr", 25 => "Mn", 26 => "Fe", 27 => "Co", 28 => "Ni", 29 => "Cu", 30 => "Zn", 31 => "Ga", 32 => "Ge", 33 => "As", 34 => "Se", 35 => "Br", 36 => "Kr",
-        37 => "Rb", 38 => "Sr", 39 => "Y", 40 => "Zr", 41 => "Nb", 42 => "Mo", 43 => "Tc", 44 => "Ru", 45 => "Rh", 46 => "Pd", 47 => "Ag", 48 => "Cd", 49 => "In", 50 => "Sn", 51 => "Sb", 52 => "Te", 53 => "I", 54 => "Xe",
-        83 => "Bi")
+    dict = Dict(
+        1 => "H",
+        2 => "He",
+        3 => "Li",
+        4 => "Be",
+        5 => "B",
+        6 => "C",
+        7 => "N",
+        8 => "O",
+        9 => "F",
+        10 => "Ne",
+        11 => "Na",
+        12 => "Mg",
+        13 => "Al",
+        14 => "Si",
+        15 => "P",
+        16 => "S",
+        17 => "Cl",
+        18 => "Ar",
+        19 => "K",
+        20 => "Ca",
+        21 => "Sc",
+        22 => "Ti",
+        23 => "V",
+        24 => "Cr",
+        25 => "Mn",
+        26 => "Fe",
+        27 => "Co",
+        28 => "Ni",
+        29 => "Cu",
+        30 => "Zn",
+        31 => "Ga",
+        32 => "Ge",
+        33 => "As",
+        34 => "Se",
+        35 => "Br",
+        36 => "Kr",
+        37 => "Rb",
+        38 => "Sr",
+        39 => "Y",
+        40 => "Zr",
+        41 => "Nb",
+        42 => "Mo",
+        43 => "Tc",
+        44 => "Ru",
+        45 => "Rh",
+        46 => "Pd",
+        47 => "Ag",
+        48 => "Cd",
+        49 => "In",
+        50 => "Sn",
+        51 => "Sb",
+        52 => "Te",
+        53 => "I",
+        54 => "Xe",
+        83 => "Bi",
+    )
 
     return dict[Z]
 end
@@ -372,17 +436,21 @@ function check_ortho(C, S, p)
         orthonormality = false
     end
     if !orthonormality
-        @printf("Orthonormality violations %i, Maximum Violation %f\n", sum(ortho_deviation .> 10^-6), maximum(ortho_deviation))
+        @printf(
+            "Orthonormality violations %i, Maximum Violation %f\n",
+            sum(ortho_deviation .> 10^-6),
+            maximum(ortho_deviation)
+        )
         println("Trying to orthonormalize")
         C = orthonormalize(C, S, p)
         C = check_ortho(C, S, p)
     else
         println("No violations of the orthonormality")
     end
-    for j in 1:p.nbf
+    for j = 1:p.nbf
         #Obtiene el índice del coeficiente con mayor valor absoluto del MO
         idxmaxabsval = 1
-        for i in 1:p.nbf
+        for i = 1:p.nbf
             if (abs(C[i, j]) > abs(C[idxmaxabsval, j]))
                 idxmaxabsval = i
             end
@@ -398,7 +466,7 @@ end
 function orthonormalize(C, S, p)
 
     evals, evecs = eigen(S)
-    for i in 1:size(evals)[1]
+    for i = 1:size(evals)[1]
         if (evals[i] < 0.0)
             evals[i] = 0.0
         else
@@ -412,9 +480,9 @@ function orthonormalize(C, S, p)
 
     @tullio Cnew2[i, j] := S_12[k, i] * Cnew[k, j]
 
-    for i in 1:size(Cnew2)[2]
+    for i = 1:size(Cnew2)[2]
         Cnew2[1:p.nbf, i] = Cnew2[1:p.nbf, i] / norm(Cnew2[1:p.nbf, i])
-        for j in i+1:size(Cnew2)[1]
+        for j = i+1:size(Cnew2)[1]
             val = -sum(Cnew2[1:p.nbf, i] .* Cnew2[1:p.nbf, j])
             Cnew2[1:p.nbf, j] = Cnew2[1:p.nbf, j] + val * Cnew2[1:p.nbf, i]
         end
@@ -431,8 +499,8 @@ function rotate_orbital(y, C, p)
     ynew = zeros(p.nbf, p.nbf)
 
     n = 1
-    for i in 1:p.nbf5
-        for j in i+1:p.nbf
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
             ynew[i, j] = y[n]
             ynew[j, i] = -y[n]
             n += 1
@@ -459,7 +527,7 @@ function n_to_gammas_ebi(n)
 
     nv = size(n)[1]
     gamma = zeros(nv)
-    for i in 1:nv
+    for i = 1:nv
         gamma[i] = erfinv(2 * n[i] - 1)
     end
     return gamma
@@ -470,7 +538,7 @@ function n_to_gammas_softmax(n, p)
 
     gamma = zeros(p.nv)
 
-    for i in 1:p.ndoc
+    for i = 1:p.ndoc
 
         ll = p.no1 + p.ndns + (p.ndoc - i) + 1
         ul = ll + p.ndoc * (p.ncwo - 1)
@@ -483,7 +551,7 @@ function n_to_gammas_softmax(n, p)
         A = zeros(p.ncwo, p.ncwo)
         b = zeros(p.ncwo)
 
-        for j in 1:p.ncwo
+        for j = 1:p.ncwo
             A[j, :] .= n_pi[j]
             A[j, j] = n_pi[j] - 1
             b[j] = -n_pi[j]
@@ -498,7 +566,7 @@ end
 
 function n_to_gammas_trigonometric(n, p)
     gamma = zeros(p.nv)
-    for i in 1:p.ndoc
+    for i = 1:p.ndoc
         idx = p.no1 + i
         gamma[i] = acos(sqrt(2.0 * n[idx] - 1.0))
         prefactor = max(1 - n[idx], 1e-14)
@@ -511,7 +579,7 @@ function n_to_gammas_trigonometric(n, p)
         ul_gamma = ll_gamma + p.ndoc * (p.ncwo - 2)
         gamma_pi = @view gamma[ll_gamma:p.ndoc:ul_gamma]
 
-        for j in 1:p.ncwo-1
+        for j = 1:p.ncwo-1
             gamma_pi[j] = asin(sqrt(n_pi[j] / prefactor))
             prefactor = prefactor * (cos(gamma_pi[j]))^2
         end
@@ -527,7 +595,7 @@ function order_occupations_softmax(old_C, old_gamma, H, I, b_mnl, p)
     #Sort ndoc subspaces
     gamma_tmp = zeros(1 + p.ncwo)
     C_tmp = zeros(p.nbf, 1 + p.ncwo)
-    for i in 1:p.ndoc
+    for i = 1:p.ndoc
         old_ll = p.no1 + p.ndns + (p.ndoc - i) + 1
         old_ul = old_ll + p.ndoc * (p.ncwo - 1)
 
@@ -552,4 +620,3 @@ function order_occupations_softmax(old_C, old_gamma, H, I, b_mnl, p)
 
     return C, gamma
 end
-

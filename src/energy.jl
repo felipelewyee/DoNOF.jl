@@ -1,6 +1,25 @@
 export energy
 
-function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do_nofmp2=false, printmode=true, nofmp2strategy="numerical", tolnofmp2=1e-10, do_ekt=false, do_mulliken_pop=false, do_lowdin_pop=true, do_m_diagnostic=true, do_mbpt=false, freeze_occ=false, do_translate_to_donofsw=false, do_erpa=false)
+function energy(
+    bset,
+    p;
+    C = nothing,
+    fmiug0 = nothing,
+    n = nothing,
+    do_hfidr = true,
+    do_nofmp2 = false,
+    printmode = true,
+    nofmp2strategy = "numerical",
+    tolnofmp2 = 1e-10,
+    do_ekt = false,
+    do_mulliken_pop = false,
+    do_lowdin_pop = true,
+    do_m_diagnostic = true,
+    do_mbpt = false,
+    freeze_occ = false,
+    do_translate_to_donofsw = false,
+    do_erpa = false,
+)
 
     t0 = time()
     println("Computing Integrals")
@@ -32,8 +51,14 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
 
     println("Geometry")
     println("========")
-    for i in 1:bset.natoms
-        @printf("%2s %15.7f %15.7f %15.7f\n", Z_to_symbol(bset.atoms[i].Z), bset.atoms[i].xyz[1], bset.atoms[i].xyz[2], bset.atoms[i].xyz[3])
+    for i = 1:bset.natoms
+        @printf(
+            "%2s %15.7f %15.7f %15.7f\n",
+            Z_to_symbol(bset.atoms[i].Z),
+            bset.atoms[i].xyz[1],
+            bset.atoms[i].xyz[2],
+            bset.atoms[i].xyz[3]
+        )
     end
     println("")
 
@@ -96,15 +121,29 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         println(" ")
     end
 
-    @printf("  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n", "Nitext", "Nit_orb", "Time", "Nit_occ", "Time", "Eelec", "Etot", "Ediff", "maxdiff", "MaxGrad_orb", "Grad_occ")
+    @printf(
+        "  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n",
+        "Nitext",
+        "Nit_orb",
+        "Time",
+        "Nit_occ",
+        "Time",
+        "Eelec",
+        "Etot",
+        "Ediff",
+        "maxdiff",
+        "MaxGrad_orb",
+        "Grad_occ"
+    )
 
     tot_it_orb = 0
     tot_it_occ = 0
 
-    for i_ext in 1:p.maxit
+    for i_ext = 1:p.maxit
         ta1 = time()
         if p.orb_method == "ID"
-            E_orb, C, nit_orb, success_orb, itlim, fmiug0 = orboptr(C, n, H, I, b_mnl, cj12, ck12, i_ext, itlim, fmiug0, p, printmode)
+            E_orb, C, nit_orb, success_orb, itlim, fmiug0 =
+                orboptr(C, n, H, I, b_mnl, cj12, ck12, i_ext, itlim, fmiug0, p, printmode)
         elseif p.orb_method == "Rotations"
             E_orb, C, nit_orb, success_orb = orbopt_rotations(gamma, C, H, I, b_mnl, p)
         elseif p.orb_method == "ADAM"
@@ -118,7 +157,8 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         end
         ta2 = time()
 
-        E_occ, nit_occ, success_occ, gamma, n, cj12, ck12 = occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
+        E_occ, nit_occ, success_occ, gamma, n, cj12, ck12 =
+            occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
         if (p.occ_method == "Softmax")
             C, gamma = order_occupations_softmax(C, gamma, H, I, b_mnl, p)
         end
@@ -134,14 +174,39 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
 
         y = zeros(p.nvar)
-        n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+        n, dn_dgamma = ocupacion(
+            gamma,
+            p.no1,
+            p.ndoc,
+            p.nalpha,
+            p.nv,
+            p.nbf5,
+            p.ndns,
+            p.ncwo,
+            p.HighSpin,
+            p.occ_method,
+        )
         cj12, ck12 = PNOFi_selector(n, p)
         grad_orb = calcorbg(y, n, cj12, ck12, C, H, I, b_mnl, p)
         J_MO, K_MO, H_core = computeJKH_MO(C, H, I, b_mnl, p)
         grad_occ = calcoccg(gamma, J_MO, K_MO, H_core, p)
 
-        M = M_diagnostic(p, n, get_value=true)
-        @printf("%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n", i_ext, nit_orb, ta2 - ta1, nit_occ, ta3 - ta2, E, E + E_nuc, E_diff, maxdiff, maximum(abs.(grad_orb)), norm(grad_occ), M)
+        M = M_diagnostic(p, n, get_value = true)
+        @printf(
+            "%6i %7i %10.1e %4i %10.1e %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",
+            i_ext,
+            nit_orb,
+            ta2 - ta1,
+            nit_occ,
+            ta3 - ta2,
+            E,
+            E + E_nuc,
+            E_diff,
+            maxdiff,
+            maximum(abs.(grad_orb)),
+            norm(grad_occ),
+            M
+        )
 
         if isnothing(fmiug0)
             save(p.title * ".jld2", "E", Etmp, "C", C, "n", n)
@@ -165,24 +230,24 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
         file["n"] = n
         if !isnothing(fmiug0)
             file["fmiug0"] = fmiug0
-	end
+        end
     end
 
     if printmode
         println(" ")
         println("RESULTS OF THE OCCUPATION OPTIMIZATION")
         println("========================================")
-        for i in 1:p.nbeta
+        for i = 1:p.nbeta
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
-        for i in p.nbeta+1:p.nalpha
+        for i = p.nbeta+1:p.nalpha
             if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
             else
                 @printf(" %3i    %9.7f  %10.8f\n", i, n[i], elag[i, i])
             end
         end
-        for i in p.nalpha+1:p.nbf5
+        for i = p.nalpha+1:p.nbf5
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
 
@@ -250,7 +315,26 @@ function energy(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do
 
 end
 
-function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, do_nofmp2=false, printmode=true, nofmp2strategy="numerical", tolnofmp2=1e-10, do_ekt=false, do_mulliken_pop=false, do_lowdin_pop=true, do_m_diagnostic=true, do_mbpt=false, freeze_occ=false, do_translate_to_donofsw=false, do_erpa=false)
+function energy2(
+    bset,
+    p;
+    C = nothing,
+    fmiug0 = nothing,
+    n = nothing,
+    do_hfidr = true,
+    do_nofmp2 = false,
+    printmode = true,
+    nofmp2strategy = "numerical",
+    tolnofmp2 = 1e-10,
+    do_ekt = false,
+    do_mulliken_pop = false,
+    do_lowdin_pop = true,
+    do_m_diagnostic = true,
+    do_mbpt = false,
+    freeze_occ = false,
+    do_translate_to_donofsw = false,
+    do_erpa = false,
+)
 
     t0 = time()
     println("Computing Integrals")
@@ -286,8 +370,14 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
 
     println("Geometry")
     println("========")
-    for i in 1:bset.natoms
-        @printf("%2s %15.7f %15.7f %15.7f\n", Z_to_symbol(bset.atoms[i].Z), bset.atoms[i].xyz[1], bset.atoms[i].xyz[2], bset.atoms[i].xyz[3])
+    for i = 1:bset.natoms
+        @printf(
+            "%2s %15.7f %15.7f %15.7f\n",
+            Z_to_symbol(bset.atoms[i].Z),
+            bset.atoms[i].xyz[1],
+            bset.atoms[i].xyz[2],
+            bset.atoms[i].xyz[3]
+        )
     end
     println("")
 
@@ -311,7 +401,17 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
 
     if isnothing(n)
         gamma = guess_gamma_trigonometric(p)
-        n, dn_dgamma = ocupacion_trigonometric(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin)
+        n, dn_dgamma = ocupacion_trigonometric(
+            gamma,
+            p.no1,
+            p.ndoc,
+            p.nalpha,
+            p.nv,
+            p.nbf5,
+            p.ndns,
+            p.ncwo,
+            p.HighSpin,
+        )
         if p.occ_method == "Softmax"
             p.nv = p.nbf5 - p.no1 - p.nsoc
             gamma = n_to_gammas_softmax(n, p)
@@ -341,9 +441,22 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
         println(" ")
     end
 
-    @printf("  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n", "Nitext", "Nit_orb", "Time", "Nit_occ", "Time", "Eelec", "Etot", "Ediff", "maxdiff", "Grad_orb", "Grad_occ")
+    @printf(
+        "  %6s  %7s %5s   %7s %5s      %8s %13s %15s %12s    %8s  %8s\n",
+        "Nitext",
+        "Nit_orb",
+        "Time",
+        "Nit_occ",
+        "Time",
+        "Eelec",
+        "Etot",
+        "Ediff",
+        "maxdiff",
+        "Grad_orb",
+        "Grad_occ"
+    )
 
-    for i_ext in 1:p.maxit
+    for i_ext = 1:p.maxit
         E_orb, C, gamma, n = comb(gamma, C, H, I, b_mnl, p)
 
         #    E_orb,C,nit_orb,success_orb = orbopt_rotations(gamma,C,H,I,b_mnl,p)
@@ -361,14 +474,35 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
         Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
 
         y = zeros(p.nvar)
-        n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+        n, dn_dgamma = ocupacion(
+            gamma,
+            p.no1,
+            p.ndoc,
+            p.nalpha,
+            p.nv,
+            p.nbf5,
+            p.ndns,
+            p.ncwo,
+            p.HighSpin,
+            p.occ_method,
+        )
         cj12, ck12 = PNOFi_selector(n, p)
         grad_orb = calcorbg(y, n, cj12, ck12, C, H, I, b_mnl, p)
         J_MO, K_MO, H_core = computeJKH_MO(C, H, I, b_mnl, p)
         grad_occ = calcoccg(gamma, J_MO, K_MO, H_core, p)
 
-        M = M_diagnostic(p, n, get_value=true)
-        @printf("%6i %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n", i_ext, E, E + E_nuc, E_diff, maxdiff, norm(grad_orb), norm(grad_occ), M)
+        M = M_diagnostic(p, n, get_value = true)
+        @printf(
+            "%6i %14.8f %14.8f %14.8f %10.6f   %4.1e   %4.1e %4.2f\n",
+            i_ext,
+            E,
+            E + E_nuc,
+            E_diff,
+            maxdiff,
+            norm(grad_orb),
+            norm(grad_occ),
+            M
+        )
 
         #    if isnothing(fmiug0)
         #        save(p.title*".jld2", "E", Etmp, "C", C,"n",n)
@@ -396,17 +530,17 @@ function energy2(bset, p; C=nothing, fmiug0=nothing, n=nothing, do_hfidr=true, d
         println(" ")
         println("RESULTS OF THE OCCUPATION OPTIMIZATION")
         println("========================================")
-        for i in 1:p.nbeta
+        for i = 1:p.nbeta
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
-        for i in p.nbeta+1:p.nalpha
+        for i = p.nbeta+1:p.nalpha
             if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
             else
                 @printf(" %3i    %9.7f  %10.8f\n", i, n[i], elag[i, i])
             end
         end
-        for i in p.nalpha+1:p.nbf5
+        for i = p.nalpha+1:p.nbf5
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
 

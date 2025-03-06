@@ -40,7 +40,7 @@ mutable struct Param
     diis::Bool
     thdiis::Float64
     ndiis::Int64
-    perdiis
+    perdiis::Any
     ncwo::Int64
     noptorb::Int64
     nv::Int64
@@ -63,7 +63,7 @@ function Param(bset, mul, charge)
     nbf = bset.nbas
 
     ne = 0
-    for i in 1:natoms
+    for i = 1:natoms
         ne += bset.atoms[i].Z
     end
     ne -= charge
@@ -164,7 +164,8 @@ function Param(bset, mul, charge)
     gpu_bits = 64
     h_cut = 0.02 * sqrt(2.0)
 
-    return Param(mol,
+    return Param(
+        mol,
         natoms,
         nbf,
         nbfaux,
@@ -216,10 +217,11 @@ function Param(bset, mul, charge)
         nvar,
         spherical,
         gpu_bits,
-        h_cut)
+        h_cut,
+    )
 end
 
-function autozeros(p; restart=false)
+function autozeros(p; restart = false)
     if (restart)
         if (abs(trunc(Int, log10(p.threshl))) <= 3)
             p.nzeros = 2
@@ -263,11 +265,11 @@ function set_ncwo(p, ncwo)
 
 end
 
-function set_no1(p, bset; no1=-1)
+function set_no1(p, bset; no1 = -1)
 
     if (no1 == -1)
         no1 = 0
-        for i in 1:p.natoms
+        for i = 1:p.natoms
             Z = bset.atoms[i].Z
             if 1 <= Z && Z <= 2
                 no1 += 0           # H-He

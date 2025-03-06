@@ -1,4 +1,4 @@
-function hfidr(C, H, I, b_mnl, E_nuc, p; printmode=true)
+function hfidr(C, H, I, b_mnl, E_nuc, p; printmode = true)
 
     no1_ori = p.no1
     p.no1 = p.nbeta
@@ -17,7 +17,15 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode=true)
         @printf("Hartree-Fock\n")
         @printf("============\n")
         @printf("\n")
-        @printf("  %6s  %6s %8s %13s %15s %16s\n", "Nitext", "Nitint", "Eelec", "Etot", "Ediff", "maxdiff")
+        @printf(
+            "  %6s  %6s %8s %13s %15s %16s\n",
+            "Nitext",
+            "Nitint",
+            "Eelec",
+            "Etot",
+            "Ediff",
+            "maxdiff"
+        )
     end
 
     E, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
@@ -25,7 +33,7 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode=true)
 
     ext = true
     # iteraciones externas
-    for i_ext in 1:p.maxitid
+    for i_ext = 1:p.maxitid
         if i_ext == 1
             maxlp = 1
         else
@@ -34,7 +42,7 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode=true)
 
         # iteraciones internas
         E_diff = 0
-        for i_int in 1:maxlp
+        for i_int = 1:maxlp
             E_old = E
 
             if p.scaling
@@ -48,7 +56,15 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode=true)
             E_diff = E - E_old
             if (abs(E_diff) < p.thresheid)
                 if (printmode)
-                    @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n", i_ext, maxlp, E, E + E_nuc, E_diff, maxdiff)
+                    @printf(
+                        "%6i %6i %14.8f %14.8f %14.8f %14.8f \n",
+                        i_ext,
+                        maxlp,
+                        E,
+                        E + E_nuc,
+                        E_diff,
+                        maxdiff
+                    )
                     flush(stdout)
                 end
                 fmiug0 = diag(elag)
@@ -61,7 +77,15 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode=true)
             break
         end
         if printmode
-            @printf("%6i %6i %14.8f %14.8f %14.8f %14.8f \n", i_ext, maxlp, E, E + E_nuc, E_diff, maxdiff)
+            @printf(
+                "%6i %6i %14.8f %14.8f %14.8f %14.8f \n",
+                i_ext,
+                maxlp,
+                E,
+                E + E_nuc,
+                E_diff,
+                maxdiff
+            )
             flush(stdout)
         end
 
@@ -77,7 +101,14 @@ function occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
 
     if p.ndoc > 0 && !freeze_occ
         J_MO, K_MO, H_core = computeJKH_MO(C, H, I, b_mnl, p)
-        res = optimize(gamma -> calcocce(gamma, J_MO, K_MO, H_core, p), gamma -> calcoccg(gamma, J_MO, K_MO, H_core, p), gamma, ConjugateGradient(), Optim.Options(g_abstol=p.threshen), inplace=false)
+        res = optimize(
+            gamma -> calcocce(gamma, J_MO, K_MO, H_core, p),
+            gamma -> calcoccg(gamma, J_MO, K_MO, H_core, p),
+            gamma,
+            ConjugateGradient(),
+            Optim.Options(g_abstol = p.threshen),
+            inplace = false,
+        )
         gamma = res.minimizer
 
         if res.iterations < 1
@@ -85,7 +116,18 @@ function occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
         end
     end
 
-    n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dn_dgamma = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
 
     if p.ndoc > 0 && !freeze_occ
@@ -96,7 +138,7 @@ function occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
 
 end
 
-function orboptr(C, n, H, I, b_mnl, cj12, ck12, i_ext, itlim, fmiug0, p, printmode=true)
+function orboptr(C, n, H, I, b_mnl, cj12, ck12, i_ext, itlim, fmiug0, p, printmode = true)
 
     i_int = 0
     success_orb = false
@@ -132,7 +174,7 @@ function orboptr(C, n, H, I, b_mnl, cj12, ck12, i_ext, itlim, fmiug0, p, printmo
     iloop = 0
     idiis = 0
 
-    for i_int in 1:maxlp
+    for i_int = 1:maxlp
         iloop = iloop + 1
         E_old2 = E
 
@@ -162,11 +204,28 @@ end
 
 function orbopt_rotations(gamma, C, H, I, b_mnl, p)
 
-    n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dn_dgamma = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
 
     y = zeros(p.nvar)
-    res = optimize(Optim.only_fg!((F, G, y) -> calcorbeg(F, G, y, n, cj12, ck12, C, H, I, b_mnl, p)), y, ConjugateGradient(), Optim.Options(iterations=p.maxloop), inplace=false)
+    res = optimize(
+        Optim.only_fg!((F, G, y) -> calcorbeg(F, G, y, n, cj12, ck12, C, H, I, b_mnl, p)),
+        y,
+        ConjugateGradient(),
+        Optim.Options(iterations = p.maxloop),
+        inplace = false,
+    )
 
     E = res.minimum
     y = res.minimizer
@@ -182,7 +241,18 @@ end
 # DEMON
 function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
 
-    n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dn_dgamma = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
     elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
     E = computeE_elec(Hmat, n, elag, p)
@@ -194,8 +264,8 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
     grad = 4 * elag - 4 * elag'
     grads = zeros(p.nvar)
     nn = 1
-    for i in 1:p.nbf5
-        for j in i+1:p.nbf
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -216,14 +286,14 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
     best_E, best_C = E, C
     binit = beta1
     nit = 0
-    for i in 1:p.maxloop
+    for i = 1:p.maxloop
         nit = nit + 1
 
         grad = 4 * elag - 4 * elag'
         grads = zeros(p.nvar)
         nn = 1
-        for i in 1:p.nbf5
-            for j in i+1:p.nbf
+        for i = 1:p.nbf5
+            for j = i+1:p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -262,15 +332,29 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
         #println("      alpha ",p.alpha)
     end
 
-    #return E,C,nit,success
-    return best_E, best_C, nit, success
+    if p.maxloop < 100
+        return best_E, best_C, nit, success
+    else
+        return E, C, nit, success
+    end
 end
 
 
 # ADAM
 function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
 
-    n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dn_dgamma = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
     elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
     E = computeE_elec(Hmat, n, elag, p)
@@ -281,8 +365,8 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
     grad = 4 * elag - 4 * elag'
     grads = zeros(p.nvar)
     nn = 1
-    for i in 1:p.nbf5
-        for j in i+1:p.nbf
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -300,14 +384,14 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
     success = false
     best_E, best_C = E, C
     nit = 0
-    for i in 1:p.maxloop
+    for i = 1:p.maxloop
         nit = nit + 1
 
         grad = 4 * elag - 4 * elag'
         grads = zeros(p.nvar)
         nn = 1
-        for i in 1:p.nbf5
-            for j in i+1:p.nbf
+        for i = 1:p.nbf5
+            for j = i+1:p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -346,14 +430,28 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
         #println("      alpha ",p.alpha)
     end
 
-    #return E, C, nit, success
-    return best_E,best_C,nit,success
+    if p.maxloop < 100
+        return best_E, best_C, nit, success
+    else
+        return E, C, nit, success
+    end
 end
 
 # ADABelief
 function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
 
-    n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dn_dgamma = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
     elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
     E = computeE_elec(Hmat, n, elag, p)
@@ -364,8 +462,8 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
     grad = 4 * elag - 4 * elag'
     grads = zeros(p.nvar)
     nn = 1
-    for i in 1:p.nbf5
-        for j in i+1:p.nbf
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -383,14 +481,14 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
     success = false
     best_E, best_C = E, C
     nit = 0
-    for i in 1:p.maxloop
+    for i = 1:p.maxloop
         nit = nit + 1
 
         grad = 4 * elag - 4 * elag'
         grads = zeros(p.nvar)
         nn = 1
-        for i in 1:p.nbf5
-            for j in i+1:p.nbf
+        for i = 1:p.nbf5
+            for j = i+1:p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -429,14 +527,29 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
         #println("      alpha ",p.alpha)
     end
 
-    #return E, C, nit, success
-    return best_E,best_C,nit,success
+    if p.maxloop < 100
+        return best_E, best_C, nit, success
+    else
+        return E, C, nit, success
+    end
+
 end
 
 # YOGI
 function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
 
-    n, dn_dgamma = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dn_dgamma = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
     elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
     E = computeE_elec(Hmat, n, elag, p)
@@ -447,8 +560,8 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
     grad = 4 * elag - 4 * elag'
     grads = zeros(p.nvar)
     nn = 1
-    for i in 1:p.nbf5
-        for j in i+1:p.nbf
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -463,14 +576,14 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
     success = false
     best_E, best_C = E, C
     nit = 0
-    for i in 1:p.maxloop
+    for i = 1:p.maxloop
         nit = nit + 1
 
         grad = 4 * elag - 4 * elag'
         grads = zeros(p.nvar)
         nn = 1
-        for i in 1:p.nbf5
-            for j in i+1:p.nbf
+        for i = 1:p.nbf5
+            for j = i+1:p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -508,8 +621,12 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
         #println("      alpha ",p.alpha)
     end
 
-    #return E, C, nit, success
-    return best_E,best_C,nit,success
+    if p.maxloop < 100
+        return best_E, best_C, nit, success
+    else
+        return E, C, nit, success
+    end
+
 end
 
 ######################
@@ -533,7 +650,18 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
 
     #############
 
-    n, dR = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dR = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     cj12, ck12 = PNOFi_selector(n, p)
     elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
     E = computeE_elec(Hmat, n, elag, p)
@@ -545,8 +673,8 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
     grad = 4 * elag - 4 * elag'
     grads = zeros(p.nvar)
     nn = 1
-    for i in 1:p.nbf5
-        for j in i+1:p.nbf
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -568,14 +696,14 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
     grads = zeros(p.nvar + p.nv)
 
     nit = 0
-    for i in 1:p.maxloop
+    for i = 1:p.maxloop
         nit = nit + 1
 
         grad = 4 * elag - 4 * elag'
         grads_orb = zeros(p.nvar)
         nn = 1
-        for i in 1:p.nbf5
-            for j in i+1:p.nbf
+        for i = 1:p.nbf5
+            for j = i+1:p.nbf
                 grads_orb[nn] = grad[i, j]
                 nn += 1
             end
@@ -608,7 +736,18 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
         C = rotate_orbital(y, C, p)
         gamma = param[p.nvar+1:end]
 
-        n, dR = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+        n, dR = ocupacion(
+            gamma,
+            p.no1,
+            p.ndoc,
+            p.nalpha,
+            p.nv,
+            p.nbf5,
+            p.ndns,
+            p.ncwo,
+            p.HighSpin,
+            p.occ_method,
+        )
         cj12, ck12 = PNOFi_selector(n, p)
 
         elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
@@ -629,7 +768,18 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
     end
 
 
-    n, dR = ocupacion(gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin, p.occ_method)
+    n, dR = ocupacion(
+        gamma,
+        p.no1,
+        p.ndoc,
+        p.nalpha,
+        p.nv,
+        p.nbf5,
+        p.ndns,
+        p.ncwo,
+        p.HighSpin,
+        p.occ_method,
+    )
     return E, C, gamma, n#,res.iterations,res.g_converged
 end
 

@@ -9,7 +9,7 @@ function read_xyz_from_file(filename)
 
     natoms = parse(Int32, filecontent[1])
     mol = ""
-    for i in 1:natoms
+    for i = 1:natoms
         mol = mol * filecontent[2+i]
         if (i != natoms)
             mol = mol * "\n"
@@ -23,13 +23,13 @@ function read_xyz_from_file(filename)
 end
 
 
-function molecule(mol, basis; spherical=false)
+function molecule(mol, basis; spherical = false)
 
     content = split(mol, "\n")
     firstline = content[1]
     if size(split(firstline))[1] == 2
         mol = ""
-        for i in 2:size(content)[1]
+        for i = 2:size(content)[1]
             mol = mol * content[i]
             if (i != size(content)[1])
                 mol = mol * "\n"
@@ -46,7 +46,7 @@ function molecule(mol, basis; spherical=false)
     if spherical
         bset = BasisSet(basis, mol)
     else
-        bset = BasisSet(basis, mol, spherical=false, lib=:acsint)
+        bset = BasisSet(basis, mol, spherical = false, lib = :acsint)
     end
     p = Param(bset, mul, charge)
     p.mol = mol
