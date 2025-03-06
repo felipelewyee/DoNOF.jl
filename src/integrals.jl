@@ -40,7 +40,6 @@ function compute_integrals(bset, p)
 
     ext = Base.get_extension(@__MODULE__, :DoNOFGPU)
     if !isnothing(ext)
-	println("Using GPU")
         I, b_mnl = ext.eris_to_gpu(I, b_mnl)
     end
 	

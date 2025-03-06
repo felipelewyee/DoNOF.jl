@@ -6,6 +6,9 @@ using Tullio
 using CUDA, KernelAbstractions, cuTENSOR
 
 function eris_to_gpu(I, b_mnl)
+    
+    println(CUDA.device())
+
     I_gpu = CuArray{Float64}(I)
     b_mnl_gpu = CuArray{Float64}(b_mnl)
 
