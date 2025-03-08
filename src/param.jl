@@ -135,7 +135,7 @@ function Param(bset, mul, charge)
     threshe = 10^-5   # Convergencia de la energía
     threshec = 10^-8 # Convergencia  de la energía en optimización orbital
     threshen = 10^-4 # Convergencia  de la energía en optimización de ocupaciones
-    threshgorb = 10^-3   # Convergencia del gradiente orbital
+    threshgorb = 4*10^-3   # Convergencia del gradiente orbital
     threshgocc = 10^-3   # Convergencia del gradiente de numeros de ocupacion
     scaling = true     # Scaling for f
     alpha = 0.01
