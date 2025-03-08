@@ -3,6 +3,7 @@ module DoNOFGPU
 using DoNOF
 using TensorOperations
 using Tullio
+using LinearAlgebra
 using CUDA, KernelAbstractions, cuTENSOR
 
 function eris_to_gpu(I, b_mnl)
@@ -284,13 +285,13 @@ function DoNOF.rotate_orbital(y::Array, C, p)
     #tmp = [i<j&&i<=p.nbf5 ? y[Int64((2*p.nbf*i - i^2 - i)/2 + j - p.nbf)] : 0 for i in 1:p.nbf, j in 1:p.nbf]
     #ynew = tmp .- tmp'
 
-    ynew = CuArray{Float64}(ynew)
+    ynew = CuArray{Float32}(ynew)
 
     vals, vecs = eigen(1im .* ynew)
     evals = exp.(vals ./ 1im)
     U = real.(vecs * Diagonal(evals) * vecs')
 
-    cC = CuArray{Float64}(C)
+    cC = CuArray{Float32}(C)
     @tensor Cnew[m, p] := cC[m, r] * U[r, p]
 
     return Array(Cnew)
