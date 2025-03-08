@@ -6,7 +6,7 @@ using Tullio
 using CUDA, KernelAbstractions, cuTENSOR
 
 function eris_to_gpu(I, b_mnl)
-    
+
     device = CUDA.device()
     gpu_name = CUDA.name(device)
     println(gpu_name)
@@ -265,6 +265,35 @@ function DoNOF.computeF_RC(J::CuArray, K, n, H, cj12, ck12, p)
     CUDA.unsafe_free!(J)
 
     return Array(F)
+
+end
+
+function DoNOF.rotate_orbital(y::Array, C, p)
+
+    ynew = zeros(p.nbf, p.nbf)
+
+    n = 1
+    for i = 1:p.nbf5
+        for j = i+1:p.nbf
+            ynew[i, j] = y[n]
+            ynew[j, i] = -y[n]
+            n += 1
+        end
+    end
+
+    #tmp = [i<j&&i<=p.nbf5 ? y[Int64((2*p.nbf*i - i^2 - i)/2 + j - p.nbf)] : 0 for i in 1:p.nbf, j in 1:p.nbf]
+    #ynew = tmp .- tmp'
+
+    ynew = CuArray{Float64}(ynew)
+
+    vals, vecs = eigen(1im .* ynew)
+    evals = exp.(vals ./ 1im)
+    U = real.(vecs * Diagonal(evals) * vecs')
+
+    cC = CuArray{Float64}(C)
+    @tensor Cnew[m, p] := cC[m, r] * U[r, p]
+
+    return Array(Cnew)
 
 end
 
