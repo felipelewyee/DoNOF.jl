@@ -12,7 +12,7 @@ function eris_to_gpu(I, b_mnl)
     gpu_name = CUDA.name(device)
     println(gpu_name)
 
-    if "TX" in gpu_name
+    if occursin("TX", gpu_name)
         I_gpu = CuArray{Float32}(I)
         b_mnl_gpu = CuArray{Float32}(b_mnl)
     else
