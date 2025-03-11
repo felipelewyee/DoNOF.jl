@@ -26,6 +26,7 @@ DoNOFGPU = ["CUDA", "KernelAbstractions", "cuTENSOR"]
 
 [compat]
 CUDA = "5.6.1"
+GaussianBasis = "0.5.0"
 FileIO = "1.17.0"
 JLD2 = "0.5.11"
 KernelAbstractions = "0.9.34"
