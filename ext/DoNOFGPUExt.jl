@@ -1,4 +1,4 @@
-module DoNOFGPU
+module DoNOFGPUExt
 
 using DoNOF
 using TensorOperations
