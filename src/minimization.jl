@@ -9,7 +9,7 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode = true)
 
     @tullio cj12[i, j] := 2 * n[i] * n[j]
     @tullio ck12[i, j] := n[i] * n[j]
-    if p.MSpin == 0 && p.nsoc > 1
+    if p.nsoc > 1
         ck12[p.nbeta+1:p.nalpha, p.nbeta+1:p.nalpha] .*= 2
     end
 

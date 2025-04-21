@@ -1,18 +1,10 @@
 function compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, pa)
 
     Cnbf5 = view(C, 1:pa.nbf, 1:pa.nbf5)
-    @tullio tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
-    @tullio H_mat[i, j] := C[m, i] * tmp[m, j]
-    if pa.RI
-        @tullio tmp[m, q, l] := Cnbf5[nn, q] * b_mnl[m, nn, l]
-        @tullio b_MO[p, q, l] := C[m, p] * tmp[m, q, l]
-    else
-        @tullio tmp[m, q, s, l] := Cnbf5[nn, q] * I[m, nn, s, l]
-        @tullio tmp2[m, q, r, l] := Cnbf5[s, r] * tmp[m, q, s, l]
-        @tullio tmp[m, q, r, t] := Cnbf5[l, t] * tmp2[m, q, r, l]
-        @tullio I_MO[p, q, r, t] := C[m, p] * tmp[m, q, r, t]
-
-    end
+    @tullio grad=false tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
+    @tullio grad=false H_mat[i, j] := C[m, i] * tmp[m, j]
+    @tullio grad=false tmp[m, q, l] := Cnbf5[nn, q] * b_mnl[m, nn, l]
+    @tullio grad=false b_MO[p, q, l] := C[m, p] * tmp[m, q, l]
 
     elag = zeros(pa.nbf, pa.nbf)
 
@@ -22,68 +14,87 @@ function compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, pa)
     grad_nbf5 = view(elag, 1:pa.nbf, 1:pa.nbf5)
     grad_nbeta = view(elag, 1:pa.nbf, 1:pa.nbeta)
     grad_nalpha = view(elag, 1:pa.nbf, pa.nalpha+1:pa.nbf5)
-    if pa.RI
-        b_nbf_beta = view(b_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbfaux)
-        b_nbf_alpha = view(b_MO, 1:pa.nbf, pa.nalpha+1:pa.nbf5, 1:pa.nbfaux)
-        b_nbeta_beta = view(b_MO, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbfaux)
-        b_nalpha_alpha = view(b_MO, pa.nalpha+1:pa.nbf5, pa.nalpha+1:pa.nbf5, 1:pa.nbfaux)
-        b_nbf_nbf5 = view(b_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbfaux)
-        b_nbf5_nbf5 = view(b_MO, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbfaux)
-    else
-        I_nb_nb_nb = view(I_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbeta)
-        I_na_na_na = view(
-            I_MO,
-            1:pa.nbf,
-            pa.nalpha+1:pa.nbf5,
-            pa.nalpha+1:pa.nbf5,
-            pa.nalpha+1:pa.nbf5,
-        )
-        I_nbf5_nbf5_nbf5 = view(I_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbf5)
+
+    b_nbf_beta = view(b_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbfaux)
+    b_nbf_alpha = view(b_MO, 1:pa.nbf, pa.nalpha+1:pa.nbf5, 1:pa.nbfaux)
+    b_nbeta_beta = view(b_MO, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbfaux)
+    b_nalpha_alpha = view(b_MO, pa.nalpha+1:pa.nbf5, pa.nalpha+1:pa.nbf5, 1:pa.nbfaux)
+    b_nbf_nbf5 = view(b_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbfaux)
+    b_nbf5_nbf5 = view(b_MO, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbfaux)
+    
+    # 2ndH/dy_ab
+    @tullio grad=false grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
+
+    # dJ_pp/dy_ab
+    if pa.nbeta > 0
+        @tullio grad=false grad_nbeta[a, b] +=
+            n_beta[b] * b_nbf_beta[a, b, k] * b_nbeta_beta[b, b, k]
+        @tullio grad=false grad_nalpha[a, b] +=
+            n_alpha[b] * b_nbf_alpha[a, b, k] * b_nalpha_alpha[b, b, k]
     end
 
-    if pa.RI
-        if (pa.MSpin == 0)
-            # 2ndH/dy_ab
-            @tullio grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
+    # C^J_pq dJ_pq/dy_ab 
+    @tullio grad=false tmp[b, k] := cj12[b, q] * b_nbf5_nbf5[q, q, k]
+    @tullio grad=false grad_nbf5[a, b] += b_nbf_nbf5[a, b, k] * tmp[b, k]
 
-            # dJ_pp/dy_ab
-            if pa.nbeta > 0
-                @tullio grad_nbeta[a, b] +=
-                    n_beta[b] * b_nbf_beta[a, b, k] * b_nbeta_beta[b, b, k]
-                @tullio grad_nalpha[a, b] +=
-                    n_alpha[b] * b_nbf_alpha[a, b, k] * b_nalpha_alpha[b, b, k]
-            end
-
-            # C^J_pq dJ_pq/dy_ab 
-            @tullio tmp[b, k] := cj12[b, q] * b_nbf5_nbf5[q, q, k]
-            @tullio grad_nbf5[a, b] += b_nbf_nbf5[a, b, k] * tmp[b, k]
-
-            # -C^K_pq dK_pq/dy_ab 
-            @tullio grad_nbf5[a, b] +=
-                -ck12[b, q] * b_nbf_nbf5[a, q, k] * b_nbf5_nbf5[b, q, k]
-        end
-    else
-        if (pa.MSpin == 0)
-            # 2ndH/dy_ab
-            @tullio grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
-
-            # dJ_pp/dy_ab
-            if pa.nbeta > 0
-                @tullio grad_nbeta[a, b] += n_beta[b] * I_nb_nb_nb[a, b, b, b]
-                @tullio grad_nalpha[a, b] += n_alpha[b] * I_na_na_na[a, b, b, b]
-            end
-
-            # C^J_pq dJ_pq/dy_ab
-            @tullio grad_nbf5[a, b] += cj12[b, q] * I_nbf5_nbf5_nbf5[a, b, q, q]
-
-            # -C^K_pq dK_pq/dy_ab 
-            @tullio grad_nbf5[a, b] += -ck12[b, q] * I_nbf5_nbf5_nbf5[a, q, b, q]
-        end
-    end
-
+    # -C^K_pq dK_pq/dy_ab 
+    @tullio grad=false grad_nbf5[a, b] +=
+        -ck12[b, q] * b_nbf_nbf5[a, q, k] * b_nbf5_nbf5[b, q, k]
+    
     return elag, H_mat
 
 end
+
+#for I_MO
+#function compute_Lagrange2(C, n, H, I, cj12, ck12, pa)
+#
+#    Cnbf5 = view(C, 1:pa.nbf, 1:pa.nbf5)
+#    @tullio tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
+#    @tullio H_mat[i, j] := C[m, i] * tmp[m, j]
+#    @tullio tmp[m, q, s, l] := Cnbf5[nn, q] * I[m, nn, s, l]
+#    @tullio tmp2[m, q, r, l] := Cnbf5[s, r] * tmp[m, q, s, l]
+#    @tullio tmp[m, q, r, t] := Cnbf5[l, t] * tmp2[m, q, r, l]
+#    @tullio I_MO[p, q, r, t] := C[m, p] * tmp[m, q, r, t]
+#
+#
+#    elag = zeros(pa.nbf, pa.nbf)
+#
+#    n_beta = view(n, 1:pa.nbeta)
+#    n_alpha = view(n, pa.nalpha+1:pa.nbf5)
+#    Hmat_nbf5 = view(H_mat, 1:pa.nbf, 1:pa.nbf5)
+#    grad_nbf5 = view(elag, 1:pa.nbf, 1:pa.nbf5)
+#    grad_nbeta = view(elag, 1:pa.nbf, 1:pa.nbeta)
+#    grad_nalpha = view(elag, 1:pa.nbf, pa.nalpha+1:pa.nbf5)
+#    I_nb_nb_nb = view(I_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbeta)
+#    I_na_na_na = view(
+#        I_MO,
+#        1:pa.nbf,
+#        pa.nalpha+1:pa.nbf5,
+#        pa.nalpha+1:pa.nbf5,
+#        pa.nalpha+1:pa.nbf5,
+#    )
+#    I_nbf5_nbf5_nbf5 = view(I_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbf5)
+#    
+#
+#    # 2ndH/dy_ab
+#    @tullio grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
+#
+#    # dJ_pp/dy_ab
+#    if pa.nbeta > 0
+#        @tullio grad_nbeta[a, b] += n_beta[b] * I_nb_nb_nb[a, b, b, b]
+#        @tullio grad_nalpha[a, b] += n_alpha[b] * I_na_na_na[a, b, b, b]
+#    end
+#
+#    # C^J_pq dJ_pq/dy_ab
+#    @tullio grad_nbf5[a, b] += cj12[b, q] * I_nbf5_nbf5_nbf5[a, b, q, q]
+#
+#    # -C^K_pq dK_pq/dy_ab
+#    @tullio grad_nbf5[a, b] += -ck12[b, q] * I_nbf5_nbf5_nbf5[a, q, b, q]
+#
+#    return elag, H_mat
+#
+#end
+
 
 function ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
 
