@@ -1,4 +1,4 @@
-function compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, nbf5, nalpha, nbeta)
+function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, cj12::Matrix{Float64}, ck12::Matrix{Float64}, nbf5::Int64, nalpha::Int64, nbeta::Int64)
 
     nbf = size(C)[1]
     nbfaux = size(b_mnl)[3]
@@ -107,11 +107,7 @@ function ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
     else
         J, K = computeJKj(C, I, b_mnl, p)
 
-        if p.MSpin == 0
-            F = computeF_RC(J, K, n, H, cj12, ck12, p)
-        elseif p.MSpin != 0
-            F = computeF_RO(J, K, n, H, cj12, ck12, p)
-        end
+        F = computeF_RC(J, K, n, H, cj12, ck12, p)
 
         elag = computeLagrange(F, C, p)
     end
@@ -175,84 +171,6 @@ function computeLagrange(F, C, p)
 
     return elag
 
-end
-
-function computeF_RO(J, K, n, H, cj12, ck12, p)
-
-    # Matriz de Fock Generalizada
-    F = zeros(p.nbf5, p.nbf, p.nbf)
-
-    ini = 0
-    if p.no1 > 1
-        ini = p.no1
-    end
-
-    F_ini_beta = view(F, ini+1:p.nbeta, :, :)
-    F_beta = view(F, 1:p.nbeta, :, :)
-    F_alpha = view(F, p.nbeta+1:p.nalpha, :, :)
-    F_nbf5 = view(F, p.nalpha+1:p.nbf5, :, :)
-    n_ini_beta = view(n, ini+1:p.nbeta)
-    n_beta = view(n, 1:p.nbeta)
-    n_alpha = view(n, p.nbeta+1:p.nalpha)
-    n_nbf5 = view(n, p.nalpha+1:p.nbf5)
-    J_ini_beta = view(J, ini+1:p.nbeta, :, :)
-    J_beta = view(J, 1:p.nbeta, :, :)
-    J_alpha = view(J, p.nbeta+1:p.nalpha, :, :)
-    J_nbf5 = view(J, p.nalpha+1:p.nbf5, :, :)
-    K_beta = view(K, 1:p.nbeta, :, :)
-    K_alpha = view(K, p.nbeta+1:p.nalpha, :, :)
-    K_nbf5 = view(K, p.nalpha+1:p.nbf5, :, :)
-
-    # nH
-    @tullio F_beta[i, m, n] += n_beta[i] * H[m, n]
-    @tullio F_alpha[i, m, n] += 0.5 * H[m, n]
-    @tullio F_nbf5[i, m, n] += n_nbf5[i] * H[m, n]
-
-    # nJ
-    @tullio avx = false F_ini_beta[i, m, n] += n_ini_beta[i] * J_ini_beta[i, m, n]
-    @tullio F_nbf5[i, m, n] += n_nbf5[i] * J_nbf5[i, m, n]
-
-    # C^J J
-    cj12_ini_nbf5 = view(cj12, ini+1:p.nbf5, ini+1:p.nbf5)
-    cj12_ini_nbf5[diagind(cj12_ini_nbf5)] .= 0.0
-    cj12_beta_beta = view(cj12, 1:p.nbeta, 1:p.nbeta)
-    cj12_beta_nbf5 = view(cj12, 1:p.nbeta, p.nalpha+1:p.nbf5)
-    cj12_nbf5_beta = view(cj12, p.nalpha+1:p.nbf5, 1:p.nbeta)
-    cj12_nbf5_nbf5 = view(cj12, p.nalpha+1:p.nbf5, p.nalpha+1:p.nbf5)
-    @tullio F_beta[i, m, n] += cj12_beta_beta[i, j] * J_beta[j, m, n]
-    @tullio F_beta[i, m, n] += cj12_beta_nbf5[i, j] * J_nbf5[j, m, n]
-    @tullio F_nbf5[i, m, n] += cj12_nbf5_beta[i, j] * J_beta[j, m, n]
-    @tullio F_nbf5[i, m, n] += cj12_nbf5_nbf5[i, j] * J_nbf5[j, m, n]
-
-    # -C^K K
-    ck12_ini_nbf5 = view(ck12, ini+1:p.nbf5, ini+1:p.nbf5)
-    ck12_ini_nbf5[diagind(ck12_ini_nbf5)] .= 0.0
-    ck12_beta_beta = view(ck12, 1:p.nbeta, 1:p.nbeta)
-    ck12_beta_nbf5 = view(ck12, 1:p.nbeta, p.nalpha+1:p.nbf5)
-    ck12_nbf5_beta = view(ck12, p.nalpha+1:p.nbf5, 1:p.nbeta)
-    ck12_nbf5_nbf5 = view(ck12, p.nalpha+1:p.nbf5, p.nalpha+1:p.nbf5)
-    @tullio F_beta[i, m, n] += -ck12_beta_beta[i, j] * K_beta[j, m, n]
-    @tullio F_beta[i, m, n] += -ck12_beta_nbf5[i, j] * K_nbf5[j, m, n]
-    @tullio F_nbf5[i, m, n] += -ck12_nbf5_beta[i, j] * K_beta[j, m, n]
-    @tullio F_nbf5[i, m, n] += -ck12_nbf5_nbf5[i, j] * K_nbf5[j, m, n]
-
-    # SUMij
-    @tullio F_beta[i, m, n] += n_beta[i] * J_alpha[j, m, n]
-    @tullio F_beta[i, m, n] += -0.5 * n_beta[i] * K_alpha[j, m, n]
-    @tullio avx = false F_alpha[i, m, n] += 0.5 * J_alpha[j, m, n]
-    @tullio avx = false F_alpha[i, m, n] += -0.5 * K_alpha[j, m, n]
-    F[p.nbeta+1:p.nalpha, :, :] -=
-        0.5 * (J[p.nbeta+1:p.nalpha, :, :] - K[p.nbeta+1:p.nalpha, :, :]) #Remove diag.
-    @tullio F_nbf5[i, m, n] += n_nbf5[i] * J_alpha[j, m, n]
-    @tullio F_nbf5[i, m, n] += -0.5 * n_nbf5[i] * K_alpha[j, m, n]
-
-    # PRODWROij
-    @tullio avx = false F_alpha[i, m, n] += n_beta[j] * J_beta[j, m, n]
-    @tullio avx = false F_alpha[i, m, n] += -0.5 * n_beta[j] * K_beta[j, m, n]
-    @tullio avx = false F_alpha[i, m, n] += n_nbf5[j] * J_nbf5[j, m, n]
-    @tullio avx = false F_alpha[i, m, n] += -0.5 * n_nbf5[j] * K_nbf5[j, m, n]
-
-    return F
 end
 
 function computeE_elec(H, C, n, elag, p)

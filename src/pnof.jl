@@ -349,7 +349,7 @@ function der_CJCKD5(n, dn_dgamma, no1, ndoc, nalpha, nv, nbf5, ndns, ncwo)
 
 end
 
-function CJCKD7(n, ista, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin)
+function CJCKD7(n::Vector{Float64}, ista::Int64, no1::Int64, ndoc::Int64, nsoc::Int64, nbeta::Int64, nalpha::Int64, ndns::Int64, ncwo::Int64, MSpin::Int64)
 
     if ista == 0
         fi = n .* (1 .- n)
@@ -395,7 +395,7 @@ function CJCKD7(n, ista, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin)
 
 end
 
-function der_CJCKD7(n, ista, dn_dgamma, no1, ndoc, nalpha, nv, nbf5, ndns, ncwo)
+function der_CJCKD7(n::Vector{Float64}, ista::Int64, dn_dgamma::Matrix{Float64}, no1::Int64, ndoc::Int64, nalpha::Int64, nv::Int64, nbf5::Int64, ndns::Int64, ncwo::Int64)
 
     if ista == 0
         fi = n .* (1 .- n)
