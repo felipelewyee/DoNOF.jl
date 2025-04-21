@@ -1,7 +1,8 @@
-function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, cj12::Matrix{Float64}, ck12::Matrix{Float64}, nbf5::Int64, nalpha::Int64, nbeta::Int64)
+function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, cj12::Matrix{Float64}, ck12::Matrix{Float64}, nalpha::Int64, nbeta::Int64)
 
     nbf = size(C)[1]
     nbfaux = size(b_mnl)[3]
+    nbf5 = size(n)[1]
 
     Cnbf5 = view(C, 1:nbf, 1:nbf5)
     @tullio grad=false tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
@@ -49,60 +50,62 @@ function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Flo
 end
 
 #for I_MO
-#function compute_Lagrange2(C, n, H, I, cj12, ck12, pa)
-#
-#    Cnbf5 = view(C, 1:pa.nbf, 1:pa.nbf5)
-#    @tullio tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
-#    @tullio H_mat[i, j] := C[m, i] * tmp[m, j]
-#    @tullio tmp[m, q, s, l] := Cnbf5[nn, q] * I[m, nn, s, l]
-#    @tullio tmp2[m, q, r, l] := Cnbf5[s, r] * tmp[m, q, s, l]
-#    @tullio tmp[m, q, r, t] := Cnbf5[l, t] * tmp2[m, q, r, l]
-#    @tullio I_MO[p, q, r, t] := C[m, p] * tmp[m, q, r, t]
-#
-#
-#    elag = zeros(pa.nbf, pa.nbf)
-#
-#    n_beta = view(n, 1:pa.nbeta)
-#    n_alpha = view(n, pa.nalpha+1:pa.nbf5)
-#    Hmat_nbf5 = view(H_mat, 1:pa.nbf, 1:pa.nbf5)
-#    grad_nbf5 = view(elag, 1:pa.nbf, 1:pa.nbf5)
-#    grad_nbeta = view(elag, 1:pa.nbf, 1:pa.nbeta)
-#    grad_nalpha = view(elag, 1:pa.nbf, pa.nalpha+1:pa.nbf5)
-#    I_nb_nb_nb = view(I_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbeta)
-#    I_na_na_na = view(
-#        I_MO,
-#        1:pa.nbf,
-#        pa.nalpha+1:pa.nbf5,
-#        pa.nalpha+1:pa.nbf5,
-#        pa.nalpha+1:pa.nbf5,
-#    )
-#    I_nbf5_nbf5_nbf5 = view(I_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbf5)
-#    
-#
-#    # 2ndH/dy_ab
-#    @tullio grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
-#
-#    # dJ_pp/dy_ab
-#    if pa.nbeta > 0
-#        @tullio grad_nbeta[a, b] += n_beta[b] * I_nb_nb_nb[a, b, b, b]
-#        @tullio grad_nalpha[a, b] += n_alpha[b] * I_na_na_na[a, b, b, b]
-#    end
-#
-#    # C^J_pq dJ_pq/dy_ab
-#    @tullio grad_nbf5[a, b] += cj12[b, q] * I_nbf5_nbf5_nbf5[a, b, q, q]
-#
-#    # -C^K_pq dK_pq/dy_ab
-#    @tullio grad_nbf5[a, b] += -ck12[b, q] * I_nbf5_nbf5_nbf5[a, q, b, q]
-#
-#    return elag, H_mat
-#
-#end
+function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Float64}, I::Array{Float64,4}, cj12::Matrix{Float64}, ck12::Matrix{Float64}, nalpha::Int64, nbeta::Int64)
+
+    nbf = size(C)[1]
+    nbf5 = size(n)[1]
+    Cnbf5 = view(C, 1:nbf, 1:nbf5)
+    @tullio tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
+    @tullio H_mat[i, j] := C[m, i] * tmp[m, j]
+    @tullio tmp[m, q, s, l] := Cnbf5[nn, q] * I[m, nn, s, l]
+    @tullio tmp2[m, q, r, l] := Cnbf5[s, r] * tmp[m, q, s, l]
+    @tullio tmp[m, q, r, t] := Cnbf5[l, t] * tmp2[m, q, r, l]
+    @tullio I_MO[p, q, r, t] := C[m, p] * tmp[m, q, r, t]
 
 
-function ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
+    elag = zeros(nbf, nbf)
+
+    n_beta = view(n, 1:nbeta)
+    n_alpha = view(n, nalpha+1:nbf5)
+    Hmat_nbf5 = view(H_mat, 1:nbf, 1:nbf5)
+    grad_nbf5 = view(elag, 1:nbf, 1:nbf5)
+    grad_nbeta = view(elag, 1:nbf, 1:nbeta)
+    grad_nalpha = view(elag, 1:nbf, nalpha+1:nbf5)
+    I_nb_nb_nb = view(I_MO, 1:nbf, 1:nbeta, 1:nbeta, 1:nbeta)
+    I_na_na_na = view(
+        I_MO,
+        1:nbf,
+        nalpha+1:nbf5,
+        nalpha+1:nbf5,
+        nalpha+1:nbf5,
+    )
+    I_nbf5_nbf5_nbf5 = view(I_MO, 1:nbf, 1:nbf5, 1:nbf5, 1:nbf5)
+    
+
+    # 2ndH/dy_ab
+    @tullio grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
+
+    # dJ_pp/dy_ab
+    if nbeta > 0
+        @tullio grad_nbeta[a, b] += n_beta[b] * I_nb_nb_nb[a, b, b, b]
+        @tullio grad_nalpha[a, b] += n_alpha[b] * I_na_na_na[a, b, b, b]
+    end
+
+    # C^J_pq dJ_pq/dy_ab
+    @tullio grad_nbf5[a, b] += cj12[b, q] * I_nbf5_nbf5_nbf5[a, b, q, q]
+
+    # -C^K_pq dK_pq/dy_ab
+    @tullio grad_nbf5[a, b] += -ck12[b, q] * I_nbf5_nbf5_nbf5[a, q, b, q]
+
+    return elag, H_mat
+
+end
+
+
+function ENERGY1r(C, n, H, I, cj12, ck12, p)
 
     if (p.no1 == 0)
-        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
+        elag, Hmat = compute_Lagrange2(C, n, H, I, cj12, ck12, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
     else
         J, K = computeJKj(C, I, b_mnl, p)
@@ -519,7 +522,7 @@ function n_to_gammas_trigonometric(n, p)
     return gamma
 end
 
-function order_occupations_softmax(old_C, old_gamma, H, I, b_mnl, p)
+function order_occupations_softmax(old_C, old_gamma, p)
 
     C = copy(old_C)
     gamma = zeros(p.nv)

@@ -361,15 +361,15 @@ function CJCKD7(n::Vector{Float64}, ista::Int64, no1::Int64, ndoc::Int64, nsoc::
 
     # Interpair Electron correlation #
 
-    @tullio cj12[i, j] := 2 * n[i] * n[j]
-    @tullio ck12[i, j] := n[i] * n[j] + fi[i] * fi[j]
+    @tullio grad=false cj12[i, j] := 2 * n[i] * n[j]
+    @tullio grad=false ck12[i, j] := n[i] * n[j] + fi[i] * fi[j]
 
     # Intrapair Electron Correlation
 
     if nsoc > 1
         n_beta_alpha = view(n, nbeta+1:nalpha)
         ck12_beta_alpha = view(ck12, nbeta+1:nalpha, nbeta+1:nalpha)
-        @tullio ck12_beta_alpha[i, j] = 2 * n_beta_alpha[i] * n_beta_alpha[j]
+        @tullio grad=false ck12_beta_alpha[i, j] = 2 * n_beta_alpha[i] * n_beta_alpha[j]
     end
 
     for l = 1:ndoc
@@ -388,7 +388,7 @@ function CJCKD7(n::Vector{Float64}, ista::Int64, no1::Int64, ndoc::Int64, nsoc::
 
         ck12_ww = view(ck12, ll:ndoc:ul, ll:ndoc:ul)
         n_ww = view(n, ll:ndoc:ul)
-        @tullio ck12_ww[i, j] = -sqrt(n_ww[i] * n_ww[j])
+        @tullio grad=false ck12_ww[i, j] = -sqrt(n_ww[i] * n_ww[j])
     end
 
     return cj12, ck12
@@ -419,8 +419,8 @@ function der_CJCKD7(n::Vector{Float64}, ista::Int64, dn_dgamma::Matrix{Float64},
 
     # Interpair Electron correlation #
 
-    @tullio Dcj12r[i, j, k] := 2 * dn_dgamma[i, k] * n[j]
-    @tullio Dck12r[i, j, k] := dn_dgamma[i, k] * n[j] + dfi_dgamma[i, k] * fi[j]
+    @tullio grad=false Dcj12r[i, j, k] := 2 * dn_dgamma[i, k] * n[j]
+    @tullio grad=false Dck12r[i, j, k] := dn_dgamma[i, k] * n[j] + dfi_dgamma[i, k] * fi[j]
 
     # Intrapair Electron Correlation
 
@@ -447,11 +447,11 @@ function der_CJCKD7(n::Vector{Float64}, ista::Int64, dn_dgamma::Matrix{Float64},
         n_occ = n[ldx]
         dn_dgamma_occ = view(dn_dgamma, ldx, 1:nv)
         dn_dgamma_cwo = view(dn_dgamma, ll:ndoc:ul, 1:nv)
-        @tullio Dck12r_occ_cwo[i, j] =
+        @tullio grad=false Dck12r_occ_cwo[i, j] =
             1 / 2 * 1 / sqrt(a) * dn_dgamma_occ[j] * sqrt(n_cwo[i])
-        @tullio Dck12r_cwo_occ[i, j] =
+        @tullio grad=false Dck12r_cwo_occ[i, j] =
             1 / 2 * 1 / sqrt(b[i]) * dn_dgamma_cwo[i, j] * sqrt(n_occ)
-        @tullio Dck12r_cwo_cwo[i, j, k] =
+        @tullio grad=false Dck12r_cwo_cwo[i, j, k] =
             -1 / 2 * 1 / sqrt(b[i]) * dn_dgamma_cwo[i, k] * sqrt(n_cwo[j])
 
     end
@@ -1284,11 +1284,11 @@ function calcorbe(y, n, cj12, ck12, C, H, I, b_mnl, p)
 
 end
 
-function calcorbg(y, n, cj12, ck12, C, H, I, b_mnl, pa)
+function calcorbg(y, n, cj12, ck12, C, H, I, pa)
 
     Cnew = rotate_orbital(y, C, pa)
 
-    elag, Hmat = compute_Lagrange2(Cnew, n, H, b_mnl, cj12, ck12, pa.nbf5, pa.nalpha, pa.nbeta)
+    elag, Hmat = compute_Lagrange2(Cnew, n, H, I, cj12, ck12, pa.nalpha, pa.nbeta)
 
     grad = 4 * elag - 4 * elag'
     grads = zeros(pa.nvar)
@@ -1304,11 +1304,11 @@ function calcorbg(y, n, cj12, ck12, C, H, I, b_mnl, pa)
 
 end
 
-function calcorbeg(F, G, y, n, cj12, ck12, C, H, I, b_mnl, pa)
+function calcorbeg(F, G, y, n, cj12, ck12, C, H, I, pa)
 
     Cnew = rotate_orbital(y, C, pa)
 
-    elag, Hmat = compute_Lagrange2(Cnew, n, H,  b_mnl, cj12, ck12, pa.nbf5, pa.nalpha, pa.nbeta)
+    elag, Hmat = compute_Lagrange2(Cnew, n, H, I, cj12, ck12, pa.nalpha, pa.nbeta)
 
     if G !== nothing
         grad = 4 * elag - 4 * elag'

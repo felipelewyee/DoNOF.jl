@@ -1,5 +1,4 @@
-using CUDA, KernelAbstractions, NNlibCUDA, cuTENSOR
-using DoNOF
+using cuTENSOR, CUDA, KernelAbstractions, DoNOF
 
 mol = """
 0 1
@@ -8,13 +7,13 @@ mol = """
  H  0.0000  -0.751  -0.485
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
+bset,p = DoNOF.molecule(mol,"cc-pvtz",spherical=true)
 
-p.ipnof = 8
+p.ipnof = 7
 
 p.RI = true
-p.gpu = true
 
-p.orb_method = "Rotations"
+p.orb_method = "ADABelief"
+p.maxit = 100
 
-DoNOF.energy(bset,p,do_hfidr=false,do_m_diagnostic=true)
+DoNOF.energy(bset,p,do_hfidr=false)

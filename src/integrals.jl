@@ -8,8 +8,7 @@ function compute_integrals(bset, p)
     V = nuclear(bset)
     V = (V .+ V') ./ 2
     H = T + V
-    I = Float64[]
-    b_mnl = Float64[]
+    I= nothing
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
         I = ERI_2e4c(bset)
@@ -34,17 +33,17 @@ function compute_integrals(bset, p)
             end
         end
         Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
-        @tullio b_mnl[m, n, l] := Iaux[m, n, k] * Gmsqrt[k, l]
+        @tullio I[m, n, l] := Iaux[m, n, k] * Gmsqrt[k, l]
 
-        p.nbfaux = size(b_mnl)[3]
+        p.nbfaux = size(I)[3]
     end
 
-    ext = Base.get_extension(@__MODULE__, :DoNOFGPU)
+    ext = Base.get_extension(@__MODULE__, :DoNOFGPUExt)
     if !isnothing(ext)
-        I, b_mnl = ext.eris_to_gpu(I, b_mnl)
+        I = ext.eris_to_gpu(I)
     end
 
-    return S, T, V, H, I, b_mnl
+    return S, T, V, H, I
 
 end
 
@@ -96,12 +95,12 @@ end
 
 ######################################### J_pq K_pq #########################################
 
-function computeJKH_MO(C, H, I, b_mnl, p)
+function computeJKH_MO(C, H, I, p)
 
     if (p.RI)
-        J_MO, K_MO, H_core = JKH_MO_RI(C, H, b_mnl, p.nbf, p.nbf5, p.nbfaux)
+        J_MO, K_MO, H_core = JKH_MO(C, H, I, p.nbf, p.nbf5, p.nbfaux)
     else
-        J_MO, K_MO, H_core = JKH_MO_Full(C, H, I, p.nbf, p.nbf5)
+        J_MO, K_MO, H_core = JKH_MO(C, H, I, p.nbf, p.nbf5)
     end
     return J_MO, K_MO, H_core
 
@@ -109,47 +108,47 @@ end
 
 #########################################
 
-function JKH_MO_RI(C, H, b_mnl, nbf, nbf5, nbfaux)
+function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, nbf::Int64, nbf5::Int64, nbfaux::Int64)
 
     Cnbf5 = view(C, :, 1:nbf5)
 
     #denmatj
-    @tullio D[i, m, n] := Cnbf5[m, i] * Cnbf5[n, i]
+    @tullio grad=false D[i, m, n] := Cnbf5[m, i] * Cnbf5[n, i]
 
     #b transform
-    @tullio b_pnl[p, n, l] := Cnbf5[m, p] * b_mnl[m, n, l]
-    @tullio b_pql[p, q, l] := Cnbf5[n, q] * b_pnl[p, n, l]
+    @tullio grad=false b_pnl[p, n, l] := Cnbf5[m, p] * b_mnl[m, n, l]
+    @tullio grad=false b_pql[p, q, l] := Cnbf5[n, q] * b_pnl[p, n, l]
 
     #QJMATm
-    @tullio J_MO[p, q] := b_pql[p, p, l] * b_pql[q, q, l]
+    @tullio grad=false J_MO[p, q] := b_pql[p, p, l] * b_pql[q, q, l]
 
     #QKMATm
-    @tullio K_MO[p, q] := b_pql[p, q, l] * b_pql[p, q, l]
+    @tullio grad=false K_MO[p, q] := b_pql[p, q, l] * b_pql[p, q, l]
 
     #QHMATm
-    @tullio H_core[i] := D[i, m, n] * H[m, n]
+    @tullio grad=false H_core[i] := D[i, m, n] * H[m, n]
 
     return J_MO, K_MO, H_core
 end
 
-function JKH_MO_Full(C, H, I, nbf, nbf5)
+function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, I::Array{Float64,4}, nbf::Int64, nbf5::Int64)
 
 
     Cnbf5 = view(C, :, 1:nbf5)
 
     #denmatj
-    @tullio D[i, m, n] := Cnbf5[m, i] * Cnbf5[n, i]
+    @tullio grad=false D[i, m, n] := Cnbf5[m, i] * Cnbf5[n, i]
 
     #QJMATm
-    @tullio J[j, m, n] := D[j, s, l] * I[m, n, s, l]
-    @tullio J_MO[i, j] := D[i, m, n] * J[j, m, n]
+    @tullio grad=false J[j, m, n] := D[j, s, l] * I[m, n, s, l]
+    @tullio grad=false J_MO[i, j] := D[i, m, n] * J[j, m, n]
 
     #QKMATm
-    @tullio K[j, m, s] := D[j, n, l] * I[m, n, s, l]
-    @tullio K_MO[i, j] := D[i, m, s] * K[j, m, s]
+    @tullio grad=false K[j, m, s] := D[j, n, l] * I[m, n, s, l]
+    @tullio grad=false K_MO[i, j] := D[i, m, s] * K[j, m, s]
 
     #QHMATm
-    @tullio H_core[i] := D[i, m, n] * H[m, n]
+    @tullio grad=false H_core[i] := D[i, m, n] * H[m, n]
 
     return J_MO, K_MO, H_core
 end
