@@ -1288,7 +1288,7 @@ function calcorbg(y, n, cj12, ck12, C, H, I, b_mnl, pa)
 
     Cnew = rotate_orbital(y, C, pa)
 
-    elag, Hmat = compute_Lagrange2(Cnew, n, H, I, b_mnl, cj12, ck12, pa)
+    elag, Hmat = compute_Lagrange2(Cnew, n, H, b_mnl, cj12, ck12, pa.nbf5, pa.nalpha, pa.nbeta)
 
     grad = 4 * elag - 4 * elag'
     grads = zeros(pa.nvar)
@@ -1308,7 +1308,7 @@ function calcorbeg(F, G, y, n, cj12, ck12, C, H, I, b_mnl, pa)
 
     Cnew = rotate_orbital(y, C, pa)
 
-    elag, Hmat = compute_Lagrange2(Cnew, n, H, I, b_mnl, cj12, ck12, pa)
+    elag, Hmat = compute_Lagrange2(Cnew, n, H,  b_mnl, cj12, ck12, pa.nbf5, pa.nalpha, pa.nbeta)
 
     if G !== nothing
         grad = 4 * elag - 4 * elag'

@@ -254,7 +254,7 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
         p.occ_method,
     )
     cj12, ck12 = PNOFi_selector(n, p)
-    elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+    elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
     E = computeE_elec(Hmat, n, elag, p)
 
     alpha = p.alpha
@@ -316,7 +316,7 @@ function orbopt_demon(gamma, C, H, I_AO, b_mnl, p)
         y = -alpha * mhat ./ (sqrt.(vhat_max .+ 10^-16)) #AMSgrad
         C = rotate_orbital(y, C, p)
 
-        elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
         if E < best_E
             best_C = C
@@ -356,7 +356,7 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
         p.occ_method,
     )
     cj12, ck12 = PNOFi_selector(n, p)
-    elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+    elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
     E = computeE_elec(Hmat, n, elag, p)
 
     alpha = p.alpha
@@ -412,7 +412,7 @@ function orbopt_adam(gamma, C, H, I_AO, b_mnl, p)
         #println(y)
         C = rotate_orbital(y, C, p)
 
-        elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
         #println(i," ",E," ", E < best_E," ",norm(grads)," ",maximum(abs.(grads)))
         if E < best_E
@@ -453,7 +453,7 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
         p.occ_method,
     )
     cj12, ck12 = PNOFi_selector(n, p)
-    elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+    elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
     E = computeE_elec(Hmat, n, elag, p)
 
     alpha = p.alpha
@@ -509,7 +509,7 @@ function orbopt_adabelief(gamma, C, H, I_AO, b_mnl, p)
         #println(y)
         C = rotate_orbital(y, C, p)
 
-        elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
         #println(i," ",E," ", E < best_E," ",norm(grads)," ",maximum(abs.(grads)))
         if E < best_E
@@ -551,7 +551,7 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
         p.occ_method,
     )
     cj12, ck12 = PNOFi_selector(n, p)
-    elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+    elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
     E = computeE_elec(Hmat, n, elag, p)
 
     alpha = p.alpha
@@ -603,7 +603,7 @@ function orbopt_yogi(gamma, C, H, I_AO, b_mnl, p)
         y = -alpha * mhat ./ (sqrt.(vhat_max .+ 10^-16))
         C = rotate_orbital(y, C, p)
 
-        elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
         #println(i," ",E," ", E < best_E," ",norm(grads)," ",maximum(abs.(grads)))
         if E < best_E
@@ -663,7 +663,7 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
         p.occ_method,
     )
     cj12, ck12 = PNOFi_selector(n, p)
-    elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+    elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
     E = computeE_elec(Hmat, n, elag, p)
 
     alpha = p.alpha
@@ -750,7 +750,7 @@ function comb(gamma, C, H, I_AO, b_mnl, p)
         )
         cj12, ck12 = PNOFi_selector(n, p)
 
-        elag, Hmat = compute_Lagrange2(C, n, H, I_AO, b_mnl, cj12, ck12, p)
+        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
         #println(i," ",E," ", E < best_E, " ", norm(grads))
         if E < best_E

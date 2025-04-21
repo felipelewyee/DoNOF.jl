@@ -1,32 +1,35 @@
-function compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, pa)
+function compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, nbf5, nalpha, nbeta)
 
-    Cnbf5 = view(C, 1:pa.nbf, 1:pa.nbf5)
+    nbf = size(C)[1]
+    nbfaux = size(b_mnl)[3]
+
+    Cnbf5 = view(C, 1:nbf, 1:nbf5)
     @tullio grad=false tmp[m, j] := H[m, nn] * Cnbf5[nn, j]
     @tullio grad=false H_mat[i, j] := C[m, i] * tmp[m, j]
     @tullio grad=false tmp[m, q, l] := Cnbf5[nn, q] * b_mnl[m, nn, l]
     @tullio grad=false b_MO[p, q, l] := C[m, p] * tmp[m, q, l]
 
-    elag = zeros(pa.nbf, pa.nbf)
+    elag = zeros(nbf, nbf)
 
-    n_beta = view(n, 1:pa.nbeta)
-    n_alpha = view(n, pa.nalpha+1:pa.nbf5)
-    Hmat_nbf5 = view(H_mat, 1:pa.nbf, 1:pa.nbf5)
-    grad_nbf5 = view(elag, 1:pa.nbf, 1:pa.nbf5)
-    grad_nbeta = view(elag, 1:pa.nbf, 1:pa.nbeta)
-    grad_nalpha = view(elag, 1:pa.nbf, pa.nalpha+1:pa.nbf5)
+    n_beta = view(n, 1:nbeta)
+    n_alpha = view(n, nalpha+1:nbf5)
+    Hmat_nbf5 = view(H_mat, 1:nbf, 1:nbf5)
+    grad_nbf5 = view(elag, 1:nbf, 1:nbf5)
+    grad_nbeta = view(elag, 1:nbf, 1:nbeta)
+    grad_nalpha = view(elag, 1:nbf, nalpha+1:nbf5)
 
-    b_nbf_beta = view(b_MO, 1:pa.nbf, 1:pa.nbeta, 1:pa.nbfaux)
-    b_nbf_alpha = view(b_MO, 1:pa.nbf, pa.nalpha+1:pa.nbf5, 1:pa.nbfaux)
-    b_nbeta_beta = view(b_MO, 1:pa.nbeta, 1:pa.nbeta, 1:pa.nbfaux)
-    b_nalpha_alpha = view(b_MO, pa.nalpha+1:pa.nbf5, pa.nalpha+1:pa.nbf5, 1:pa.nbfaux)
-    b_nbf_nbf5 = view(b_MO, 1:pa.nbf, 1:pa.nbf5, 1:pa.nbfaux)
-    b_nbf5_nbf5 = view(b_MO, 1:pa.nbf5, 1:pa.nbf5, 1:pa.nbfaux)
+    b_nbf_beta = view(b_MO, 1:nbf, 1:nbeta, 1:nbfaux)
+    b_nbf_alpha = view(b_MO, 1:nbf, nalpha+1:nbf5, 1:nbfaux)
+    b_nbeta_beta = view(b_MO, 1:nbeta, 1:nbeta, 1:nbfaux)
+    b_nalpha_alpha = view(b_MO, nalpha+1:nbf5, nalpha+1:nbf5, 1:nbfaux)
+    b_nbf_nbf5 = view(b_MO, 1:nbf, 1:nbf5, 1:nbfaux)
+    b_nbf5_nbf5 = view(b_MO, 1:nbf5, 1:nbf5, 1:nbfaux)
     
     # 2ndH/dy_ab
     @tullio grad=false grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
 
     # dJ_pp/dy_ab
-    if pa.nbeta > 0
+    if nbeta > 0
         @tullio grad=false grad_nbeta[a, b] +=
             n_beta[b] * b_nbf_beta[a, b, k] * b_nbeta_beta[b, b, k]
         @tullio grad=false grad_nalpha[a, b] +=
@@ -99,7 +102,7 @@ end
 function ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
 
     if (p.no1 == 0)
-        elag, Hmat = compute_Lagrange2(C, n, H, I, b_mnl, cj12, ck12, p)
+        elag, Hmat = compute_Lagrange2(C, n, H, b_mnl, cj12, ck12, p.nbf5, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
     else
         J, K = computeJKj(C, I, b_mnl, p)
