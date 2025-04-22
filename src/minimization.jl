@@ -131,7 +131,7 @@ function occoptr(gamma, C, H, I, freeze_occ, p)
     cj12, ck12 = PNOFi_selector(n, p)
 
     if p.ndoc > 0 && !freeze_occ
-        return res.minimum, res.iterations, true, gamma, n, cj12, ck12
+        return res.minimum, res.iterations, res.stopped_by.g_converged, gamma, n, cj12, ck12
     else
         return -1, 0, true, gamma, n, cj12, ck12
     end
