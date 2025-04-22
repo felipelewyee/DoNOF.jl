@@ -27,7 +27,7 @@ function DoNOF.computeJKH_MO(C, H, I::CuArray, p)
     if (p.RI)
         J_MO, K_MO, H_core = DoNOF.JKH_MO(C, H, I, p.nbf, p.nbf5, p.nbfaux)
     else
-        J_MO, K_MO, H_core = DoNOF.JKH_MO(CuArray(C), CuArray(H), I, p.nbf, p.nbf5)
+        J_MO, K_MO, H_core = DoNOF.JKH_MO(C, H, I, p.nbf, p.nbf5)
     end
     return Array(J_MO), Array(K_MO), Array(H_core)
 
@@ -66,6 +66,29 @@ function DoNOF.JKH_MO(C, H, b_mnl::CuArray{T, 3}, nbf, nbf5, nbfaux) where {T <:
     return J_MO, K_MO, H_core
 end
 
+function DoNOF.JKH_MO(C, H, I::CuArray{T, 4}, nbf::Int64, nbf5::Int64)  where {T <: Union{Float32, Float64}}
+
+    C = CuArray{typeof(I).parameters[1]}(C)
+    H = CuArray{typeof(I).parameters[1]}(H)
+
+    Cnbf5 = view(C, :, 1:nbf5)
+
+    #denmatj
+    @tullio grad=false D[i, m, n] := Cnbf5[m, i] * Cnbf5[n, i]
+
+    #QJMATm
+    @tensor J[j, m, n] := D[j, s, l] * I[m, n, s, l]
+    @tensor J_MO[i, j] := D[i, m, n] * J[j, m, n]
+
+    #QKMATm
+    @tensor K[j, m, s] := D[j, n, l] * I[m, n, s, l]
+    @tensor K_MO[i, j] := D[i, m, s] * K[j, m, s]
+
+    #QHMATm
+    @tensor H_core[i] := D[i, m, n] * H[m, n]
+
+    return J_MO, K_MO, H_core
+end
 
 function DoNOF.JKj_RI(C, b_mnl::CuArray, nbf, nbf5, nbfaux)
 
@@ -199,8 +222,8 @@ function DoNOF.compute_Lagrange2(C, n, H, I::CuArray{T, 4}, cj12, ck12, nalpha, 
 
     nbf = size(C)[1]
     nbf5 = size(n)[1]
-    C = CuArray{typeof(b_mnl).parameters[1]}(C)
-    H = CuArray{typeof(b_mnl).parameters[1]}(H)
+    C = CuArray{typeof(I).parameters[1]}(C)
+    H = CuArray{typeof(I).parameters[1]}(H)
 
     Cnbf5 = C[1:nbf, 1:nbf5]
     H_mat = C' * (H * Cnbf5)
@@ -210,10 +233,10 @@ function DoNOF.compute_Lagrange2(C, n, H, I::CuArray{T, 4}, cj12, ck12, nalpha, 
     @tullio tmp[m, q, r, t] := Cnbf5[l, t] * tmp2[m, q, r, l]
     @tullio I_MO[p, q, r, t] := C[m, p] * tmp[m, q, r, t]
 
-    elag = CUDA.zeros(typeof(b_mnl).parameters[1], nbf, nbf)
-    cj12 = CuArray{typeof(b_mnl).parameters[1]}(cj12)
-    ck12 = CuArray{typeof(b_mnl).parameters[1]}(ck12)
-    n = CuArray{typeof(b_mnl).parameters[1]}(n)
+    elag = CUDA.zeros(typeof(I).parameters[1], nbf, nbf)
+    cj12 = CuArray{typeof(I).parameters[1]}(cj12)
+    ck12 = CuArray{typeof(I).parameters[1]}(ck12)
+    n = CuArray{typeof(I).parameters[1]}(n)
 
     n_beta = view(n, 1:nbeta)
     n_alpha = view(n, nalpha+1:nbf5)
