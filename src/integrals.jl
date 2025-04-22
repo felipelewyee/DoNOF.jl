@@ -19,21 +19,23 @@ function compute_integrals(bset, p)
             aux =
                 BasisSet(bset.name * "-jkfit", bset.atoms, spherical = false, lib = :acsint)
         end
-        Iaux = ERI_2e3c(bset, aux)
-        G = ERI_2e2c(aux)
-        G = (G .+ G') ./ 2
+        #Iaux = ERI_2e3c(bset, aux)
+        #G = ERI_2e2c(aux)
+        #G = (G .+ G') ./ 2
 
-        evals, evecs = eigen(G)
-        sqrtinv = Float64[]
-        for i = 1:size(evals)[1]
-            if (evals[i] < 0.0)
-                append!(sqrtinv, 0.0)
-            else
-                append!(sqrtinv, 1 / sqrt(evals[i]))
-            end
-        end
-        Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
-        @tullio I[m, n, l] := Iaux[m, n, k] * Gmsqrt[k, l]
+        #evals, evecs = eigen(G)
+        #sqrtinv = Float64[]
+        #for i = 1:size(evals)[1]
+        #    if (evals[i] < 0.0)
+        #        append!(sqrtinv, 0.0)
+        #    else
+        #        append!(sqrtinv, 1 / sqrt(evals[i]))
+        #    end
+        #end
+        #Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
+        #@tullio I[m, n, l] := Iaux[m, n, k] * Gmsqrt[k, l]
+
+        I = Iaux(bset,aux)
 
         p.nbfaux = size(I)[3]
     end
@@ -47,6 +49,33 @@ function compute_integrals(bset, p)
 
 end
 
+function Iaux(bset,aux)
+    I = ERI_2e3c(bset, aux)
+
+    nbf = size(I)[1]
+    nbfaux = size(I)[3]
+
+    G = ERI_2e2c(aux)
+    G = (G .+ G') ./ 2
+
+    evals, evecs = eigen(G)
+    sqrtinv = Float64[]
+    for i = 1:size(evals)[1]
+        if (evals[i] < 0.0)
+            append!(sqrtinv, 0.0)
+        else
+            append!(sqrtinv, 1 / sqrt(evals[i]))
+        end
+    end
+    Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
+
+    Threads.@threads for m in 1:nbf
+	tmp = I[m, 1:end, 1:end]
+	I[m,1:end,1:end] = tmp * Gmsqrt
+    end
+    #@tullio I[m, n, l] := I[m, n, k] * Gmsqrt[k, l]
+    return I
+end
 
 ######################################### J_mn^(j) K_mn^(j) #########################################
 
