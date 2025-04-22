@@ -70,9 +70,12 @@ function Iaux(bset,aux)
     Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
 
     Threads.@threads for m in 1:nbf
-	tmp = I[m, 1:end, 1:end]
-	I[m,1:end,1:end] = tmp * Gmsqrt
+        I[m, :, :] = I[m, :, :] * Gmsqrt
     end
+    #Threads.@threads for m in 1:nbf
+    #    tmp = I[m, 1:end, 1:end]
+    #    I[m,1:end,1:end] = tmp * Gmsqrt
+    #end
     #@tullio I[m, n, l] := I[m, n, k] * Gmsqrt[k, l]
     return I
 end
