@@ -62,6 +62,7 @@ function energy(
     println("")
 
     println("====a1====")
+    flush(stdout)
     E_nuc = compute_E_nuc(bset, p)
 
     if isnothing(C)
@@ -70,19 +71,23 @@ function energy(
         Cguess = C
     end
     println("====a2====")
+    flush(stdout)
     Cguess = check_ortho(Cguess, S, p)
 
     println("====a3====")
+    flush(stdout)
     if do_hfidr
         EHF, Cguess, fmiug0guess = hfidr(Cguess, H, I, E_nuc, p)
     end
     println("====a4====")
+    flush(stdout)
 
     if isnothing(C)
         C = Cguess
     end
     C = check_ortho(C, S, p)
     println("====a5====")
+    flush(stdout)
 
     if isnothing(n)
         if p.occ_method == "Trigonometric"
@@ -110,6 +115,7 @@ function energy(
         end
     end
     println("====a6====")
+    flush(stdout)
 
     elag = zeros(p.nbf, p.nbf)
     #E_occ, nit_occ, success_occ, gamma, n, cj12, ck12 = occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
