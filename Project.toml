@@ -23,7 +23,7 @@ cuTENSOR = "011b41b2-24ef-40a8-b3eb-fa098493e9e1"
 DoNOFGPUExt = ["CUDA", "KernelAbstractions", "cuTENSOR"]
 
 [compat]
-Julia = "1.10"
+julia = "1.10"
 CUDA = "5.7.3"
 FileIO = "1.17.0"
 GaussianBasis = "0.5.0"

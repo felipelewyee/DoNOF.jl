@@ -9,6 +9,6 @@ mol = """
 
 bset,p = DoNOF.molecule(mol,"cc-pvtz",spherical=true)
 
-p.ipnof = 7
+p.ipnof = 8
 
 DoNOF.energy(bset,p,do_hfidr=false)
