@@ -11,9 +11,4 @@ bset,p = DoNOF.molecule(mol,"cc-pvtz",spherical=true)
 
 p.ipnof = 7
 
-p.RI = true
-
-p.orb_method = "ADABelief"
-p.maxit = 100
-
 DoNOF.energy(bset,p,do_hfidr=false)
