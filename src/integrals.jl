@@ -14,10 +14,19 @@ function compute_integrals(bset, p)
         I = ERI_2e4c(bset)
     else
         if p.spherical
-            aux = BasisSet(bset.name * "-jkfit", bset.atoms)
+	    try
+                aux = BasisSet(bset.name * "-jkfit", bset.atoms)
+	    catch
+                aux = BasisSet("def2-universal-jkfit", bset.atoms)
+	    end
         else
+	    try
             aux =
                 BasisSet(bset.name * "-jkfit", bset.atoms, spherical = false, lib = :acsint)
+	    catch
+            aux =
+                BasisSet("def2-universal-jkfit", bset.atoms, spherical = false, lib = :acsint)
+	    end
         end
         #Iaux = ERI_2e3c(bset, aux)
         #G = ERI_2e2c(aux)

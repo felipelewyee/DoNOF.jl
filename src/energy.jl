@@ -6,7 +6,7 @@ function energy(
     C = nothing,
     fmiug0 = nothing,
     n = nothing,
-    do_hfidr = true,
+    do_hfidr = false,
     do_nofmp2 = false,
     printmode = true,
     nofmp2strategy = "numerical",
