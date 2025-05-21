@@ -25,8 +25,7 @@ function energy(
     println("Computing Integrals")
     flush(stdout)
 
-    S, T, V, H, I, b_mnl = compute_integrals(bset, p)
-
+    S, T, V, H, I = compute_integrals(bset, p)
     t1 = time()
     @printf("Elapsed time: %7.2f Seconds\n\n", t1 - t0)
     flush(stdout)
@@ -72,7 +71,7 @@ function energy(
     Cguess = check_ortho(Cguess, S, p)
 
     if do_hfidr
-        EHF, Cguess, fmiug0guess = hfidr(Cguess, H, I, b_mnl, E_nuc, p)
+        EHF, Cguess, fmiug0guess = hfidr(Cguess, H, I, E_nuc, p)
     end
 
     if isnothing(C)
@@ -145,22 +144,22 @@ function energy(
             E_orb, C, nit_orb, success_orb, itlim, fmiug0 =
                 orboptr(C, n, H, I, b_mnl, cj12, ck12, i_ext, itlim, fmiug0, p, printmode)
         elseif p.orb_method == "Rotations"
-            E_orb, C, nit_orb, success_orb = orbopt_rotations(gamma, C, H, I, b_mnl, p)
+            E_orb, C, nit_orb, success_orb = orbopt_rotations(gamma, C, H, I, p)
         elseif p.orb_method == "ADAM"
-            E_orb, C, nit_orb, success_orb = orbopt_adam(gamma, C, H, I, b_mnl, p)
+            E_orb, C, nit_orb, success_orb = orbopt_adam(gamma, C, H, I, p)
         elseif p.orb_method == "ADABelief"
-            E_orb, C, nit_orb, success_orb = orbopt_adabelief(gamma, C, H, I, b_mnl, p)
+            E_orb, C, nit_orb, success_orb = orbopt_adabelief(gamma, C, H, I, p)
         elseif p.orb_method == "Demon"
-            E_orb, C, nit_orb, success_orb = orbopt_demon(gamma, C, H, I, b_mnl, p)
+            E_orb, C, nit_orb, success_orb = orbopt_demon(gamma, C, H, I, p)
         elseif p.orb_method == "YOGI"
-            E_orb, C, nit_orb, success_orb = orbopt_yogi(gamma, C, H, I, b_mnl, p)
+            E_orb, C, nit_orb, success_orb = orbopt_yogi(gamma, C, H, I, p)
         end
         ta2 = time()
 
         E_occ, nit_occ, success_occ, gamma, n, cj12, ck12 =
-            occoptr(gamma, C, H, I, b_mnl, freeze_occ, p)
+            occoptr(gamma, C, H, I, freeze_occ, p)
         if (p.occ_method == "Softmax")
-            C, gamma = order_occupations_softmax(C, gamma, H, I, b_mnl, p)
+            C, gamma = order_occupations_softmax(C, gamma, p)
         end
         ta3 = time()
 
@@ -171,7 +170,7 @@ function energy(
         E_diff = E - E_old
         E_old = E
 
-        Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
+        Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, cj12, ck12, p)
 
         y = zeros(p.nvar)
         n, dn_dgamma = ocupacion(
@@ -187,8 +186,8 @@ function energy(
             p.occ_method,
         )
         cj12, ck12 = PNOFi_selector(n, p)
-        grad_orb = calcorbg(y, n, cj12, ck12, C, H, I, b_mnl, p)
-        J_MO, K_MO, H_core = computeJKH_MO(C, H, I, b_mnl, p)
+        grad_orb = calcorbg(y, n, cj12, ck12, C, H, I, p)
+        J_MO, K_MO, H_core = computeJKH_MO(C, H, I, p)
         grad_occ = calcoccg(gamma, J_MO, K_MO, H_core, p)
 
         M = M_diagnostic(p, n, get_value = true)
@@ -222,7 +221,7 @@ function energy(
     end
 
     if (p.ipnof > 4)
-        C, n, elag = order_subspaces(C, n, elag, H, I, b_mnl, p)
+        C, n, elag = order_subspaces(C, n, elag, H, I, p)
     end
 
     jldopen(p.title * ".jld2", "w") do file

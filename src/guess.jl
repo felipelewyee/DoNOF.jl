@@ -55,7 +55,7 @@ function read_all(; title = "donof")
 
 end
 
-function order_subspaces(old_C, old_n, elag, H, I, b_mnl, p)
+function order_subspaces(old_C, old_n, elag, H, I, p)
 
     C = zeros(p.nbf, p.nbf)
     n = zeros(p.nbf5)
@@ -99,7 +99,7 @@ function order_subspaces(old_C, old_n, elag, H, I, b_mnl, p)
     C[1:p.nbf, p.nbf5+1:p.nbf] = old_C[1:p.nbf, p.nbf5+1:p.nbf]
 
     cj12, ck12 = PNOFi_selector(n, p)
-    Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, b_mnl, cj12, ck12, p)
+    Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, cj12, ck12, p)
 
     return C, n, elag
 
