@@ -22,7 +22,7 @@ mol = """
  H  0.0000  -0.751  -0.485
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvtz")
+bset,p = DoNOF.molecule(mol,"cc-pvdz")
 p.ipnof = 8
 
 DoNOF.energy(bset,p)
@@ -53,7 +53,7 @@ mol = """
  H  0.0000  -0.751  -0.485
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvtz")
+bset,p = DoNOF.molecule(mol,"cc-pvdz")
 p.ipnof = 8
 
 DoNOF.energy(bset,p)

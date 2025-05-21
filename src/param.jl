@@ -151,7 +151,7 @@ function Param(bset, mul, charge)
     noptorb = noptorb   # Número de orbitales a optimizar Nbf5 <= Noptorb <= Nbf
     nv = ncwo * ndoc
     gpu = false
-    RI = false
+    RI = true
 
     HighSpin = false
     MSpin = 0

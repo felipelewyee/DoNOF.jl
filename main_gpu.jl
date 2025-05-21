@@ -7,8 +7,8 @@ mol = """
  H  0.0000  -0.751  -0.485
 """
 
-bset,p = DoNOF.molecule(mol,"cc-pvtz",spherical=true)
+bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 
 p.ipnof = 8
 
-DoNOF.energy(bset,p,do_hfidr=false)
+DoNOF.energy(bset,p)

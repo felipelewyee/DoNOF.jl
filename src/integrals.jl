@@ -13,6 +13,7 @@ function compute_integrals(bset, p)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
         I = ERI_2e4c(bset)
     else
+	aux = nothing
         if p.spherical
 	    try
                 aux = BasisSet(bset.name * "-jkfit", bset.atoms)

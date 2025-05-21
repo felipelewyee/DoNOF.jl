@@ -7,7 +7,7 @@ authors = ["Juan Felipe Huan Lew Yee <felipe.lew.yee@quimica.unam.mx>",
            "Iván Bonfil Rivera",
            "Roberto Rojas Hernández",
            ]
-version = "1.1.1"
+version = "1.1.2"
 
 [deps]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
