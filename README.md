@@ -2,14 +2,14 @@
 
 This is a Julia version of the [DoNOF](https://github.com/DoNOF/DoNOFsw/) (Donostia Natural Orbital Functionals) software written by Prof. Mario Piris, with the intention of take advantage of the wonderful capabilities of Julia language.
 
-# Installation
+## 🌟 Installation
 
 Open a julia prompt, enter to the Pkg REPL by pressing ], and simply add DoNOF:
 ~~~julia
 add DoNOF
 ~~~
 
-# Example
+## 🎯 Example
 
 - Put the following directly on the Julia prompt to run a calculation:
 ~~~julia
@@ -33,11 +33,11 @@ DoNOF.energy(bset,p)
 julia example.jl > example.out
 ~~~
 
-## Tips
+## 😎 Tips
 
 - You should have [Julia installed](https://julialang.org/downloads)
 
-- Remember to have configured the number of threads that Jullia can use for parallelism, for example:
+- Remember to configure the number of threads for parallelism, for example:
 ~~~
 export JULIA_NUM_THREADS=12
 ~~~
