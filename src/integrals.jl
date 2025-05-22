@@ -29,24 +29,16 @@ function compute_integrals(bset, p)
                 BasisSet("def2-universal-jkfit", bset.atoms, spherical = false, lib = :acsint)
 	    end
         end
-        #Iaux = ERI_2e3c(bset, aux)
-        #G = ERI_2e2c(aux)
-        #G = (G .+ G') ./ 2
 
-        #evals, evecs = eigen(G)
-        #sqrtinv = Float64[]
-        #for i = 1:size(evals)[1]
-        #    if (evals[i] < 0.0)
-        #        append!(sqrtinv, 0.0)
-        #    else
-        #        append!(sqrtinv, 1 / sqrt(evals[i]))
-        #    end
-        #end
-        #Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
-        #@tullio I[m, n, l] := Iaux[m, n, k] * Gmsqrt[k, l]
-
-        I = Iaux(bset,aux)
-
+        G = ERI_2e2c(aux)
+        G = (G .+ G') ./ 2
+        I = ERI_2e3c(bset, aux)
+        ext = Base.get_extension(@__MODULE__, :DoNOFGPUExt)
+        if !isnothing(ext)
+            I = ext.Iaux_gpu(G,I)
+        else
+            I = Iaux(G,I)
+        end
         p.nbfaux = size(I)[3]
     end
 
@@ -59,18 +51,15 @@ function compute_integrals(bset, p)
 
 end
 
-function Iaux(bset,aux)
-    I = ERI_2e3c(bset, aux)
+function Iaux(G::Matrix{Float64},I::Array{Float64,3})
 
     nbf = size(I)[1]
     nbfaux = size(I)[3]
 
-    G = ERI_2e2c(aux)
-    G = (G .+ G') ./ 2
-
+    G = Symmetric(G)
     evals, evecs = eigen(G)
     sqrtinv = Float64[]
-    for i = 1:size(evals)[1]
+    for i = 1:nbfaux
         if (evals[i] < 0.0)
             append!(sqrtinv, 0.0)
         else
