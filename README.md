@@ -28,10 +28,32 @@ p.ipnof = 8
 DoNOF.energy(bset,p)
 ~~~
 
-- To save the input in a file and run it directly on the command line:
+- You can also save the input in a file (e.g. example.jl) and run it directly on the command line:
 ~~~bash
 julia example.jl > example.out
 ~~~
+
+## ⚙️ Useful Options
+
+> [!TIP]
+> **Available functionals**
+> - p.ipnof = 9 (GNOFm)
+> - p.ipnof = 8 (GNOF)
+> - p.ipnof = 7 (PNOF7)
+> - p.ipnof = 7 + p.ista=1 (PNOF7s)
+> - p.ipnof = 5 (PNOF5)
+> - p.ipnof = 4 (PNOF4)
+
+> [!NOTE]
+> **Available optimizers**
+> - For Orbital Optimization:
+>   - p.orb_method = "ADAM"
+>   - p.orb_method = "ADABelief"
+>   - p.orb_method = "YOGI"
+>   - p.orb_method = "Demon"
+> - For Occupation Optimization:
+>   - p.occ_method = "Softmax"
+>   - p.occ_method = "Trigonometric"
 
 ## 😎 Tips
 
