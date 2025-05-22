@@ -55,7 +55,7 @@ julia example.jl > example.out
 >   - p.occ_method = "Softmax"
 >   - p.occ_method = "Trigonometric"
 
-You can give title to the jobs, and the orbitals and occupations will be saved on a jld2 file wit that name:
+You can give title to the jobs, and the orbitals and occupations will be saved on a jld2 file with that name:
 - p.title = "molecule_name"
 
 Orbitals are saved in a FCHK file that you can open in your prefered software (e.g. Avogadro2, IQmol)
