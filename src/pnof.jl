@@ -502,6 +502,9 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
         fi = fi .^ alpha
     elseif ista == 3
 	fi = sqrt.(fi) .* exp.( - (n .- 0.5) .^2 )
+    elseif ista == 4
+	alpha = 0.9
+	fi = alpha * sqrt.(fi)
     end
 
     # Interpair Electron correlation #
@@ -650,6 +653,15 @@ function der_CJCKD8(
             end
         end
         fi = fi .* exp.( - (n .- 0.5) .^2 )
+    elseif ista == 4
+	alpha = 0.9
+        fi = alpha * sqrt.(fi)
+        for i = no1+1:nbf5
+            a = max(fi[i], 10^-15)
+            for k = 1:nv
+                dfi_dgamma[i, k] = alpha^2 / (2 * a) * (1 - 2 * n[i]) * dn_dgamma[i, k]
+            end
+        end
     end
 
     # Interpair Electron correlation #
