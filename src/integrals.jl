@@ -9,6 +9,7 @@ function compute_integrals(bset, p)
     V = (V .+ V') ./ 2
     H = T + V
     I= nothing
+    println("Basis Set                                            = ", bset.name)
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
         I = ERI_2e4c(bset)
@@ -29,6 +30,8 @@ function compute_integrals(bset, p)
                 BasisSet("def2-universal-jkfit", bset.atoms, spherical = false, lib = :acsint)
 	    end
         end
+        println("Auxiliary Basis Set                                  = ", aux.name)
+        println("Gaussian Type                                        = ", p.spherical ? "Spherical" : "Cartesian")
 
         G = ERI_2e2c(aux)
         G = (G .+ G') ./ 2

@@ -9,7 +9,7 @@ mol = """
 
 bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 
-p.ipnof = 8
-p.ista = 0
+p.ipnof = 9
 
 DoNOF.energy(bset,p)
+

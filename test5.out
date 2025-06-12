@@ -1,0 +1,12 @@
+/home/pobleyef/.juliaup/bin/julia
+test5
+Job runing on nagpu02
+Choosing scratch ...
+Automatic scratch folder selection
+/scratch/pobleyef/159746
+/scratch/pobleyef/159746 directory
+cp test5.jl test5.jld2 to  /scratch/pobleyef/159746/.
+Recovering execution output...
+Moving from /scratch/pobleyef/159746 to /home-nas/pobleyef/DietGMTKN55/ncwo1/050/PNOF5/arina.159746
+mkdir -p /home-nas/pobleyef/DietGMTKN55/ncwo1/050/PNOF5/arina.159746
+mv /scratch/pobleyef/159746/* /home-nas/pobleyef/DietGMTKN55/ncwo1/050/PNOF5/arina.159746

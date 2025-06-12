@@ -30,6 +30,7 @@ function PNOFi_selector(n, p)
             p.ncwo,
             p.MSpin,
             p.h_cut,
+	    p.ista
         )
     elseif p.ipnof == 9
         cj12, ck12 = CJCKD9(
@@ -86,6 +87,7 @@ function der_PNOFi_selector(n, dn_dgamma, p)
             p.MSpin,
             p.nsoc,
             p.h_cut,
+	    p.ista
         )
     elseif p.ipnof == 9
         Dcj12r, Dck12r = der_CJCKD9(
@@ -459,7 +461,12 @@ function der_CJCKD7(n::Vector{Float64}, ista::Int64, dn_dgamma::Matrix{Float64},
 
 end
 
-function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut)
+function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ista)
+
+    # ista = 0 GNOF
+    # ista = 1 GNOFm (with N<F static interpair interactions)
+    # ista = 2 GNOFmsta (with N<F static interpair interactions and phi = a (n*(1-n))^0.55 )
+    # ista = 3 GNOFmodulated (with N<F static interpair interactions and phi = exp(-(n-0.5)^2) sqrt(n(1-n)) )
 
     nbf5 = size(n)[1]
 
@@ -484,34 +491,50 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut)
     n_d12 = sqrt.(n_d)
     fi = n .* (1 .- n)
     fi[fi.<=0] .= 0
-    fi = sqrt.(fi)
+
+    if ista == 0 || ista == 1
+        fi = sqrt.(fi)
+    elseif ista == 2
+        alpha = 0.55
+        aa = 2.0^(2.0*alpha-1)
+        aa = aa ^ (1/alpha)
+        fi = aa * fi
+        fi = fi .^ alpha
+    elseif ista == 3
+	fi = sqrt.(fi) .* exp.( - (n .- 0.5) .^2 )
+    end
 
     # Interpair Electron correlation #
 
     @tullio cj12[i, j] := 2 * n[i] * n[j]
-    @tullio ck12[i, j] := n[i] * n[j]
+    if ista == 0
+        @tullio ck12[i, j] := n[i] * n[j]
 
-    ck12_beta_cwo = view(ck12, no1+1:nbeta, nalpha+1:nbf5)
-    ck12_cwo_beta = view(ck12, nalpha+1:nbf5, no1+1:nbeta)
-    ck12_cwo_cwo = view(ck12, nalpha+1:nbf5, nalpha+1:nbf5)
-    fi_beta = view(fi, no1+1:nbeta)
-    fi_cwo = view(fi, nalpha+1:nbf5)
-    @tullio ck12_beta_cwo[i, j] += fi_beta[i] * fi_cwo[j]
-    @tullio ck12_cwo_beta[i, j] += fi_cwo[i] * fi_beta[j]
-    @tullio ck12_cwo_cwo[i, j] += fi_cwo[i] * fi_cwo[j]
+        ck12_beta_cwo = view(ck12, no1+1:nbeta, nalpha+1:nbf5)
+        ck12_cwo_beta = view(ck12, nalpha+1:nbf5, no1+1:nbeta)
+        ck12_cwo_cwo = view(ck12, nalpha+1:nbf5, nalpha+1:nbf5)
+        fi_beta = view(fi, no1+1:nbeta)
+        fi_cwo = view(fi, nalpha+1:nbf5)
+        @tullio ck12_beta_cwo[i, j] += fi_beta[i] * fi_cwo[j]
+        @tullio ck12_cwo_beta[i, j] += fi_cwo[i] * fi_beta[j]
+        @tullio ck12_cwo_cwo[i, j] += fi_cwo[i] * fi_cwo[j]
+        if nsoc > 0
+            ck12[no1+1:nbeta, nbeta+1:nalpha] .+= 0.5 * fi[no1+1:nbeta] * 0.5
+            ck12[nbeta+1:nalpha, no1+1:nbeta] .+= 0.5 * 0.5 * fi[no1+1:nbeta]'
+            ck12[nbeta+1:nalpha, nalpha+1:nbf5] .+= 0.5 * fi[nalpha+1:nbf5]'
+            ck12[nalpha+1:nbf5, nbeta+1:nalpha] .+= fi[nalpha+1:nbf5] * 0.5
+        end
+        if nsoc > 1
+            ck12[nbeta+1:nalpha, nbeta+1:nalpha] .= 0.5
+        end
+    elseif ista > 0
+        @tullio ck12[i, j] := n[i] * n[j] + fi[i] * fi[j]
+        ck12_beta_cwo = view(ck12, no1+1:nbeta, nalpha+1:nbf5)
+        ck12_cwo_beta = view(ck12, nalpha+1:nbf5, no1+1:nbeta)
+        ck12_cwo_cwo = view(ck12, nalpha+1:nbf5, nalpha+1:nbf5)
+    end
 
     # Intrapair Electron Correlation
-
-    if nsoc > 0
-        ck12[no1+1:nbeta, nbeta+1:nalpha] .+= 0.5 * fi[no1+1:nbeta] * 0.5
-        ck12[nbeta+1:nalpha, no1+1:nbeta] .+= 0.5 * 0.5 * fi[no1+1:nbeta]'
-        ck12[nbeta+1:nalpha, nalpha+1:nbf5] .+= 0.5 * fi[nalpha+1:nbf5]'
-        ck12[nalpha+1:nbf5, nbeta+1:nalpha] .+= fi[nalpha+1:nbf5] * 0.5
-    end
-
-    if nsoc > 1
-        ck12[nbeta+1:nalpha, nbeta+1:nalpha] .= 0.5
-    end
 
     n_d12_beta = view(n_d12, no1+1:nbeta)
     n_d12_cwo = view(n_d12, nalpha+1:nbf5)
@@ -558,6 +581,7 @@ function der_CJCKD8(
     MSpin,
     nsoc,
     h_cut,
+    ista
 )
 
     nbf5 = size(n)[1]
@@ -594,43 +618,76 @@ function der_CJCKD8(
 
     fi = n .* (1 .- n)
     fi[fi.<=0] .= 0
-    fi = sqrt.(fi)
 
     dfi_dgamma = zeros(nbf5, nv)
-    for i = no1+1:nbf5
+    if ista == 0 || ista == 1
+        fi = sqrt.(fi)
+        for i = no1+1:nbf5
         a = max(fi[i], 10^-15)
-        for k = 1:nv
-            dfi_dgamma[i, k] = 1 / (2 * a) * (1 - 2 * n[i]) * dn_dgamma[i, k]
+            for k = 1:nv
+                dfi_dgamma[i, k] = 1 / (2 * a) * (1 - 2 * n[i]) * dn_dgamma[i, k]
+            end
         end
+    elseif ista == 2
+        alpha = 0.55
+        aa = 2.0^(2.0*alpha-1)
+        aa = aa ^ (1/alpha)
+        fi = aa * fi
+        fi = fi .^ alpha
+        for i = no1+1:nbf5
+            a = max(aa * n[i] * (1 - n[i]), 10^-15)
+            for k = 1:nv
+                dfi_dgamma[i, k] = alpha * a^(alpha - 1) * aa * (1 - 2 * n[i]) * dn_dgamma[i, k]
+            end
+        end
+    elseif ista == 3
+        fi = sqrt.(fi)
+        for i = no1+1:nbf5
+            a = max(fi[i], 10^-15)
+            for k = 1:nv
+                dfi_dgamma[i, k] = 1 / (2 * a) * (1 - 2 * n[i]) * dn_dgamma[i, k] * exp(-(n[i] - 0.5)^2)
+                dfi_dgamma[i, k] += - fi[i] * 2 * (n[i] - 0.5) * dn_dgamma[i, k] * exp(-(n[i] - 0.5)^2)
+            end
+        end
+        fi = fi .* exp.( - (n .- 0.5) .^2 )
     end
-
 
     # Interpair Electron correlation #
 
     @tullio Dcj12r[i, j, k] := 2 * dn_dgamma[i, k] * n[j]
     @tullio Dck12r[i, j, k] := dn_dgamma[i, k] * n[j]
 
-    Dck12r_beta_cwo = view(Dck12r, no1+1:nbeta, nalpha+1:nbf5, 1:nv)
-    Dck12r_cwo_beta = view(Dck12r, nalpha+1:nbf5, no1+1:nbeta, 1:nv)
-    Dck12r_cwo_cwo = view(Dck12r, nalpha+1:nbf5, nalpha+1:nbf5, 1:nv)
-    fi_beta = view(fi, no1+1:nbeta)
-    fi_cwo = view(fi, nalpha+1:nbf5)
-    dfi_beta = view(dfi_dgamma, no1+1:nbeta, 1:nv)
-    dfi_cwo = view(dfi_dgamma, nalpha+1:nbf5, 1:nv)
-    @tullio Dck12r_beta_cwo[i, j, k] += dfi_beta[i, k] * fi_cwo[j]
-    @tullio Dck12r_cwo_beta[i, j, k] += fi_beta[j] * dfi_cwo[i, k]
-    @tullio Dck12r_cwo_cwo[i, j, k] += fi_cwo[j] * dfi_cwo[i, k]
-
-    if nsoc > 0
-        Dck12r_beta_alpha = view(Dck12r, no1+1:nbeta, nbeta+1:nalpha, 1:nv)
-        Dck12r_cwo_alpha = view(Dck12r, nalpha+1:nbf5, nbeta+1:nalpha, 1:nv)
+    if ista==0
+        Dck12r_beta_cwo = view(Dck12r, no1+1:nbeta, nalpha+1:nbf5, 1:nv)
+        Dck12r_cwo_beta = view(Dck12r, nalpha+1:nbf5, no1+1:nbeta, 1:nv)
+        Dck12r_cwo_cwo = view(Dck12r, nalpha+1:nbf5, nalpha+1:nbf5, 1:nv)
+        fi_beta = view(fi, no1+1:nbeta)
+        fi_cwo = view(fi, nalpha+1:nbf5)
+        dfi_beta = view(dfi_dgamma, no1+1:nbeta, 1:nv)
         dfi_cwo = view(dfi_dgamma, nalpha+1:nbf5, 1:nv)
-        @tullio Dck12r_beta_alpha[i, j, k] += 0.5 * dfi_beta[i, k] * 0.5
-        @tullio Dck12r_cwo_alpha[i, j, k] += dfi_cwo[i, k] * 0.5
-    end
+        @tullio Dck12r_beta_cwo[i, j, k] += dfi_beta[i, k] * fi_cwo[j]
+        @tullio Dck12r_cwo_beta[i, j, k] += fi_beta[j] * dfi_cwo[i, k]
+        @tullio Dck12r_cwo_cwo[i, j, k] += fi_cwo[j] * dfi_cwo[i, k]
 
-    if nsoc > 1
-        Dck12r[nbeta+1:nalpha, nbeta+1:nalpha, 1:nv] .= 0.0
+        if nsoc > 0
+            Dck12r_beta_alpha = view(Dck12r, no1+1:nbeta, nbeta+1:nalpha, 1:nv)
+            Dck12r_cwo_alpha = view(Dck12r, nalpha+1:nbf5, nbeta+1:nalpha, 1:nv)
+            dfi_cwo = view(dfi_dgamma, nalpha+1:nbf5, 1:nv)
+            @tullio Dck12r_beta_alpha[i, j, k] += 0.5 * dfi_beta[i, k] * 0.5
+            @tullio Dck12r_cwo_alpha[i, j, k] += dfi_cwo[i, k] * 0.5
+        end
+
+        if nsoc > 1
+            Dck12r[nbeta+1:nalpha, nbeta+1:nalpha, 1:nv] .= 0.0
+        end
+    elseif ista>0
+        @tullio Dck12r[i, j, k] := dn_dgamma[i, k] * n[j] + dfi_dgamma[i, k] * fi[j]
+        Dck12r_beta_cwo = view(Dck12r, no1+1:nbeta, nalpha+1:nbf5, 1:nv)
+        Dck12r_cwo_beta = view(Dck12r, nalpha+1:nbf5, no1+1:nbeta, 1:nv)
+        Dck12r_cwo_cwo = view(Dck12r, nalpha+1:nbf5, nalpha+1:nbf5, 1:nv)
+        if nsoc > 1
+            Dck12r[nbeta+1:nalpha, nbeta+1:nalpha, 1:nv] .= 0.0
+        end
     end
 
     n_d12_beta = view(n_d12, no1+1:nbeta)

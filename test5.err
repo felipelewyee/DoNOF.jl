@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/software/eb2024/easybuild/extra/bin/software_subdir.py", line 55, in <module>
+    distro = platform.linux_distribution()[0].replace(" ", "").lower()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'platform' has no attribute 'linux_distribution'
+cp: cannot stat 'test5.jld2': No such file or directory
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** STEP 159746.0 ON nagpu02 CANCELLED AT 2025-05-23T16:31:41 ***
+slurmstepd: error: *** JOB 159746 ON nagpu02 CANCELLED AT 2025-05-23T16:31:41 ***

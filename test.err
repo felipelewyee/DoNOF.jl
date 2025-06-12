@@ -1,0 +1,252 @@
+Traceback (most recent call last):
+  File "/software/eb2024/easybuild/extra/bin/software_subdir.py", line 55, in <module>
+    distro = platform.linux_distribution()[0].replace(" ", "").lower()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'platform' has no attribute 'linux_distribution'
+cp: cannot stat 'test.jld2': No such file or directory
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** STEP 159741.0 ON na18 CANCELLED AT 2025-05-23T16:31:41 ***
+slurmstepd: error: *** JOB 159741 ON na18 CANCELLED AT 2025-05-23T16:31:41 ***
+
+[1010324] signal 15: Terminated
+in expression starting at /scratch/pobleyef/159741/test.jl:73
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:148
+start_thread at /lib64/libpthread.so.0 (unknown line)
+clone at /lib64/libc.so.6 (unknown line)
+unknown function (ip: (nil))
+pthread_cond_wait at /lib64/libpthread.so.0 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/tester-amdci5-12/julialang/julia-release-1-dot-11/src/scheduler.c:584
+poptask at ./task.jl:1012
+wait at ./task.jl:1021
+task_done_hook at ./task.jl:694
