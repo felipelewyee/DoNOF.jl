@@ -37,10 +37,10 @@ julia example.jl > example.out
 
 > [!TIP]
 > **Available functionals**
-> - p.ipnof = 9 (GNOFm)
+> - p.ipnof = 8 (GNOF) + p.ista = 1 (GNOFm)
 > - p.ipnof = 8 (GNOF)
 > - p.ipnof = 7 (PNOF7)
-> - p.ipnof = 7 + p.ista=1 (PNOF7s)
+> - p.ipnof = 7 + p.ista = 1 (PNOF7s)
 > - p.ipnof = 5 (PNOF5)
 > - p.ipnof = 4 (PNOF4)
 
