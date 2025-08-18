@@ -465,6 +465,7 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
 
     # ista = 0 GNOF
     # ista = 1 GNOFm (with N<F static interpair interactions)
+    # ista = 2 GNOFa (with N<F static interpair interactions and phi = 0.9 sqrt(n*(1-n)) )
     # ista = 2 GNOFmsta (with N<F static interpair interactions and phi = a (n*(1-n))^0.55 )
     # ista = 3 GNOFmodulated (with N<F static interpair interactions and phi = exp(-(n-0.5)^2) sqrt(n(1-n)) )
 
@@ -495,16 +496,16 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
     if ista == 0 || ista == 1
         fi = sqrt.(fi)
     elseif ista == 2
+        alpha = 0.9
+	    fi = alpha * sqrt.(fi)
+    elseif ista == 3
         alpha = 0.55
         aa = 2.0^(2.0*alpha-1)
         aa = aa ^ (1/alpha)
         fi = aa * fi
         fi = fi .^ alpha
-    elseif ista == 3
-	fi = sqrt.(fi) .* exp.( - (n .- 0.5) .^2 )
     elseif ista == 4
-	alpha = 0.9
-	fi = alpha * sqrt.(fi)
+	    fi = sqrt.(fi) .* exp.( - (n .- 0.5) .^2 )
     end
 
     # Interpair Electron correlation #
@@ -632,6 +633,15 @@ function der_CJCKD8(
             end
         end
     elseif ista == 2
+	    alpha = 0.9
+        fi = alpha * sqrt.(fi)
+        for i = no1+1:nbf5
+            a = max(fi[i], 10^-15)
+            for k = 1:nv
+                dfi_dgamma[i, k] = alpha^2 / (2 * a) * (1 - 2 * n[i]) * dn_dgamma[i, k]
+            end
+        end	
+    elseif ista == 3
         alpha = 0.55
         aa = 2.0^(2.0*alpha-1)
         aa = aa ^ (1/alpha)
@@ -643,7 +653,7 @@ function der_CJCKD8(
                 dfi_dgamma[i, k] = alpha * a^(alpha - 1) * aa * (1 - 2 * n[i]) * dn_dgamma[i, k]
             end
         end
-    elseif ista == 3
+    elseif ista == 4
         fi = sqrt.(fi)
         for i = no1+1:nbf5
             a = max(fi[i], 10^-15)
@@ -653,15 +663,6 @@ function der_CJCKD8(
             end
         end
         fi = fi .* exp.( - (n .- 0.5) .^2 )
-    elseif ista == 4
-	alpha = 0.9
-        fi = alpha * sqrt.(fi)
-        for i = no1+1:nbf5
-            a = max(fi[i], 10^-15)
-            for k = 1:nv
-                dfi_dgamma[i, k] = alpha^2 / (2 * a) * (1 - 2 * n[i]) * dn_dgamma[i, k]
-            end
-        end
     end
 
     # Interpair Electron correlation #
