@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/software/eb2024/easybuild/extra/bin/software_subdir.py", line 55, in <module>
-    distro = platform.linux_distribution()[0].replace(" ", "").lower()
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: module 'platform' has no attribute 'linux_distribution'
-real 7226.45
-user 0.00
-sys 0.00

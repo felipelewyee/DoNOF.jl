@@ -474,6 +474,11 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
     #h_cut = p.h_cut#0.02*sqrt(2.0)
     n_d = zeros(nbf5)
 
+    c = 1.0
+    if ista == 5
+        c = 0.8
+    end
+
     for i = 1:ndoc
         idx = no1 + i
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
@@ -483,7 +488,7 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
         h = 1.0 - n[idx]
         coc = h / h_cut
         arg = -coc^2
-        F = exp(arg)  # ! Hd/Hole
+        F = c*exp(arg)  # ! Hd/Hole
         n_d[idx] = n[idx] * F
         n_d[ll:ndoc:ul] = n[ll:ndoc:ul] * F  # ROd = RO*Hd/Hole
 
@@ -493,11 +498,11 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
     fi = n .* (1 .- n)
     fi[fi.<=0] .= 0
 
-    if ista == 0 || ista == 1
+    if ista == 0 || ista == 1 || ista == 5
         fi = sqrt.(fi)
     elseif ista == 2
         alpha = 0.9
-	    fi = alpha * sqrt.(fi)
+	fi = alpha * sqrt.(fi)
     elseif ista == 3
         alpha = 0.55
         aa = 2.0^(2.0*alpha-1)
@@ -595,6 +600,10 @@ function der_CJCKD8(
     dn_d_dgamma = zeros(nbf5, nv)
     dn_d12_dgamma = zeros(nbf5, nv)
 
+    c = 1.0
+    if ista == 5
+        c = 0.8
+    end
     for i = 1:ndoc
         idx = no1 + i
         # inicio y fin de los orbitales acoplados a los fuertemente ocupados
@@ -604,7 +613,7 @@ function der_CJCKD8(
         h_idx = 1.0 - n[idx]
         coc = h_idx / h_cut
         arg = -coc^2
-        F_idx = exp(arg)                # Hd/Hole
+        F_idx = c * exp(arg)                # Hd/Hole
         n_d[idx] = n[idx] * F_idx
         n_d[ll:ndoc:ul] = n[ll:ndoc:ul] * F_idx      # n_d = RO*Hd/Hole
         dn_d_dgamma[idx, 1:nv] .=
@@ -624,7 +633,7 @@ function der_CJCKD8(
     fi[fi.<=0] .= 0
 
     dfi_dgamma = zeros(nbf5, nv)
-    if ista == 0 || ista == 1
+    if ista == 0 || ista == 1 || ista == 5
         fi = sqrt.(fi)
         for i = no1+1:nbf5
         a = max(fi[i], 10^-15)
