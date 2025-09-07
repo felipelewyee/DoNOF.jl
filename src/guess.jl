@@ -107,40 +107,6 @@ end
 
 function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
 
-    Cnew = zeros(p.nbf, p.nbf)
-
-    if (p.spherical)
-        println("Warning: Currently DoNOF only support cartesian functions.")
-    else
-        i = 0
-        for basis in bset.basis
-            l = basis.l
-            ori = trunc(Int, round((l + 1) * (l + 2) / 2))
-            if l == 2
-                Cnew[i+1, 1:end] = C[i+1, 1:end]
-                Cnew[i+4, 1:end] = C[i+2, 1:end]
-                Cnew[i+5, 1:end] = C[i+3, 1:end]
-                Cnew[i+2, 1:end] = C[i+4, 1:end]
-                Cnew[i+6, 1:end] = C[i+5, 1:end]
-                Cnew[i+3, 1:end] = C[i+6, 1:end]
-            elseif l == 3
-                Cnew[i+1, 1:end] = C[i+1, 1:end]
-                Cnew[i+4, 1:end] = C[i+2, 1:end]
-                Cnew[i+5, 1:end] = C[i+3, 1:end]
-                Cnew[i+6, 1:end] = C[i+4, 1:end]
-                Cnew[i+10, 1:end] = C[i+5, 1:end]
-                Cnew[i+8, 1:end] = C[i+6, 1:end]
-                Cnew[i+2, 1:end] = C[i+7, 1:end]
-                Cnew[i+7, 1:end] = C[i+8, 1:end]
-                Cnew[i+9, 1:end] = C[i+9, 1:end]
-                Cnew[i+2, 1:end] = C[i+10, 1:end]
-            else
-                Cnew[i+1:i+ori, 1:end] = C[i+1:i+ori, 1:end]
-            end
-            i += ori
-        end
-    end
-
     f = open(p.title * ".gcf", "w")
     for i = 1:p.nbf5
         @printf(f, "%6d %30.16f\n", i, n[i])
@@ -155,7 +121,7 @@ function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
     @printf(f, "%30.16f\n", sumsl)
     for i = 1:p.nbf
         for j = 1:p.nbf
-            @printf(f, "%6d %30.16f\n", j, Cnew[j, i])
+            @printf(f, "%6d %30.16f\n", j, C[j, i])
         end
     end
     for i = 1:p.nbf
@@ -178,6 +144,40 @@ function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
     end
 
     close(f)
+
+end
+
+function read_from_DoNOFsw(p, bset)
+
+    f = open(p.title * ".gcf", "r")
+    n = zeros(p.nbf5)
+    for i = 1:p.nbf5
+        line = readline(f)
+        j, val = split(line)
+        n[i] = parse(Float64, val)
+    end
+    for i = p.nbf5+1:p.nbf
+        line = readline(f)
+    end
+    sumsl = readline(f)
+    C = zeros(p.nbf, p.nbf)
+    for i = 1:p.nbf
+        for j = 1:p.nbf
+            line = readline(f)
+            k, val = split(line)
+            C[j,i] = parse(Float64, val)
+        end
+    end
+    for i = 1:p.nbf
+        line = readline(f)
+    end
+    for i = 1:p.nbf
+        line = readline(f)
+    end
+
+    close(f)
+
+    return C,n
 
 end
 
