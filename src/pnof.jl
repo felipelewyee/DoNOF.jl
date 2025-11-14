@@ -465,7 +465,7 @@ function CJCKD8(n, no1, ndoc, nsoc, nbeta, nalpha, ndns, ncwo, MSpin, h_cut, ist
 
     # ista = 0 GNOF
     # ista = 1 GNOFm (with N<F static interpair interactions)
-    # ista = 2 GNOFa (with N<F static interpair interactions and phi = 0.9 sqrt(n*(1-n)) )
+    # ista = 2 GNOFs (with N<F static interpair interactions and phi = 0.9 sqrt(n*(1-n)) )
     # ista = 2 GNOFmsta (with N<F static interpair interactions and phi = a (n*(1-n))^0.55 )
     # ista = 3 GNOFmodulated (with N<F static interpair interactions and phi = exp(-(n-0.5)^2) sqrt(n(1-n)) )
 
@@ -1554,7 +1554,11 @@ function compute_2RDM(pp, n)
     if (pp.ipnof == 7 || pp.ipnof == 8)
         fi = n .* (1 .- n)
         fi[fi.<=0] .= 0
-        fi = sqrt.(fi)
+	if (pp.ista == 2)
+            fi = 0.9 * sqrt.(fi)
+	else
+            fi = sqrt.(fi)
+	end
         Pi_s = fi .* fi'
         # Intrapair Electron Correlation
         for l = 1:pp.ndoc
@@ -1579,7 +1583,7 @@ function compute_2RDM(pp, n)
 
         @tullio Dab[p, q, r, t] += -inter2[p, q] * Id[p, t] * Id[q, r]
 
-        if (pp.ipnof == 8)
+        if (pp.ipnof == 8 && pp.ista==0)
             Pi_s[1:pp.nbeta, 1:pp.nbeta] .= 0
             Pi_s[1:pp.nbeta, pp.nbeta+1:pp.nalpha] *= 0.5
             Pi_s[pp.nbeta+1:pp.nalpha, 1:pp.nbeta] *= 0.5
@@ -1589,7 +1593,7 @@ function compute_2RDM(pp, n)
 
         if (pp.ipnof == 8)
 
-            h_cut = 0.02 * sqrt(2.0)
+            h_cut = pp.h_cut
             n_d = zeros(size(n)[1])
 
             for i = 1:pp.ndoc

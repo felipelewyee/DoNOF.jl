@@ -303,7 +303,7 @@ function energy(
     end
 
     if (do_erpa)
-        erpa(n, C, H, I, b_mnl, E_nuc, E, p)
+        erpa(n, C, H, I, E_nuc, E, p)
     end
 
     if (do_translate_to_donofsw)

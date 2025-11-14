@@ -1468,14 +1468,15 @@ function build_A_from_D(h, n_nbf5, I_MO, pp)
 
 end
 
-function build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
+function build_A_from_pnof(n, C, H, I_AO, pp)
+
 
     n_nbf5 = view(n, 1:pp.nbf5)
     C_nbf5 = view(C, 1:pp.nbf, 1:pp.nbf5)
     @tullio h_nbf5[m, j] := H[m, n] * C_nbf5[n, j]
     @tullio h[i, j] := C_nbf5[m, i] * h_nbf5[m, j]
 
-    I_MO = compute_eris_full(b_mnl, I_AO, C, pp.nbf5)
+    I_MO = compute_eris_full(I_AO, C, pp.nbf5)
 
     A = zeros(pp.nbf5, pp.nbf5, pp.nbf5, pp.nbf5)
     Id = 1.0 * Matrix(I, pp.nbf5, pp.nbf5)
@@ -1562,10 +1563,16 @@ function build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
 
     ######################
 
-    if (pp.ipnof == 7 || pp.ipnof == 8 || pp.ipnof == 9)
+    if (pp.ipnof == 7 || pp.ipnof == 8)
+
         fi = n .* (1 .- n)
         fi[fi.<=0] .= 0
-        fi = sqrt.(fi)
+        if(pp.ipnof == 8 && pp.ista == 2)
+            fi = 0.9 * sqrt.(fi)
+	else
+            fi = sqrt.(fi)
+        end
+
         Pi_s = fi .* fi'
         # Intrapair Electron Correlation
         for l = 1:pp.ndoc
@@ -1604,7 +1611,7 @@ function build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
         @tullio tmp[s, q] := I_MO[s, u, u, q] * inter2[s, u]#*Id[w,u]*Id[s,t]#Dab[w,s,t,u]
         @tullio A[r, s, p, q] += Id[p, r] * tmp[s, q]
 
-        if (pp.ipnof == 8)
+        if (pp.ipnof == 8 && pp.ista==0)
             Pi_s[1:pp.nbeta, 1:pp.nbeta] .= 0
             Pi_s[1:pp.nbeta, pp.nbeta+1:pp.nalpha] *= 0.5
             Pi_s[pp.nbeta+1:pp.nalpha, 1:pp.nbeta] *= 0.5
@@ -1625,9 +1632,9 @@ function build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
         @tullio tmp[s, q] := I_MO[s, u, q, u] * Pi_s[s, u]#*Id[w,s]*Id[t,u]#Dab[w,s,t,u]
         @tullio A[r, s, p, q] += Id[p, r] * tmp[s, q]
 
-        if (pp.ipnof == 8 || pp.ipnof == 9)
+        if (pp.ipnof == 8)
 
-            h_cut = 0.02 * sqrt(2.0)
+            h_cut = pp.h_cut
             n_d = zeros(size(n)[1])
 
             for i = 1:pp.ndoc
@@ -1725,7 +1732,7 @@ function build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
 
 end
 
-function erpa(n, C, H, I_AO, b_mnl, E_nuc, E_elec, pp)
+function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
 
     println("\n---------------")
     println(" ERPA Analysis")
@@ -1737,7 +1744,7 @@ function erpa(n, C, H, I_AO, b_mnl, E_nuc, E_elec, pp)
     println("Building A")
     flush(stdout)
 
-    A = build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
+    A = build_A_from_pnof(n, C, H, I_AO, pp)
     GC.gc()
 
     println("Building M")
@@ -1894,7 +1901,7 @@ function erpa(n, C, H, I_AO, b_mnl, E_nuc, E_elec, pp)
 
     println("Building A")
     flush(stdout)
-    A = build_A_from_pnof(n, C, H, b_mnl, I_AO, pp)
+    A = build_A_from_pnof(n, C, H, I_AO, pp)
     GC.gc()
 
     M = build_M_ERPA2(pp.nbf5, A, c)
