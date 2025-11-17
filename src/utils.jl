@@ -510,20 +510,14 @@ function n_to_gammas_softmax(n, p)
         ul = ll + p.ndoc * (p.ncwo - 1)
         n_pi = @view n[ll:p.ndoc:ul]
 
-        llg = p.ndoc + (p.ndoc - i) + 1
+        llg = (p.ndoc - i) + 1
         ulg = llg + p.ndoc * (p.ncwo - 1)
         gamma_pi = @view gamma[llg:p.ndoc:ulg]
 
-        A = zeros(p.ncwo, p.ncwo)
-        b = zeros(p.ncwo)
-
         for j = 1:p.ncwo
-            A[j, :] .= n_pi[j]
-            A[j, j] = n_pi[j] - 1
-            b[j] = -n_pi[j]
+            gamma_pi[j] = log(max(n_pi[j],1e-16)) - log(n[i])
         end
 
-        gamma_pi .= log.(A \ b)
     end
 
     return gamma
@@ -556,33 +550,37 @@ end
 function order_occupations_softmax(old_C, old_gamma, p)
 
     C = copy(old_C)
-    gamma = zeros(p.nv)
+    gamma = copy(old_gamma)
 
-    #Sort ndoc subspaces
-    gamma_tmp = zeros(1 + p.ncwo)
-    C_tmp = zeros(p.nbf, 1 + p.ncwo)
-    for i = 1:p.ndoc
-        old_ll = p.no1 + p.ndns + (p.ndoc - i) + 1
-        old_ul = old_ll + p.ndoc * (p.ncwo - 1)
+    if any(gamma .> 0)
+        #Sort ndoc subspaces
+        old_n, dn_dgamma = ocupacion_softmax(old_gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin)
+        n = similar(old_n)
+        n_tmp = zeros(1 + p.ncwo)
+        C_tmp = zeros(p.nbf, 1 + p.ncwo)
+        for i = 1:p.ndoc
+            old_ll = p.no1 + p.ndns + (p.ndoc - i) + 1
+            old_ul = old_ll + p.ndoc * (p.ncwo - 1)
 
-        C_tmp[:, 1] = old_C[:, p.no1+i]
-        C_tmp[:, 2:end] = old_C[:, old_ll:p.ndoc:old_ul]
+            C_tmp[:, 1] = old_C[:, p.no1+i]
+            C_tmp[:, 2:end] = old_C[:, old_ll:p.ndoc:old_ul]
 
-        old_ll_x = p.ndoc + (p.ndoc - i) + 1
-        old_ul_x = old_ll_x + p.ndoc * (p.ncwo - 1)
+            old_ll_x = p.ndoc + (p.ndoc - i) + 1
+            old_ul_x = old_ll_x + p.ndoc * (p.ncwo - 1)
 
-        gamma_tmp[1] = old_gamma[i]
-        gamma_tmp[2:end] = old_gamma[old_ll_x:p.ndoc:old_ul_x]
+            n_tmp[1] = old_n[i]
+            n_tmp[2:end] = old_n[old_ll_x:p.ndoc:old_ul_x]
 
-        sort_idx = sortperm(gamma_tmp)[end:-1:1]
-        gamma_tmp = gamma_tmp[sort_idx]
-        C_tmp = C_tmp[:, sort_idx]
+            sort_idx = sortperm(n_tmp)[end:-1:1]
+            n_tmp = n_tmp[sort_idx]
+            C_tmp = C_tmp[:, sort_idx]
 
-        gamma[i] = gamma_tmp[1]
-        gamma[old_ll_x:p.ndoc:old_ul_x] = gamma_tmp[2:end]
-        C[:, p.no1+i] = C_tmp[:, 1]
-        C[:, old_ll:p.ndoc:old_ul] = C_tmp[:, 2:end]
+            n[i] = n_tmp[1]
+            n[old_ll_x:p.ndoc:old_ul_x] = n_tmp[2:end]
+            C[:, p.no1+i] = C_tmp[:, 1]
+            C[:, old_ll:p.ndoc:old_ul] = C_tmp[:, 2:end]
+        end
+	gamma = n_to_gammas_softmax(n, p)
     end
-
     return C, gamma
 end

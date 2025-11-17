@@ -199,15 +199,14 @@ end
 
 function guess_gamma_softmax(ndoc, ncwo)
 
-    nv = (ncwo + 1) * ndoc
+    nv = ncwo * ndoc
     γ = zeros(nv)
     for i = 1:ndoc
-        γ[i] = log(0.999)
-        ll = ndoc + (ndoc - i) + 1
+        ll = (ndoc - i) + 1
         ul = ll + ndoc * (ncwo - 1)
         γ_coupled = @view γ[ll:ndoc:ul]
         for j = 1:ncwo
-            γ_coupled[j] = log(0.001 / ncwo)
+            γ_coupled[j] = log(max(0.001 / ncwo, 1e-16)) - log(0.999)
         end
     end
     return γ

@@ -1112,28 +1112,23 @@ function ocupacion_softmax(gamma, no1, ndoc, nalpha, nv, nbf5, ndns, ncwo, HighS
         ul = ll + ndoc * (ncwo - 1)
         n_pi = @view n[ll:ndoc:ul]
 
-        llg = ndoc + (ndoc - i) + 1
+        llg = (ndoc - i) + 1
         ulg = llg + ndoc * (ncwo - 1)
         exp_gamma_pi = @view exp_gamma[llg:ndoc:ulg]
 
-        sum_exp = exp_gamma[i] + sum(exp_gamma_pi)
+        sum_exp = sum(exp_gamma_pi)
 
-        n[i] = exp_gamma[i] / sum_exp
-        n_pi .= exp_gamma_pi ./ sum_exp
-
-        dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul, llg:ndoc:ulg]
-        dn_pi_dgamma_pi .= -exp_gamma_pi * exp_gamma_pi' ./ sum_exp^2
+	n[i] = 1 / (1 + sum_exp)
+	n_pi .= exp_gamma_pi ./ (1 + sum_exp)
 
         dn_g_dgamma_pi = @view dn_dgamma[i, llg:ndoc:ulg]
-        dn_g_dgamma_pi .= -exp_gamma[i] .* exp_gamma_pi ./ sum_exp^2
+	dn_g_dgamma_pi .= - exp_gamma_pi ./ (1 + sum_exp)^2
 
-        dn_pi_dgamma_g = @view dn_dgamma[ll:ndoc:ul, i]
-        dn_pi_dgamma_g .= -exp_gamma[i] .* exp_gamma_pi ./ sum_exp^2
-
-        dn_dgamma[i, i] = exp_gamma[i] * (sum_exp - exp_gamma[i]) / sum_exp^2
         dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul, llg:ndoc:ulg]
-        dn_pi_dgamma_pi[diagind(dn_pi_dgamma_pi)] .=
-            exp_gamma_pi .* (sum_exp .- exp_gamma_pi) ./ sum_exp^2
+	dn_pi_dgamma_pi .= -exp_gamma_pi * exp_gamma_pi' ./ (1 + sum_exp)^2
+
+        dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul, llg:ndoc:ulg]
+	dn_pi_dgamma_pi[diagind(dn_pi_dgamma_pi)] += exp_gamma_pi ./ (1 + sum_exp)
     end
 
     return n, dn_dgamma

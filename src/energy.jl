@@ -83,7 +83,6 @@ function energy(
         if p.occ_method == "Trigonometric"
             gamma = guess_gamma_trigonometric(p.ndoc, p.ncwo)
         elseif p.occ_method == "Softmax"
-            p.nv = p.nbf5 - p.no1 - p.nsoc
             gamma = guess_gamma_softmax(p.ndoc, p.ncwo)
         elseif p.occ_method == "EBI"
             p.nbf5 = p.nbf
@@ -95,7 +94,6 @@ function energy(
         if p.occ_method == "Trigonometric"
             gamma = n_to_gammas_trigonometric(n, p)
         elseif p.occ_method == "Softmax"
-            p.nv = p.nbf5 - p.no1 - p.nsoc
             gamma = n_to_gammas_softmax(n, p)
         elseif p.occ_method == "EBI"
             p.nbf5 = p.nbf
