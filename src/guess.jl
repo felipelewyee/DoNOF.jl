@@ -69,7 +69,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
     end
 
     #Sort ndoc subspaces
-    elag_diag = diag(elag)[p.no1+1:p.ndoc]
+    elag_diag = diag(elag)[(p.no1+1):p.ndoc]
     sort_idx = sortperm(elag_diag)
     C[1:p.nbf, 1:p.no1] = old_C[1:p.nbf, 1:p.no1]
     n[1:p.no1] = old_n[1:p.no1]
@@ -88,7 +88,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
     end
 
     #Sort nsoc orbitals
-    elag_diag = diag(elag)[p.no1+p.ndoc+1:p.no1+p.ndns]
+    elag_diag = diag(elag)[(p.no1+p.ndoc+1):(p.no1+p.ndns)]
     sort_idx = sortperm(elag_diag)
     for i = 1:p.nsoc
         i_old = sort_idx[i]
@@ -96,7 +96,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
         n[p.no1+p.ndoc+i] = old_n[p.no1+p.ndoc+i_old]
     end
 
-    C[1:p.nbf, p.nbf5+1:p.nbf] = old_C[1:p.nbf, p.nbf5+1:p.nbf]
+    C[1:p.nbf, (p.nbf5+1):p.nbf] = old_C[1:p.nbf, (p.nbf5+1):p.nbf]
 
     cj12, ck12 = PNOFi_selector(n, p)
     Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, cj12, ck12, p)
@@ -111,7 +111,7 @@ function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
     for i = 1:p.nbf5
         @printf(f, "%6d %30.16f\n", i, n[i])
     end
-    for i = p.nbf5+1:p.nbf
+    for i = (p.nbf5+1):p.nbf
         @printf(f, "%6d %30.16f\n", i, 0.0)
     end
     sumsl = p.nbeta
@@ -156,7 +156,7 @@ function read_from_DoNOFsw(p, bset)
         j, val = split(line)
         n[i] = parse(Float64, val)
     end
-    for i = p.nbf5+1:p.nbf
+    for i = (p.nbf5+1):p.nbf
         line = readline(f)
     end
     sumsl = readline(f)
@@ -165,7 +165,7 @@ function read_from_DoNOFsw(p, bset)
         for j = 1:p.nbf
             line = readline(f)
             k, val = split(line)
-            C[j,i] = parse(Float64, val)
+            C[j, i] = parse(Float64, val)
         end
     end
     for i = 1:p.nbf
@@ -177,7 +177,7 @@ function read_from_DoNOFsw(p, bset)
 
     close(f)
 
-    return C,n
+    return C, n
 
 end
 
@@ -190,7 +190,7 @@ function guess_gamma_trigonometric(ndoc, ncwo)
         ll = ndoc + (ndoc - i) + 1
         ul = ll + ndoc * (ncwo - 2)
         γ_coupled = @view γ[ll:ndoc:ul]
-        for j = 1:ncwo-1
+        for j = 1:(ncwo-1)
             γ_coupled[j] = asin(sqrt(1.0 / (ncwo - j + 1)))
         end
     end
@@ -224,7 +224,7 @@ function guess_gamma_ebi(ndoc, nbf)
         γ[i] = erfinv(2 * 0.999 - 1)
     end
     val = ndoc * (1.0 - 0.999)
-    for i = ndoc+1:nv
+    for i = (ndoc+1):nv
         γ[i] = erfinv(2 * val / nv - 1)
     end
     return γ

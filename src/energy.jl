@@ -237,14 +237,14 @@ function energy(
         for i = 1:p.nbeta
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
-        for i = p.nbeta+1:p.nalpha
+        for i = (p.nbeta+1):p.nalpha
             if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
             else
                 @printf(" %3i    %9.7f  %10.8f\n", i, n[i], elag[i, i])
             end
         end
-        for i = p.nalpha+1:p.nbf5
+        for i = (p.nalpha+1):p.nbf5
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
 
@@ -530,14 +530,14 @@ function energy2(
         for i = 1:p.nbeta
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
-        for i = p.nbeta+1:p.nalpha
+        for i = (p.nbeta+1):p.nalpha
             if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
             else
                 @printf(" %3i    %9.7f  %10.8f\n", i, n[i], elag[i, i])
             end
         end
-        for i = p.nalpha+1:p.nbf5
+        for i = (p.nalpha+1):p.nbf5
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
 

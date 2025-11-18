@@ -5,12 +5,12 @@ function hfidr(C, H, I, b_mnl, E_nuc, p; printmode = true)
 
     n = zeros((p.nbf5))
     n[1:p.nbeta] .= 1.0
-    n[p.nbeta+1:p.nalpha] .= 0.5
+    n[(p.nbeta+1):p.nalpha] .= 0.5
 
     @tullio cj12[i, j] := 2 * n[i] * n[j]
     @tullio ck12[i, j] := n[i] * n[j]
     if p.nsoc > 1
-        ck12[p.nbeta+1:p.nalpha, p.nbeta+1:p.nalpha] .*= 2
+        ck12[(p.nbeta+1):p.nalpha, (p.nbeta+1):p.nalpha] .*= 2
     end
 
     if (printmode)
@@ -265,7 +265,7 @@ function orbopt_demon(gamma, C, H, I, p)
     grads = zeros(p.nvar)
     nn = 1
     for i = 1:p.nbf5
-        for j = i+1:p.nbf
+        for j = (i+1):p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -293,7 +293,7 @@ function orbopt_demon(gamma, C, H, I, p)
         grads = zeros(p.nvar)
         nn = 1
         for i = 1:p.nbf5
-            for j = i+1:p.nbf
+            for j = (i+1):p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -366,7 +366,7 @@ function orbopt_adam(gamma, C, H, I, p)
     grads = zeros(p.nvar)
     nn = 1
     for i = 1:p.nbf5
-        for j = i+1:p.nbf
+        for j = (i+1):p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -391,7 +391,7 @@ function orbopt_adam(gamma, C, H, I, p)
         grads = zeros(p.nvar)
         nn = 1
         for i = 1:p.nbf5
-            for j = i+1:p.nbf
+            for j = (i+1):p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -463,7 +463,7 @@ function orbopt_adabelief(gamma, C, H, I, p)
     grads = zeros(p.nvar)
     nn = 1
     for i = 1:p.nbf5
-        for j = i+1:p.nbf
+        for j = (i+1):p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -488,7 +488,7 @@ function orbopt_adabelief(gamma, C, H, I, p)
         grads = zeros(p.nvar)
         nn = 1
         for i = 1:p.nbf5
-            for j = i+1:p.nbf
+            for j = (i+1):p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end
@@ -561,7 +561,7 @@ function orbopt_yogi(gamma, C, H, I, p)
     grads = zeros(p.nvar)
     nn = 1
     for i = 1:p.nbf5
-        for j = i+1:p.nbf
+        for j = (i+1):p.nbf
             grads[nn] = grad[i, j]
             nn += 1
         end
@@ -583,7 +583,7 @@ function orbopt_yogi(gamma, C, H, I, p)
         grads = zeros(p.nvar)
         nn = 1
         for i = 1:p.nbf5
-            for j = i+1:p.nbf
+            for j = (i+1):p.nbf
                 grads[nn] = grad[i, j]
                 nn += 1
             end

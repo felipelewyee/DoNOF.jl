@@ -8,39 +8,50 @@ function compute_integrals(bset, p)
     V = nuclear(bset)
     V = (V .+ V') ./ 2
     H = T + V
-    I= nothing
+    I = nothing
     println("Basis Set                                            = ", bset.name)
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
         I = ERI_2e4c(bset)
     else
-	aux = nothing
+        aux = nothing
         if p.spherical
-	    try
+            try
                 aux = BasisSet(bset.name * "-jkfit", bset.atoms)
-	    catch
+            catch
                 aux = BasisSet("def2-universal-jkfit", bset.atoms)
-	    end
+            end
         else
-	    try
-            aux =
-                BasisSet(bset.name * "-jkfit", bset.atoms, spherical = false, lib = :acsint)
-	    catch
-            aux =
-                BasisSet("def2-universal-jkfit", bset.atoms, spherical = false, lib = :acsint)
-	    end
+            try
+                aux = BasisSet(
+                    bset.name * "-jkfit",
+                    bset.atoms,
+                    spherical = false,
+                    lib = :acsint,
+                )
+            catch
+                aux = BasisSet(
+                    "def2-universal-jkfit",
+                    bset.atoms,
+                    spherical = false,
+                    lib = :acsint,
+                )
+            end
         end
         println("Auxiliary Basis Set                                  = ", aux.name)
-        println("Gaussian Type                                        = ", p.spherical ? "Spherical" : "Cartesian")
+        println(
+            "Gaussian Type                                        = ",
+            p.spherical ? "Spherical" : "Cartesian",
+        )
 
         G = ERI_2e2c(aux)
         G = (G .+ G') ./ 2
         I = ERI_2e3c(bset, aux)
         ext = Base.get_extension(@__MODULE__, :DoNOFGPUExt)
         if !isnothing(ext)
-            I = ext.Iaux_gpu(G,I)
+            I = ext.Iaux_gpu(G, I)
         else
-            I = Iaux(G,I)
+            I = Iaux(G, I)
         end
         p.nbfaux = size(I)[3]
     end
@@ -54,7 +65,7 @@ function compute_integrals(bset, p)
 
 end
 
-function Iaux(G::Matrix{Float64},I::Array{Float64,3})
+function Iaux(G::Matrix{Float64}, I::Array{Float64,3})
 
     nbf = size(I)[1]
     nbfaux = size(I)[3]
@@ -72,7 +83,7 @@ function Iaux(G::Matrix{Float64},I::Array{Float64,3})
     Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
 
     #@tullio I[m, n, l] := I[m, n, k] * Gmsqrt[k, l]
-    Threads.@threads for m in 1:nbf
+    Threads.@threads for m = 1:nbf
         I[m, :, :] = I[m, :, :] * Gmsqrt
     end
 
@@ -139,7 +150,14 @@ end
 
 #########################################
 
-function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, nbf::Int64, nbf5::Int64, nbfaux::Int64)
+function JKH_MO(
+    C::Matrix{Float64},
+    H::Matrix{Float64},
+    b_mnl::Array{Float64,3},
+    nbf::Int64,
+    nbf5::Int64,
+    nbfaux::Int64,
+)
 
     Cnbf5 = view(C, :, 1:nbf5)
 
@@ -162,7 +180,13 @@ function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3},
     return J_MO, K_MO, H_core
 end
 
-function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, I::Array{Float64,4}, nbf::Int64, nbf5::Int64)
+function JKH_MO(
+    C::Matrix{Float64},
+    H::Matrix{Float64},
+    I::Array{Float64,4},
+    nbf::Int64,
+    nbf5::Int64,
+)
 
 
     Cnbf5 = view(C, :, 1:nbf5)
@@ -195,7 +219,7 @@ end
 
 function computeDalpha_HF(C, I, b_mnl, p)
 
-    Calpha = view(C, :, p.nbeta+1:p.nalpha)
+    Calpha = view(C, :, (p.nbeta+1):p.nalpha)
     @tullio D[m, n] := Calpha[m, j] * Calpha[n, j]
 
     return D
@@ -238,8 +262,8 @@ end
 
 function iajb_Full(C, I, no1, nalpha, nbf, nbf5)
 
-    Cocc = view(C, :, no1+1:nalpha)
-    Ccwo = view(C, :, nalpha+1:nbf)
+    Cocc = view(C, :, (no1+1):nalpha)
+    Ccwo = view(C, :, (nalpha+1):nbf)
 
     @tullio iajb[i, a, j, b] :=
         ((Ccwo[n, a] * ((Cocc[m, i] * I[m, n, s, l]) * Cocc[s, j])) * Ccwo[l, b])

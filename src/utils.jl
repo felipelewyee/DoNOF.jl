@@ -1,4 +1,13 @@
-function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, cj12::Matrix{Float64}, ck12::Matrix{Float64}, nalpha::Int64, nbeta::Int64)
+function compute_Lagrange2(
+    C::Matrix{Float64},
+    n::Vector{Float64},
+    H::Matrix{Float64},
+    b_mnl::Array{Float64,3},
+    cj12::Matrix{Float64},
+    ck12::Matrix{Float64},
+    nalpha::Int64,
+    nbeta::Int64,
+)
 
     nbf = size(C)[1]
     nbfaux = size(b_mnl)[3]
@@ -13,19 +22,19 @@ function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Flo
     elag = zeros(nbf, nbf)
 
     n_beta = view(n, 1:nbeta)
-    n_alpha = view(n, nalpha+1:nbf5)
+    n_alpha = view(n, (nalpha+1):nbf5)
     Hmat_nbf5 = view(H_mat, 1:nbf, 1:nbf5)
     grad_nbf5 = view(elag, 1:nbf, 1:nbf5)
     grad_nbeta = view(elag, 1:nbf, 1:nbeta)
-    grad_nalpha = view(elag, 1:nbf, nalpha+1:nbf5)
+    grad_nalpha = view(elag, 1:nbf, (nalpha+1):nbf5)
 
     b_nbf_beta = view(b_MO, 1:nbf, 1:nbeta, 1:nbfaux)
-    b_nbf_alpha = view(b_MO, 1:nbf, nalpha+1:nbf5, 1:nbfaux)
+    b_nbf_alpha = view(b_MO, 1:nbf, (nalpha+1):nbf5, 1:nbfaux)
     b_nbeta_beta = view(b_MO, 1:nbeta, 1:nbeta, 1:nbfaux)
-    b_nalpha_alpha = view(b_MO, nalpha+1:nbf5, nalpha+1:nbf5, 1:nbfaux)
+    b_nalpha_alpha = view(b_MO, (nalpha+1):nbf5, (nalpha+1):nbf5, 1:nbfaux)
     b_nbf_nbf5 = view(b_MO, 1:nbf, 1:nbf5, 1:nbfaux)
     b_nbf5_nbf5 = view(b_MO, 1:nbf5, 1:nbf5, 1:nbfaux)
-    
+
     # 2ndH/dy_ab
     @tullio grad=false grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
 
@@ -44,13 +53,22 @@ function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Flo
     # -C^K_pq dK_pq/dy_ab 
     @tullio grad=false grad_nbf5[a, b] +=
         -ck12[b, q] * b_nbf_nbf5[a, q, k] * b_nbf5_nbf5[b, q, k]
-    
+
     return elag, H_mat
 
 end
 
 #for I_MO
-function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Float64}, I::Array{Float64,4}, cj12::Matrix{Float64}, ck12::Matrix{Float64}, nalpha::Int64, nbeta::Int64)
+function compute_Lagrange2(
+    C::Matrix{Float64},
+    n::Vector{Float64},
+    H::Matrix{Float64},
+    I::Array{Float64,4},
+    cj12::Matrix{Float64},
+    ck12::Matrix{Float64},
+    nalpha::Int64,
+    nbeta::Int64,
+)
 
     nbf = size(C)[1]
     nbf5 = size(n)[1]
@@ -66,21 +84,15 @@ function compute_Lagrange2(C::Matrix{Float64}, n::Vector{Float64}, H::Matrix{Flo
     elag = zeros(nbf, nbf)
 
     n_beta = view(n, 1:nbeta)
-    n_alpha = view(n, nalpha+1:nbf5)
+    n_alpha = view(n, (nalpha+1):nbf5)
     Hmat_nbf5 = view(H_mat, 1:nbf, 1:nbf5)
     grad_nbf5 = view(elag, 1:nbf, 1:nbf5)
     grad_nbeta = view(elag, 1:nbf, 1:nbeta)
-    grad_nalpha = view(elag, 1:nbf, nalpha+1:nbf5)
+    grad_nalpha = view(elag, 1:nbf, (nalpha+1):nbf5)
     I_nb_nb_nb = view(I_MO, 1:nbf, 1:nbeta, 1:nbeta, 1:nbeta)
-    I_na_na_na = view(
-        I_MO,
-        1:nbf,
-        nalpha+1:nbf5,
-        nalpha+1:nbf5,
-        nalpha+1:nbf5,
-    )
+    I_na_na_na = view(I_MO, 1:nbf, (nalpha+1):nbf5, (nalpha+1):nbf5, (nalpha+1):nbf5)
     I_nbf5_nbf5_nbf5 = view(I_MO, 1:nbf, 1:nbf5, 1:nbf5, 1:nbf5)
-    
+
 
     # 2ndH/dy_ab
     @tullio grad_nbf5[a, b] += n[b] * Hmat_nbf5[a, b]
@@ -137,22 +149,22 @@ function computeF_RC(J, K, n, H, cj12, ck12, p)
     @tullio F[i, m, s] += n[i] * H[m, s]
 
     # nJ
-    F_ini_beta = view(F, ini+1:p.nbeta, :, :)
-    n_ini_beta = view(n, ini+1:p.nbeta)
-    J_ini_beta = view(J, ini+1:p.nbeta, :, :)
+    F_ini_beta = view(F,((ini+1):p.nbeta),:,:)
+    n_ini_beta = view(n, (ini+1):p.nbeta)
+    J_ini_beta = view(J,((ini+1):p.nbeta),:,:)
     @tullio F_ini_beta[i, m, n] += n_ini_beta[i] * J_ini_beta[i, m, n]
-    F_alpha_nbf5 = view(F, p.nalpha+1:p.nbf5, :, :)
-    n_alpha_nbf5 = view(n, p.nalpha+1:p.nbf5)
-    J_alpha_nbf5 = view(J, p.nalpha+1:p.nbf5, :, :)
+    F_alpha_nbf5 = view(F,((p.nalpha+1):p.nbf5),:,:)
+    n_alpha_nbf5 = view(n, (p.nalpha+1):p.nbf5)
+    J_alpha_nbf5 = view(J,((p.nalpha+1):p.nbf5),:,:)
     @tullio F_alpha_nbf5[i, m, n] += n_alpha_nbf5[i] * J_alpha_nbf5[i, m, n]
 
     # C^J J
-    cj12_ini_nbf5 = view(cj12, ini+1:p.nbf5, ini+1:p.nbf5)
+    cj12_ini_nbf5 = view(cj12, (ini+1):p.nbf5, (ini+1):p.nbf5)
     cj12_ini_nbf5[diagind(cj12_ini_nbf5)] .= 0.0
     @tullio F[i, m, n] += cj12[i, j] * J[j, m, n]
 
     # -C^K K
-    ck12_ini_nbf5 = view(ck12, ini+1:p.nbf5, ini+1:p.nbf5)
+    ck12_ini_nbf5 = view(ck12, (ini+1):p.nbf5, (ini+1):p.nbf5)
     ck12_ini_nbf5[diagind(ck12_ini_nbf5)] .= 0.0
     @tullio F[i, m, n] += -ck12[i, j] * K[j, m, n]
 
@@ -185,16 +197,16 @@ function computeE_elec(H, C, n, elag, p)
     C_beta = view(C, :, 1:p.nbeta)
     @tullio E += n_beta[i] * C_beta[m, i] * H[m, n] * C_beta[n, i]
     if (!p.HighSpin)
-        n_beta_alpha = view(n, p.nbeta+1:p.nalpha)
-        C_beta_alpha = view(C, :, p.nbeta+1:p.nalpha)
+        n_beta_alpha = view(n, (p.nbeta+1):p.nalpha)
+        C_beta_alpha = view(C, :, (p.nbeta+1):p.nalpha)
         @tullio avx = false E +=
             n_beta_alpha[i] * C_beta_alpha[m, i] * H[m, n] * C_beta_alpha[n, i]
     elseif (p.HighSpin)
-        C_beta_alpha = view(C, :, p.nbeta+1:p.nalpha)
+        C_beta_alpha = view(C, :, (p.nbeta+1):p.nalpha)
         @tullio avx = false E += 0.5 * C_beta_alpha[m, i] * H[m, n] * C_beta_alpha[n, i]
     end
-    n_alpha_nbf5 = view(n, p.nalpha+1:p.nbf5)
-    C_alpha_nbf5 = view(C, :, p.nalpha+1:p.nbf5)
+    n_alpha_nbf5 = view(n, (p.nalpha+1):p.nbf5)
+    C_alpha_nbf5 = view(C, :, (p.nalpha+1):p.nbf5)
     @tullio E += n_alpha_nbf5[i] * C_alpha_nbf5[m, i] * H[m, n] * C_alpha_nbf5[n, i]
 
     return E
@@ -233,8 +245,8 @@ function fmiug_scaling(fmiug0, elag, i_ext, nzeros, nbf, noptorb)
     else
         @tullio fmiug[i, j] = (elag[i, j] - elag[j, i])
         fmiug = tril(fmiug, -1) + Transpose(tril(fmiug, -1))
-        for k = 0:nzeros+9
-            fmiug[10.0^(9-k).<abs.(fmiug).<10.0^(10-k)] .*= 0.1
+        for k = 0:(nzeros+9)
+            fmiug[10.0^(9-k) .< abs.(fmiug) .< 10.0^(10-k)] .*= 0.1
         end
         fmiug[diagind(fmiug)] .= fmiug0
     end
@@ -264,12 +276,12 @@ function fmiug_diis(fk, fmiug, idiis, bdiis, cdiis, maxdiff, p)
         cdiis = zeros(idiis + 1)
         cdiis[1:idiis] .= 0
         cdiis[idiis+1] .= -1
-        x = bdiis[1:idiis+1, 1:idiis+1] \ cdiis[1:idiis+1]
+        x = bdiis[1:(idiis+1), 1:(idiis+1)] \ cdiis[1:(idiis+1)]
 
         for i = 1:p.noptorb
             for j = 1:i
                 fmiug[i, j] = 0
-                for k = 1:idiis+1
+                for k = 1:(idiis+1)
                     fmiug[i, j] += x[k] * fk[k, i, j]
                 end
                 fmiug[j, i] = fmiug[i, j]
@@ -288,7 +300,7 @@ function compute_E_nuc(bset, p)
 
     E_nuc = 0.0
     for i = 1:p.natoms
-        for j = i+1:p.natoms
+        for j = (i+1):p.natoms
             E_nuc +=
                 bset.atoms[i].Z * bset.atoms[j].Z /
                 (norm(bset.atoms[i].xyz - bset.atoms[j].xyz) * 1.88973)
@@ -355,8 +367,8 @@ function Z_to_symbol(Z)
         52 => "Te",
         53 => "I",
         54 => "Xe",
-        55 => "Cs", 
-        56 => "Ba", 
+        55 => "Cs",
+        56 => "Ba",
         57 => "La",
         58 => "Ce",
         59 => "Pr",
@@ -372,19 +384,19 @@ function Z_to_symbol(Z)
         69 => "Tm",
         70 => "Yb",
         71 => "Lu",
-        72 => "Hf", 
-        73 => "Ta", 
-        74 => "W", 
-        75 => "Re", 
-        76 => "Os", 
-        77 => "Ir", 
-        78 => "Pt", 
-        79 => "Au", 
-        80 => "Hg", 
-        81 => "Tl", 
-        82 => "Pb", 
-        83 => "Bi", 
-        84 => "Po", 
+        72 => "Hf",
+        73 => "Ta",
+        74 => "W",
+        75 => "Re",
+        76 => "Os",
+        77 => "Ir",
+        78 => "Pt",
+        79 => "Au",
+        80 => "Hg",
+        81 => "Tl",
+        82 => "Pb",
+        83 => "Bi",
+        84 => "Po",
         85 => "At",
         86 => "Rn",
     )
@@ -448,7 +460,7 @@ function orthonormalize(C, S, p)
 
     for i = 1:size(Cnew2)[2]
         Cnew2[1:p.nbf, i] = Cnew2[1:p.nbf, i] / norm(Cnew2[1:p.nbf, i])
-        for j = i+1:size(Cnew2)[1]
+        for j = (i+1):size(Cnew2)[1]
             val = -sum(Cnew2[1:p.nbf, i] .* Cnew2[1:p.nbf, j])
             Cnew2[1:p.nbf, j] = Cnew2[1:p.nbf, j] + val * Cnew2[1:p.nbf, i]
         end
@@ -466,7 +478,7 @@ function rotate_orbital(y, C, p)
 
     n = 1
     for i = 1:p.nbf5
-        for j = i+1:p.nbf
+        for j = (i+1):p.nbf
             ynew[i, j] = y[n]
             ynew[j, i] = -y[n]
             n += 1
@@ -515,7 +527,7 @@ function n_to_gammas_softmax(n, p)
         gamma_pi = @view gamma[llg:p.ndoc:ulg]
 
         for j = 1:p.ncwo
-            gamma_pi[j] = log(max(n_pi[j],1e-16)) - log(n[i])
+            gamma_pi[j] = log(max(n_pi[j], 1e-16)) - log(n[i])
         end
 
     end
@@ -539,7 +551,7 @@ function n_to_gammas_trigonometric(n, p)
         ul_gamma = ll_gamma + p.ndoc * (p.ncwo - 2)
         gamma_pi = @view gamma[ll_gamma:p.ndoc:ul_gamma]
 
-        for j = 1:p.ncwo-1
+        for j = 1:(p.ncwo-1)
             gamma_pi[j] = asin(sqrt(n_pi[j] / prefactor))
             prefactor = prefactor * (cos(gamma_pi[j]))^2
         end
@@ -565,10 +577,10 @@ function order_occupations_softmax(old_C, old_gamma, p)
             old_ll_x = (p.ndoc - i) + 1
             old_ul_x = old_ll_x + p.ndoc * (p.ncwo - 1)
 
-	    gamma_tmp = vcat([0], gamma[old_ll_x:p.ndoc:old_ul_x])
+            gamma_tmp = vcat([0], gamma[old_ll_x:p.ndoc:old_ul_x])
             sort_idx = sortperm(gamma_tmp)[end:-1:1]
 
-	    gamma_tmp = gamma_tmp[sort_idx] .- maximum(gamma_tmp)
+            gamma_tmp = gamma_tmp[sort_idx] .- maximum(gamma_tmp)
             C_tmp = C_tmp[:, sort_idx]
 
             gamma[old_ll_x:p.ndoc:old_ul_x] = gamma_tmp[2:end]

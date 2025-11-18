@@ -3,8 +3,8 @@ function nofmp2(n, C, H, I, b_mnl, E_nuc, p, nofmp2strategy, tol)
     println(" NOF-MP2")
     println("=========")
 
-    occ = view(n, p.no1+1:p.nbf5)
-    vec = view(C, :, p.no1+1:p.nbf)
+    occ = view(n, (p.no1+1):p.nbf5)
+    vec = view(C, :, (p.no1+1):p.nbf)
     D = computeD_HF(C, I, b_mnl, p)
     if p.MSpin == 0
         if p.nsoc > 0
@@ -43,7 +43,7 @@ function nofmp2(n, C, H, I, b_mnl, E_nuc, p, nofmp2strategy, tol)
 
     @tullio F_MO[i, j] := vec[k, i] * F[k, l] * vec[l, j]
 
-    F_MO_act = view(F_MO, 1:p.nbf-p.no1, 1:p.nbf-p.no1)
+    F_MO_act = view(F_MO, 1:(p.nbf-p.no1), 1:(p.nbf-p.no1))
     @tullio eig[i] := F_MO_act[i, i]
     #eig = np.einsum("ii->i",F_MO[:p.nbf-p.no1,:p.nbf-p.no1])
 
@@ -53,10 +53,10 @@ function nofmp2(n, C, H, I, b_mnl, E_nuc, p, nofmp2strategy, tol)
     FI1 = ones(p.nbf - p.no1)
     FI2 = ones(p.nbf - p.no1)
 
-    FI1[1:p.nbf5-p.no1] = 1.0 .- (1.0 .- abs.(1.0 .- 2 * occ[1:p.nbf5-p.no1])) .^ 2
+    FI1[1:(p.nbf5-p.no1)] = 1.0 .- (1.0 .- abs.(1.0 .- 2 * occ[1:(p.nbf5-p.no1)])) .^ 2
 
-    FI2[p.nalpha-p.no1+1:p.nbf5-p.no1] =
-        abs.(1.0 .- 2 * occ[p.nalpha-p.no1+1:p.nbf5-p.no1]) .^ 2
+    FI2[(p.nalpha-p.no1+1):(p.nbf5-p.no1)] =
+        abs.(1.0 .- 2 * occ[(p.nalpha-p.no1+1):(p.nbf5-p.no1)]) .^ 2
 
     Tijab = CalTijab(iajb, F_MO, eig, FI1, FI2, p, nofmp2strategy, tol)
     ECd = 0
@@ -78,7 +78,7 @@ function nofmp2(n, C, H, I, b_mnl, E_nuc, p, nofmp2strategy, tol)
                         (k - 1) * p.ndns * p.ndns * p.nvir
                     ECd = ECd + Xijkl * (2 * Tijab[ijkl] - Tijab[ijlk])
                 end
-                for j = p.ndoc+1:p.ndns
+                for j = (p.ndoc+1):p.ndns
                     Xijkl = iajb[j, k, i, l]
                     ijkl =
                         i +
@@ -93,7 +93,7 @@ function nofmp2(n, C, H, I, b_mnl, E_nuc, p, nofmp2strategy, tol)
                     ECd = ECd + Xijkl * (Tijab[ijkl] - 0.5 * Tijab[ijlk])
                 end
             end
-            for i = p.ndoc+1:p.ndns
+            for i = (p.ndoc+1):p.ndns
                 for j = 1:p.ndoc
                     Xijkl = iajb[j, k, i, l]
                     ijkl =
@@ -108,7 +108,7 @@ function nofmp2(n, C, H, I, b_mnl, E_nuc, p, nofmp2strategy, tol)
                         (k - 1) * p.ndns * p.ndns * p.nvir
                     ECd = ECd + Xijkl * (Tijab[ijkl] - 0.5 * Tijab[ijlk])
                 end
-                for j = p.ndoc+1:p.ndns
+                for j = (p.ndoc+1):p.ndns
                     Xijkl = iajb[j, k, i, l]
                     ijkl =
                         i +
@@ -360,34 +360,34 @@ function build_R(T, B, F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf)
                             F_MO[j, j]
                         ) * T[i+jab]
 
-                    for k = 1:i-1
+                    for k = 1:(i-1)
                         if abs(F_MO[i, k]) > 1e-10
                             Cki = FI2[k] * FI2[i]
                             Bp[ijab] += (-Cki * F_MO[i, k]) * T[k+jab]
                         end
                     end
 
-                    for k = i+1:ndns
+                    for k = (i+1):ndns
                         if abs(F_MO[i, k]) > 1e-10
                             Cki = FI2[k] * FI2[i]
                             Bp[ijab] += (-Cki * F_MO[i, k]) * T[k+jab]
                         end
                     end
 
-                    for k = 1:j-1
+                    for k = 1:(j-1)
                         if abs(F_MO[j, k]) > 1e-10
                             Ckj = FI2[k] * FI2[j]
                             Bp[ijab] += (-Ckj * F_MO[j, k]) * T[(k-1)*ndns+iab]
                         end
                     end
-                    for k = j+1:ndns
+                    for k = (j+1):ndns
                         if abs(F_MO[j, k]) > 1e-10
                             Ckj = FI2[k] * FI2[j]
                             Bp[ijab] += (-Ckj * F_MO[j, k]) * T[(k-1)*ndns+iab]
                         end
                     end
 
-                    for k = 1:ia-1
+                    for k = 1:(ia-1)
                         if abs(F_MO[ia+ndns, k+ndns]) > 1e-10
                             if npair[k] == npair[ia]
                                 Ckia = FI1[k+ndns] * FI1[ia+ndns]
@@ -398,7 +398,7 @@ function build_R(T, B, F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf)
                                 (Ckia * F_MO[ia+ndns, k+ndns]) * T[(k-1)*ndns*ndns+ijb]
                         end
                     end
-                    for k = ia+1:nvir
+                    for k = (ia+1):nvir
                         if abs(F_MO[ia+ndns, k+ndns]) > 1e-10
                             if npair[k] == npair[ia]
                                 Ckia = FI1[k+ndns] * FI1[ia+ndns]
@@ -410,7 +410,7 @@ function build_R(T, B, F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf)
                         end
                     end
 
-                    for k = 1:ib-1
+                    for k = 1:(ib-1)
                         if abs(F_MO[ib+ndns, k+ndns]) > 1e-10
                             if npair[k] == npair[ib]
                                 Ckib = FI1[k+ndns] * FI1[ib+ndns]
@@ -421,7 +421,7 @@ function build_R(T, B, F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf)
                                 (Ckib * F_MO[ib+ndns, k+ndns]) * T[(k-1)*ndns*ndns*nvir+ija]
                         end
                     end
-                    for k = ib+1:nvir
+                    for k = (ib+1):nvir
                         if abs(F_MO[ib+ndns, k+ndns]) > 1e-10
                             if npair[k] == npair[ib]
                                 Ckib = FI1[k+ndns] * FI1[ib+ndns]
@@ -478,7 +478,7 @@ function build_A(F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf, tol)
                     )
                     Threads.unlock(l)
 
-                    for k = 1:i-1
+                    for k = 1:(i-1)
                         if abs(F_MO[i, k]) > tol
                             Cki = FI2[k] * FI2[i]
                             Threads.lock(l)
@@ -487,7 +487,7 @@ function build_A(F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf, tol)
                             Threads.unlock(l)
                         end
                     end
-                    for k = 1:j-1
+                    for k = 1:(j-1)
                         if abs(F_MO[j, k]) > tol
                             Ckj = FI2[k] * FI2[j]
                             Threads.lock(l)
@@ -497,7 +497,7 @@ function build_A(F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf, tol)
                         end
                     end
 
-                    for k = 1:ia-1
+                    for k = 1:(ia-1)
                         if abs(F_MO[ia+ndns, k+ndns]) > tol
                             if npair[k] == npair[ia]
                                 Ckia = FI1[k+ndns] * FI1[ia+ndns]
@@ -511,7 +511,7 @@ function build_A(F_MO, FI1, FI2, no1, ndoc, ndns, nvir, ncwo, nbf, tol)
                         end
                     end
 
-                    for k = 1:ib-1
+                    for k = 1:(ib-1)
                         if abs(F_MO[ib+ndns, k+ndns]) > tol
                             if npair[k] == npair[ib]
                                 Ckib = FI1[k+ndns] * FI1[ib+ndns]
@@ -571,7 +571,7 @@ function mulliken_pop(bset, p, n, C, S)
     ifun = 1
     for iatom = 1:bset.natoms
         nfun = bset.basis_per_atom[iatom]
-        pop[iatom] += sum(nPS[ifun:ifun+nfun-1])
+        pop[iatom] += sum(nPS[ifun:(ifun+nfun-1)])
         ifun += nfun
     end
 
@@ -615,7 +615,7 @@ function lowdin_pop(bset, p, n, C, S)
     ifun = 1
     for iatom = 1:bset.natoms
         nfun = bset.basis_per_atom[iatom]
-        pop[iatom] += sum(S_12nPS_12[ifun:ifun+nfun-1])
+        pop[iatom] += sum(S_12nPS_12[ifun:(ifun+nfun-1)])
         ifun += nfun
     end
 
@@ -646,17 +646,17 @@ function M_diagnostic(p, n; get_value = false)
 
     m_diagnostic = 0
 
-    m_vals[p.no1+1:p.nbeta] = 2.0 .- m_vals[p.no1+1:p.nbeta]
+    m_vals[(p.no1+1):p.nbeta] = 2.0 .- m_vals[(p.no1+1):p.nbeta]
     if p.nbeta > 0
-        m_diagnostic += maximum(m_vals[p.no1+1:p.nbeta])
+        m_diagnostic += maximum(m_vals[(p.no1+1):p.nbeta])
     end
     #if(p.nsoc!=0): #This is always zero
     #    m_vals[p.nbeta+1:p.nalpha] = 1.0 - m_vals[p.nbeta+1:p.nalpha]
     #    m_diagnostic += max(m_vals[p.nbeta+1:p.nalpha])
 
-    m_vals[p.nalpha+1:p.nbf5] = m_vals[p.nalpha+1:p.nbf5] .- 0.0
+    m_vals[(p.nalpha+1):p.nbf5] = m_vals[(p.nalpha+1):p.nbf5] .- 0.0
     if p.nalpha + 1 <= p.nbf5
-        m_diagnostic += maximum(m_vals[p.nalpha+1:p.nbf5])
+        m_diagnostic += maximum(m_vals[(p.nalpha+1):p.nbf5])
     end
     m_diagnostic = 0.5 * m_diagnostic
 
@@ -875,7 +875,7 @@ function build_F_MO(C, H, I, b_mnl, p)
     D = C_beta * C_beta'
     if (p.MSpin == 0)
         if (p.nsoc > 0)
-            C_alpha = C[:, p.nbeta+1:p.nalpha]
+            C_alpha = C[:, (p.nbeta+1):p.nalpha]
             Dalpha = C_alpha * C_alpha'
             D = D + 0.5 * Dalpha
         end
@@ -937,7 +937,7 @@ function F_MO_attenuated(
     for i = 1:nsoc
         subspaces[no1+ndoc+i] = no1 + ndoc + i
     end
-    subspaces[nbf5+1:end] .= -1
+    subspaces[(nbf5+1):end] .= -1
 
     for p = 1:nbf
         for q = 1:nbf
@@ -952,8 +952,8 @@ function F_MO_attenuated(
             end
         end
     end
-    F_MO_at[1:nalpha, nalpha+1:nbf] .= 0.0
-    F_MO_at[nalpha+1:nbf, 1:nalpha] .= 0.0
+    F_MO_at[1:nalpha, (nalpha+1):nbf] .= 0.0
+    F_MO_at[(nalpha+1):nbf, 1:nalpha] .= 0.0
 
     return F_MO_at
 
@@ -974,7 +974,7 @@ function ERIS_attenuated(pqrt, Cintra, Cinter, no1, ndoc, nsoc, ndns, ncwo, nbf5
     for i = 1:nsoc
         subspaces[no1+ndoc+i] = no1 + ndoc + i
     end
-    subspaces[nbf5+1:end] .= -1
+    subspaces[(nbf5+1):end] .= -1
 
     pqrt_at = zeros(nbf, nbf, nbf, nbf)
     for p = 1:nbf
@@ -1027,7 +1027,7 @@ function ERIS_RI_attenuated(
     for i = 1:nsoc
         subspaces[no1+ndoc+i] = no1 + ndoc + i
     end
-    subspaces[nbf5+1:end] .= -1
+    subspaces[(nbf5+1):end] .= -1
 
     @tullio pql_at_intra[p, q, l] := pql[p, q, l] * Cintra[p] * Cintra[q]
     @tullio pql_at_inter[p, q, l] := pql[p, q, l] * Cinter[p] * Cinter[q]
@@ -1038,29 +1038,29 @@ end
 function mp2_eq(eig, pqrt, pqrt_at, nbeta, nalpha, nbf)
 
     EcMP2 = 0
-    for a = nalpha+1:nbf
-        for b = nalpha+1:nbf
+    for a = (nalpha+1):nbf
+        for b = (nalpha+1):nbf
             for i = 1:nbeta
                 for j = 1:nbeta
                     EcMP2 +=
                         pqrt[i, a, j, b] * (2 * pqrt_at[i, a, j, b] - pqrt_at[i, b, j, a]) /
                         (eig[i] + eig[j] - eig[a] - eig[b] + 1e-10)
                 end
-                for j = nbeta+1:nalpha
+                for j = (nbeta+1):nalpha
                     EcMP2 +=
                         pqrt[i, a, j, b] *
                         (pqrt_at[i, a, j, b] - 0.5 * pqrt_at[i, b, j, a]) /
                         (eig[i] + eig[j] - eig[a] - eig[b] + 1e-10)
                 end
             end
-            for i = nbeta+1:nalpha
+            for i = (nbeta+1):nalpha
                 for j = 1:nbeta
                     EcMP2 +=
                         pqrt[i, a, j, b] *
                         (pqrt_at[i, a, j, b] - 0.5 * pqrt_at[i, b, j, a]) /
                         (eig[i] + eig[j] - eig[a] - eig[b] + 1e-10)
                 end
-                for j = nbeta+1:nalpha
+                for j = (nbeta+1):nalpha
                     EcMP2 +=
                         0.5 *
                         pqrt[i, a, j, b] *
@@ -1087,8 +1087,8 @@ function build_I_at(
     nbfaux,
 )
     I_at = zeros(nbf - nalpha, nbf - nalpha)
-    Threads.@threads for a = nalpha+1:nbf
-        for b = nalpha+1:nbf
+    Threads.@threads for a = (nalpha+1):nbf
+        for b = (nalpha+1):nbf
             if (
                 subspaces[i] == subspaces[a] &&
                 subspaces[i] == subspaces[b] &&
@@ -1138,22 +1138,22 @@ function mp2_RI_eq(
     for i = 1:nsoc
         subspaces[no1+ndoc+i] = no1 + ndoc + i
     end
-    subspaces[nbf5+1:end] .= -1
+    subspaces[(nbf5+1):end] .= -1
 
     EcMP2 = 0
     for i = 1:nbeta
-        ial = view(pql, i, nalpha+1:nbf, 1:nbfaux)
+        ial = view(pql, i, (nalpha+1):nbf, 1:nbfaux)
         ial_at_intra = view(pql_at_intra, i, 1:nbf, 1:nbfaux)
         ial_at_inter = view(pql_at_inter, i, 1:nbf, 1:nbfaux)
         ei = eig[i]
         for j = 1:nbeta
-            jbl = view(pql, j, nalpha+1:nbf, 1:nbfaux)
+            jbl = view(pql, j, (nalpha+1):nbf, 1:nbfaux)
             jbl_at_intra = view(pql_at_intra, j, 1:nbf, 1:nbfaux)
             jbl_at_inter = view(pql_at_inter, j, 1:nbf, 1:nbfaux)
             ej = eig[j]
 
             @tullio I[a, b] := ial[a, l] * jbl[b, l]
-            e = view(eig, nalpha+1:nbf)
+            e = view(eig, (nalpha+1):nbf)
             I_at = build_I_at(
                 subspaces,
                 i,
@@ -1170,14 +1170,14 @@ function mp2_RI_eq(
                 I[a, b] * (2 * I_at[a, b] - I_at[b, a]) / (ei + ej - e[a] - e[b])
             #            EcMP2 += pqrt[i,a,j,b]*(2*pqrt_at[i,a,j,b]-pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
-        for j = nbeta+1:nalpha
-            jbl = view(pql, j, nalpha+1:nbf, 1:nbfaux)
+        for j = (nbeta+1):nalpha
+            jbl = view(pql, j, (nalpha+1):nbf, 1:nbfaux)
             jbl_at_intra = view(pql_at_intra, j, 1:nbf, 1:nbfaux)
             jbl_at_inter = view(pql_at_inter, j, 1:nbf, 1:nbfaux)
             ej = eig[j]
 
             @tullio I[a, b] := ial[a, l] * jbl[b, l]
-            e = eig[nalpha+1:nbf]
+            e = eig[(nalpha+1):nbf]
             I_at = build_I_at(
                 subspaces,
                 i,
@@ -1195,19 +1195,19 @@ function mp2_RI_eq(
             #            EcMP2 += pqrt[i,a,j,b]*(pqrt_at[i,a,j,b]-0.5*pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
     end
-    for i = nbeta+1:nalpha
-        ial = view(pql, i, nalpha+1:nbf, 1:nbfaux)
+    for i = (nbeta+1):nalpha
+        ial = view(pql, i, (nalpha+1):nbf, 1:nbfaux)
         ial_at_intra = view(pql_at_intra, i, 1:nbf, 1:nbfaux)
         ial_at_inter = view(pql_at_inter, i, 1:nbf, 1:nbfaux)
         ei = eig[i]
         for j = 1:nbeta
-            jbl = view(pql, j, nalpha+1:nbf, 1:nbfaux)
+            jbl = view(pql, j, (nalpha+1):nbf, 1:nbfaux)
             jbl_at_intra = view(pql_at_intra, j, 1:nbf, 1:nbfaux)
             jbl_at_inter = view(pql_at_inter, j, 1:nbf, 1:nbfaux)
             ej = eig[j]
 
             @tullio I[a, b] := ial[a, l] * jbl[b, l]
-            e = eig[nalpha+1:nbf]
+            e = eig[(nalpha+1):nbf]
             I_at = build_I_at(
                 subspaces,
                 i,
@@ -1224,14 +1224,14 @@ function mp2_RI_eq(
                 I[a, b] * (I_at[a, b] - 0.5 * I_at[b, a]) / (ei + ej - e[a] - e[b])
             #            EcMP2 += pqrt[i,a,j,b]*(pqrt_at[i,a,j,b]-0.5*pqrt_at[i,b,j,a])/(eig[i]+eig[j]-eig[a]-eig[b]+1e-10)
         end
-        for j = nbeta+1:nalpha
-            jbl = view(pql, j, nalpha+1:nbf, 1:nbfaux)
+        for j = (nbeta+1):nalpha
+            jbl = view(pql, j, (nalpha+1):nbf, 1:nbfaux)
             jbl_at_intra = view(pql_at_intra, j, 1:nbf, 1:nbfaux)
             jbl_at_inter = view(pql_at_inter, j, 1:nbf, 1:nbfaux)
             ej = eig[j]
 
             @tullio I[a, b] := ial[a, l] * jbl[b, l]
-            e = eig[nalpha+1:nbf]
+            e = eig[(nalpha+1):nbf]
             I_at = build_I_at(
                 subspaces,
                 i,
@@ -1277,8 +1277,8 @@ function ECorrNonDyn(n, C, H, I, b_mnl, p)
 
         ECndHF =
             -dot(
-                diag(CK12nd[p.nbeta+1:p.nalpha, p.nbeta+1:p.nalpha]),
-                diag(K_MO[p.nbeta+1:p.nalpha, p.nbeta+1:p.nalpha]),
+                diag(CK12nd[(p.nbeta+1):p.nalpha, (p.nbeta+1):p.nalpha]),
+                diag(K_MO[(p.nbeta+1):p.nalpha, (p.nbeta+1):p.nalpha]),
             )
         CK12nd[diagind(CK12nd)] .= 0
         ECndl -= sum(CK12nd .* K_MO')
@@ -1290,17 +1290,17 @@ end
 function build_M_ERPA(nbf5, A)
     M = zeros(nbf5^2, nbf5^2)
     Threads.@threads for s = 1:nbf5
-        Threads.@threads for r = s+1:nbf5
+        Threads.@threads for r = (s+1):nbf5
             i = Int64((2 * nbf5 * s - s^2 - s) / 2 + r - nbf5)
             j = 0
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, p, q]
                 end
             end
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, q, p]
                 end
@@ -1312,17 +1312,17 @@ function build_M_ERPA(nbf5, A)
         end
     end
     Threads.@threads for s = 1:nbf5
-        Threads.@threads for r = s+1:nbf5
+        Threads.@threads for r = (s+1):nbf5
             i = Int64(nbf5 * (nbf5 - 1) / 2 + (2 * nbf5 * s - s^2 - s) / 2 + r - nbf5)
             j = 0
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, q, p]
                 end
             end
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, p, q]
                 end
@@ -1337,13 +1337,13 @@ function build_M_ERPA(nbf5, A)
         i = Int64(nbf5 * (nbf5 - 1) + r)
         j = 0
         for q = 1:nbf5
-            for p = q+1:nbf5
+            for p = (q+1):nbf5
                 j += 1
                 M[i, j] = A[r, r, p, q]
             end
         end
         for q = 1:nbf5
-            for p = q+1:nbf5
+            for p = (q+1):nbf5
                 j += 1
                 M[i, j] = A[r, r, q, p]
             end
@@ -1359,7 +1359,7 @@ end
 function build_dN_ERPA(nbf5, n)
     dN = zeros(Int64(nbf5 * (nbf5 - 1) / 2))
     Threads.@threads for s = 1:nbf5
-        Threads.@threads for r = s+1:nbf5
+        Threads.@threads for r = (s+1):nbf5
             i = Int64((2 * nbf5 * s - s^2 - s) / 2 + r - nbf5)
             dN[i] = +(n[s] - n[r])
         end
@@ -1370,17 +1370,17 @@ end
 function build_M_ERPA2(nbf5, A, c)
     M = zeros(nbf5^2, nbf5^2)
     Threads.@threads for s = 1:nbf5
-        Threads.@threads for r = s+1:nbf5
+        Threads.@threads for r = (s+1):nbf5
             i = Int64((2 * nbf5 * s - s^2 - s) / 2 + r - nbf5)
             j = 0
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, p, q]
                 end
             end
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, q, p]
                 end
@@ -1392,17 +1392,17 @@ function build_M_ERPA2(nbf5, A, c)
         end
     end
     Threads.@threads for s = 1:nbf5
-        Threads.@threads for r = s+1:nbf5
+        Threads.@threads for r = (s+1):nbf5
             i = Int64(nbf5 * (nbf5 - 1) / 2 + (2 * nbf5 * s - s^2 - s) / 2 + r - nbf5)
             j = 0
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, q, p]
                 end
             end
             for q = 1:nbf5
-                for p = q+1:nbf5
+                for p = (q+1):nbf5
                     j += 1
                     M[i, j] = A[r, s, p, q]
                 end
@@ -1417,13 +1417,13 @@ function build_M_ERPA2(nbf5, A, c)
         i = Int64(nbf5 * (nbf5 - 1) + r)
         j = 0
         for q = 1:nbf5
-            for p = q+1:nbf5
+            for p = (q+1):nbf5
                 j += 1
                 M[i, j] = A[r, r, p, q] * (1 / c[r])
             end
         end
         for q = 1:nbf5
-            for p = q+1:nbf5
+            for p = (q+1):nbf5
                 j += 1
                 M[i, j] = A[r, r, q, p] * (1 / c[r])
             end
@@ -1510,7 +1510,7 @@ function build_A_from_pnof(n, C, H, I_AO, pp)
         @tullio intra_ww[i, j] = sqrt(n_ww[i] * n_ww[j])
     end
 
-    for i = pp.nbeta+1:pp.nalpha
+    for i = (pp.nbeta+1):pp.nalpha
         inter[i, i] = 0
     end
 
@@ -1566,10 +1566,10 @@ function build_A_from_pnof(n, C, H, I_AO, pp)
     if (pp.ipnof == 7 || pp.ipnof == 8)
 
         fi = n .* (1 .- n)
-        fi[fi.<=0] .= 0
-        if(pp.ipnof == 8 && pp.ista == 2)
+        fi[fi .<= 0] .= 0
+        if (pp.ipnof == 8 && pp.ista == 2)
             fi = 0.9 * sqrt.(fi)
-	else
+        else
             fi = sqrt.(fi)
         end
 
@@ -1586,14 +1586,14 @@ function build_A_from_pnof(n, C, H, I_AO, pp)
             Pi_s[ll:pp.ndoc:ul, ldx] .= 0
             Pi_s[ll:pp.ndoc:ul, ll:pp.ndoc:ul] .= 0
         end
-        for i = pp.nbeta+1:pp.nalpha
+        for i = (pp.nbeta+1):pp.nalpha
             Pi_s[i, i] = 0
         end
 
         inter2 = 0 * Pi_s
-        inter2[pp.nbeta+1:pp.nalpha, pp.nbeta+1:pp.nalpha] =
-            Pi_s[pp.nbeta+1:pp.nalpha, pp.nbeta+1:pp.nalpha]
-        Pi_s[pp.nbeta+1:pp.nalpha, pp.nbeta+1:pp.nalpha] .= 0
+        inter2[(pp.nbeta+1):pp.nalpha, (pp.nbeta+1):pp.nalpha] =
+            Pi_s[(pp.nbeta+1):pp.nalpha, (pp.nbeta+1):pp.nalpha]
+        Pi_s[(pp.nbeta+1):pp.nalpha, (pp.nbeta+1):pp.nalpha] .= 0
 
         #@tullio Dab[p,q,r,t] += -inter2[p,q]*Id[p,t]*Id[q,r]
 
@@ -1613,8 +1613,8 @@ function build_A_from_pnof(n, C, H, I_AO, pp)
 
         if (pp.ipnof == 8 && pp.ista==0)
             Pi_s[1:pp.nbeta, 1:pp.nbeta] .= 0
-            Pi_s[1:pp.nbeta, pp.nbeta+1:pp.nalpha] *= 0.5
-            Pi_s[pp.nbeta+1:pp.nalpha, 1:pp.nbeta] *= 0.5
+            Pi_s[1:pp.nbeta, (pp.nbeta+1):pp.nalpha] *= 0.5
+            Pi_s[(pp.nbeta+1):pp.nalpha, 1:pp.nbeta] *= 0.5
         end
 
         #@tullio Dab[p,q,r,t] += -Pi_s[p,r]*Id[p,q]*Id[r,t]
@@ -1672,7 +1672,7 @@ function build_A_from_pnof(n, C, H, I_AO, pp)
                 inter2[ll:pp.ndoc:ul, ll:pp.ndoc:ul] .= 0
             end
 
-            inter[pp.nbeta+1:end, pp.nbeta+1:end] .= 0
+            inter[(pp.nbeta+1):end, (pp.nbeta+1):end] .= 0
             inter[1:pp.nalpha, 1:pp.nalpha] .= 0
             inter2[1:pp.nalpha, :] .= 0
             inter2[:, 1:pp.nalpha] .= 0
@@ -1754,8 +1754,8 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
     dN = build_dN_ERPA(pp.nbf5, n)
 
     v = zeros(pp.nbf5 * (pp.nbf5 - 1))
-    v[1:Int64(pp.nbf5 * (pp.nbf5 - 1) / 2)] .= dN
-    v[Int64(pp.nbf5 * (pp.nbf5 - 1) / 2 + 1):Int64(pp.nbf5 * (pp.nbf5 - 1))] .= -dN
+    v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
+    v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
 
     A = nothing
     GC.gc()
@@ -1773,8 +1773,8 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
     end
 
     significant = sort_idx[1:idx]
-    no_significant = sort_idx[idx+1:end]
-    empt = collect(pp.nbf5*(pp.nbf5-1)+1:pp.nbf5^2)
+    no_significant = sort_idx[(idx+1):end]
+    empt = collect((pp.nbf5*(pp.nbf5-1)+1):(pp.nbf5^2))
 
     new_idx = vcat(significant, length(dN) .+ significant)
     new_idx = vcat(new_idx, no_significant)
@@ -1801,7 +1801,7 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
 
     dd = Int64(dim / 2)
     AA = @view M_sorted[1:dd, 1:dd]
-    BB = @view M_sorted[1:dd, dd+1:2*dd]
+    BB = @view M_sorted[1:dd, (dd+1):(2*dd)]
 
     ApB = AA .+ BB
     AmB = AA .- BB
@@ -1825,8 +1825,8 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
     GC.gc()
 
     vals = real.(vals)
-    vals_neg = vals[vals.<=0.00]
-    vals_pos = vals[vals.>0.00]
+    vals_neg = vals[vals .<= 0.00]
+    vals_pos = vals[vals .> 0.00]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
@@ -1843,9 +1843,9 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
 
     ######## ERPA  ########
 
-    CC = @view M_sorted[1:dd, 2*dd+1:2*dd+pp.nbf5]
-    EE = @view M_sorted[2*dd+1:2*dd+pp.nbf5, 1:dd]
-    FF = @view M_sorted[2*dd+1:2*dd+pp.nbf5, 2*dd+1:2*dd+pp.nbf5]
+    CC = @view M_sorted[1:dd, (2*dd+1):(2*dd+pp.nbf5)]
+    EE = @view M_sorted[(2*dd+1):(2*dd+pp.nbf5), 1:dd]
+    FF = @view M_sorted[(2*dd+1):(2*dd+pp.nbf5), (2*dd+1):(2*dd+pp.nbf5)]
     GC.gc()
 
     FFm1 = pinv(FF)
@@ -1876,8 +1876,8 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
     GC.gc()
 
     vals = real.(vals)
-    vals_neg = vals[vals.<=0.00]
-    vals_pos = vals[vals.>0.00]
+    vals_neg = vals[vals .<= 0.00]
+    vals_pos = vals[vals .> 0.00]
     vals = sqrt.(vals_pos)
 
     n_neg_vals = size(vals_neg)[1]
@@ -1895,7 +1895,7 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
     ######## ERPA2 ########
     n_nbf5 = view(n, 1:pp.nbf5)
     c = sqrt.(n_nbf5)
-    c[pp.no1+pp.ndns+1:end] *= -1
+    c[(pp.no1+pp.ndns+1):end] *= -1
 
     GC.gc()
 
@@ -1908,9 +1908,9 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
     dN = build_dN_ERPA(pp.nbf5, n)
 
     v = zeros(pp.nbf5^2)
-    v[1:Int64(pp.nbf5 * (pp.nbf5 - 1) / 2)] .= dN
-    v[Int64(pp.nbf5 * (pp.nbf5 - 1) / 2 + 1):Int64(pp.nbf5 * (pp.nbf5 - 1))] .= -dN
-    v[Int64(pp.nbf5 * (pp.nbf5 - 1) + 1):end] .= 1
+    v[1:Int64(pp.nbf5*(pp.nbf5-1)/2)] .= dN
+    v[Int64(pp.nbf5*(pp.nbf5-1)/2+1):Int64(pp.nbf5*(pp.nbf5-1))] .= -dN
+    v[Int64(pp.nbf5*(pp.nbf5-1)+1):end] .= 1
 
     A = nothing
     GC.gc()
@@ -1952,9 +1952,9 @@ function erpa(n, C, H, I_AO, E_nuc, E_elec, pp)
 
     vals_real = real.(vals)
     vals_complex = imag.(vals)
-    n_complex_vals = size(vals_complex[abs.(vals_complex).>=1e-7])[1]
-    vals_real = vals_real[abs.(vals_complex).<1e-7]
-    vals = vals_real[vals_real.>0.04]
+    n_complex_vals = size(vals_complex[abs.(vals_complex) .>= 1e-7])[1]
+    vals_real = vals_real[abs.(vals_complex) .< 1e-7]
+    vals = vals_real[vals_real .> 0.04]
     vals = vals * 27.2114
 
     @printf("  Excitation energies ERPA2/PNOF%i (eV)\n", pp.ipnof)
