@@ -554,9 +554,6 @@ function order_occupations_softmax(old_C, old_gamma, p)
 
     if any(gamma .> 0)
         #Sort ndoc subspaces
-        old_n, dn_dgamma = ocupacion_softmax(old_gamma, p.no1, p.ndoc, p.nalpha, p.nv, p.nbf5, p.ndns, p.ncwo, p.HighSpin)
-        n = similar(old_n)
-        n_tmp = zeros(1 + p.ncwo)
         C_tmp = zeros(p.nbf, 1 + p.ncwo)
         for i = 1:p.ndoc
             old_ll = p.no1 + p.ndns + (p.ndoc - i) + 1
@@ -565,22 +562,19 @@ function order_occupations_softmax(old_C, old_gamma, p)
             C_tmp[:, 1] = old_C[:, p.no1+i]
             C_tmp[:, 2:end] = old_C[:, old_ll:p.ndoc:old_ul]
 
-            old_ll_x = p.ndoc + (p.ndoc - i) + 1
+            old_ll_x = (p.ndoc - i) + 1
             old_ul_x = old_ll_x + p.ndoc * (p.ncwo - 1)
 
-            n_tmp[1] = old_n[i]
-            n_tmp[2:end] = old_n[old_ll_x:p.ndoc:old_ul_x]
+	    gamma_tmp = vcat([0], gamma[old_ll_x:p.ndoc:old_ul_x])
+            sort_idx = sortperm(gamma_tmp)[end:-1:1]
 
-            sort_idx = sortperm(n_tmp)[end:-1:1]
-            n_tmp = n_tmp[sort_idx]
+	    gamma_tmp = gamma_tmp[sort_idx] .- maximum(gamma_tmp)
             C_tmp = C_tmp[:, sort_idx]
 
-            n[i] = n_tmp[1]
-            n[old_ll_x:p.ndoc:old_ul_x] = n_tmp[2:end]
+            gamma[old_ll_x:p.ndoc:old_ul_x] = gamma_tmp[2:end]
             C[:, p.no1+i] = C_tmp[:, 1]
             C[:, old_ll:p.ndoc:old_ul] = C_tmp[:, 2:end]
         end
-	gamma = n_to_gammas_softmax(n, p)
     end
     return C, gamma
 end

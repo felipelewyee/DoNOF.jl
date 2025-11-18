@@ -1094,7 +1094,7 @@ end
 
 function ocupacion_softmax(gamma, no1, ndoc, nalpha, nv, nbf5, ndns, ncwo, HighSpin)
 
-    n = zeros(nbf5)
+    n = Vector{Float64}(undef,nbf5)
     dn_dgamma = zeros(nbf5, nv)
 
     n[1:no1] .= 1                                              # [1,no1]
@@ -1116,19 +1116,20 @@ function ocupacion_softmax(gamma, no1, ndoc, nalpha, nv, nbf5, ndns, ncwo, HighS
         ulg = llg + ndoc * (ncwo - 1)
         exp_gamma_pi = @view exp_gamma[llg:ndoc:ulg]
 
-        sum_exp = sum(exp_gamma_pi)
+        den = 1 + sum(exp_gamma_pi)
 
-	n[i] = 1 / (1 + sum_exp)
-	n_pi .= exp_gamma_pi ./ (1 + sum_exp)
+	n[i] = 1 / den
+	n_pi .= exp_gamma_pi / den
 
         dn_g_dgamma_pi = @view dn_dgamma[i, llg:ndoc:ulg]
-	dn_g_dgamma_pi .= - exp_gamma_pi ./ (1 + sum_exp)^2
+	dn_g_dgamma_pi .= - n[i] * n_pi
 
         dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul, llg:ndoc:ulg]
-	dn_pi_dgamma_pi .= -exp_gamma_pi * exp_gamma_pi' ./ (1 + sum_exp)^2
+	dn_pi_dgamma_pi .= - n_pi * n_pi' 
 
         dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul, llg:ndoc:ulg]
-	dn_pi_dgamma_pi[diagind(dn_pi_dgamma_pi)] += exp_gamma_pi ./ (1 + sum_exp)
+	dn_pi_dgamma_pi[diagind(dn_pi_dgamma_pi)] += n_pi
+
     end
 
     return n, dn_dgamma
