@@ -5,24 +5,17 @@ function compute_geom_gradients(bset,n,C,cj12,ck12,elag,p)
     @tullio RDM1[m,l] := 2 * n[p] * C_nbf5[m,p] * C_nbf5[l,p]
     @tullio lag[m,l] := 2 * C[m,q] * elag[q,p] *C[l,p]
 
-    #grad = zeros(p.natoms,3)
-
     grad = compute_grad_nuc(bset, p)
-    println(grad)
-#    grad += np.array(mol.nuclear_repulsion_energy_deriv1())
 
     for i in 1:p.natoms
 	grad_i = @view grad[i, 1:end]
 
-#        dSx,dSy,dSz = np.array(mints.ao_oei_deriv1("OVERLAP",i))
 	dS = ∇overlap(bset, i)
 	@tullio grad_i[k] += -lag[m,n] * dS[m,n,k]
 
-#        dTx,dTy,dTz = np.array(mints.ao_oei_deriv1("KINETIC",i))
 	dT = ∇kinetic(bset, i)
 	@tullio grad_i[k] += RDM1[m,n] * dT[m,n,k]
 
-#        dVx,dVy,dVz = np.array(mints.ao_oei_deriv1("POTENTIAL",i))
 	dV = ∇nuclear(bset, i)
 	@tullio grad_i[k] += RDM1[m,n] * dV[m,n,k]
     end
@@ -45,7 +38,7 @@ function compute_geom_gradients(bset,n,C,cj12,ck12,elag,p)
 	grad_i = @view grad[i, 1:end]
 
         dERI = ∇ERI_2e4c(bset, i)
-	@tullio grad_i[k] += -RDM2[m,n,s,l] * dERI[m,n,s,l,k]
+	@tullio grad_i[k] += RDM2[m,n,s,l] * dERI[m,n,s,l,k]
 
     end
 
