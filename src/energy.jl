@@ -19,6 +19,7 @@ function energy(
     freeze_occ = false,
     do_translate_to_donofsw = false,
     do_erpa = false,
+    do_gradients = false,
 )
 
     t0 = time()
@@ -306,6 +307,12 @@ function energy(
 
     if (do_translate_to_donofsw)
         write_to_DoNOFsw(p, bset, n, C, diag(elag), zeros(p.nbf), 10, E_nuc + E)
+    end
+
+    if do_gradients
+        cj12, ck12 = PNOFi_selector(n, p)
+        grad = compute_geom_gradients(bset,n,C,cj12,ck12,elag,p)
+	return grad, E_nuc + E, C, n
     end
 
     return E_nuc + E, C, n, fmiug0

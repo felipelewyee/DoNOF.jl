@@ -311,6 +311,30 @@ function compute_E_nuc(bset, p)
 
 end
 
+function compute_grad_nuc(bset, p)
+
+    grad = zeros(p.natoms,3)
+    for k = 1:p.natoms
+        for j = 1:k-1
+	    for d in 1:3
+	    grad[k,d] +=
+	    - bset.atoms[k].Z * bset.atoms[j].Z * (bset.atoms[k].xyz[d] - bset.atoms[j].xyz[d]) /
+                (norm(bset.atoms[k].xyz - bset.atoms[j].xyz) * 1.88973) ^ 3
+	    end
+        end
+        for j = (k+1):p.natoms
+	    for d in 1:3
+	    grad[k,d] +=
+	    - bset.atoms[k].Z * bset.atoms[j].Z * (bset.atoms[k].xyz[d] - bset.atoms[j].xyz[d]) /
+                (norm(bset.atoms[k].xyz - bset.atoms[j].xyz) * 1.88973) ^ 3
+	    end
+        end
+    end 
+    
+    return grad
+
+end
+
 function Z_to_symbol(Z)
     dict = Dict(
         1 => "H",
