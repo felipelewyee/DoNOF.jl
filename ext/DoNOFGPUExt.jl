@@ -6,6 +6,33 @@ using Tullio
 using LinearAlgebra
 using CUDA, KernelAbstractions, cuTENSOR
 
+function Iaux_gpu(G::Matrix{Float64},I::Array{Float64,3})
+
+    nbf = size(I)[1]
+    nbfaux = size(I)[3]
+
+    G = Symmetric(G)
+    G = CuArray{Float64}(G)
+    evals, evecs = eigen(G)
+    evals = Array(evals)
+    sqrtinv = Float64[]
+    for i = 1:nbfaux
+        if (evals[i] < 0.0)
+            append!(sqrtinv, 0.0)
+        else
+            append!(sqrtinv, 1 / sqrt(evals[i]))
+        end
+    end
+    sqrtinv = CuArray{Float64}(sqrtinv)
+    Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
+
+    I = CuArray{Float64,3,CUDA.UnifiedMemory}(I)
+    @tensor Inew[m, n, l] := I[m, n, k] * Gmsqrt[k, l]
+
+    return Inew
+end
+
+
 function eris_to_gpu(I)
 
     device = CUDA.device()

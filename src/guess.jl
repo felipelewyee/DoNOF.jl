@@ -69,7 +69,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
     end
 
     #Sort ndoc subspaces
-    elag_diag = diag(elag)[p.no1+1:p.ndoc]
+    elag_diag = diag(elag)[(p.no1+1):p.ndoc]
     sort_idx = sortperm(elag_diag)
     C[1:p.nbf, 1:p.no1] = old_C[1:p.nbf, 1:p.no1]
     n[1:p.no1] = old_n[1:p.no1]
@@ -88,7 +88,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
     end
 
     #Sort nsoc orbitals
-    elag_diag = diag(elag)[p.no1+p.ndoc+1:p.no1+p.ndns]
+    elag_diag = diag(elag)[(p.no1+p.ndoc+1):(p.no1+p.ndns)]
     sort_idx = sortperm(elag_diag)
     for i = 1:p.nsoc
         i_old = sort_idx[i]
@@ -96,7 +96,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
         n[p.no1+p.ndoc+i] = old_n[p.no1+p.ndoc+i_old]
     end
 
-    C[1:p.nbf, p.nbf5+1:p.nbf] = old_C[1:p.nbf, p.nbf5+1:p.nbf]
+    C[1:p.nbf, (p.nbf5+1):p.nbf] = old_C[1:p.nbf, (p.nbf5+1):p.nbf]
 
     cj12, ck12 = PNOFi_selector(n, p)
     Etmp, elag, sumdiff, maxdiff = ENERGY1r(C, n, H, I, cj12, ck12, p)
@@ -107,45 +107,11 @@ end
 
 function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
 
-    Cnew = zeros(p.nbf, p.nbf)
-
-    if (p.spherical)
-        println("Warning: Currently DoNOF only support cartesian functions.")
-    else
-        i = 0
-        for basis in bset.basis
-            l = basis.l
-            ori = trunc(Int, round((l + 1) * (l + 2) / 2))
-            if l == 2
-                Cnew[i+1, 1:end] = C[i+1, 1:end]
-                Cnew[i+4, 1:end] = C[i+2, 1:end]
-                Cnew[i+5, 1:end] = C[i+3, 1:end]
-                Cnew[i+2, 1:end] = C[i+4, 1:end]
-                Cnew[i+6, 1:end] = C[i+5, 1:end]
-                Cnew[i+3, 1:end] = C[i+6, 1:end]
-            elseif l == 3
-                Cnew[i+1, 1:end] = C[i+1, 1:end]
-                Cnew[i+4, 1:end] = C[i+2, 1:end]
-                Cnew[i+5, 1:end] = C[i+3, 1:end]
-                Cnew[i+6, 1:end] = C[i+4, 1:end]
-                Cnew[i+10, 1:end] = C[i+5, 1:end]
-                Cnew[i+8, 1:end] = C[i+6, 1:end]
-                Cnew[i+2, 1:end] = C[i+7, 1:end]
-                Cnew[i+7, 1:end] = C[i+8, 1:end]
-                Cnew[i+9, 1:end] = C[i+9, 1:end]
-                Cnew[i+2, 1:end] = C[i+10, 1:end]
-            else
-                Cnew[i+1:i+ori, 1:end] = C[i+1:i+ori, 1:end]
-            end
-            i += ori
-        end
-    end
-
     f = open(p.title * ".gcf", "w")
     for i = 1:p.nbf5
         @printf(f, "%6d %30.16f\n", i, n[i])
     end
-    for i = p.nbf5+1:p.nbf
+    for i = (p.nbf5+1):p.nbf
         @printf(f, "%6d %30.16f\n", i, 0.0)
     end
     sumsl = p.nbeta
@@ -155,7 +121,7 @@ function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
     @printf(f, "%30.16f\n", sumsl)
     for i = 1:p.nbf
         for j = 1:p.nbf
-            @printf(f, "%6d %30.16f\n", j, Cnew[j, i])
+            @printf(f, "%6d %30.16f\n", j, C[j, i])
         end
     end
     for i = 1:p.nbf
@@ -181,6 +147,40 @@ function write_to_DoNOFsw(p, bset, n, C, elag, fmiug0, it, E)
 
 end
 
+function read_from_DoNOFsw(p, bset)
+
+    f = open(p.title * ".gcf", "r")
+    n = zeros(p.nbf5)
+    for i = 1:p.nbf5
+        line = readline(f)
+        j, val = split(line)
+        n[i] = parse(Float64, val)
+    end
+    for i = (p.nbf5+1):p.nbf
+        line = readline(f)
+    end
+    sumsl = readline(f)
+    C = zeros(p.nbf, p.nbf)
+    for i = 1:p.nbf
+        for j = 1:p.nbf
+            line = readline(f)
+            k, val = split(line)
+            C[j, i] = parse(Float64, val)
+        end
+    end
+    for i = 1:p.nbf
+        line = readline(f)
+    end
+    for i = 1:p.nbf
+        line = readline(f)
+    end
+
+    close(f)
+
+    return C, n
+
+end
+
 function guess_gamma_trigonometric(ndoc, ncwo)
 
     nv = (ncwo) * ndoc
@@ -190,7 +190,7 @@ function guess_gamma_trigonometric(ndoc, ncwo)
         ll = ndoc + (ndoc - i) + 1
         ul = ll + ndoc * (ncwo - 2)
         γ_coupled = @view γ[ll:ndoc:ul]
-        for j = 1:ncwo-1
+        for j = 1:(ncwo-1)
             γ_coupled[j] = asin(sqrt(1.0 / (ncwo - j + 1)))
         end
     end
@@ -199,15 +199,14 @@ end
 
 function guess_gamma_softmax(ndoc, ncwo)
 
-    nv = (ncwo + 1) * ndoc
+    nv = ncwo * ndoc
     γ = zeros(nv)
     for i = 1:ndoc
-        γ[i] = log(0.999)
-        ll = ndoc + (ndoc - i) + 1
+        ll = (ndoc - i) + 1
         ul = ll + ndoc * (ncwo - 1)
         γ_coupled = @view γ[ll:ndoc:ul]
         for j = 1:ncwo
-            γ_coupled[j] = log(0.001 / ncwo)
+            γ_coupled[j] = log(max(0.001 / ncwo, 1e-16)) - log(0.999)
         end
     end
     return γ
@@ -225,7 +224,7 @@ function guess_gamma_ebi(ndoc, nbf)
         γ[i] = erfinv(2 * 0.999 - 1)
     end
     val = ndoc * (1.0 - 0.999)
-    for i = ndoc+1:nv
+    for i = (ndoc+1):nv
         γ[i] = erfinv(2 * val / nv - 1)
     end
     return γ

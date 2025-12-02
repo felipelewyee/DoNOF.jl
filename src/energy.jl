@@ -19,6 +19,7 @@ function energy(
     freeze_occ = false,
     do_translate_to_donofsw = false,
     do_erpa = false,
+    do_gradients = false,
 )
 
     t0 = time()
@@ -83,7 +84,6 @@ function energy(
         if p.occ_method == "Trigonometric"
             gamma = guess_gamma_trigonometric(p.ndoc, p.ncwo)
         elseif p.occ_method == "Softmax"
-            p.nv = p.nbf5 - p.no1 - p.nsoc
             gamma = guess_gamma_softmax(p.ndoc, p.ncwo)
         elseif p.occ_method == "EBI"
             p.nbf5 = p.nbf
@@ -95,7 +95,6 @@ function energy(
         if p.occ_method == "Trigonometric"
             gamma = n_to_gammas_trigonometric(n, p)
         elseif p.occ_method == "Softmax"
-            p.nv = p.nbf5 - p.no1 - p.nsoc
             gamma = n_to_gammas_softmax(n, p)
         elseif p.occ_method == "EBI"
             p.nbf5 = p.nbf
@@ -239,14 +238,14 @@ function energy(
         for i = 1:p.nbeta
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
-        for i = p.nbeta+1:p.nalpha
+        for i = (p.nbeta+1):p.nalpha
             if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
             else
                 @printf(" %3i    %9.7f  %10.8f\n", i, n[i], elag[i, i])
             end
         end
-        for i = p.nalpha+1:p.nbf5
+        for i = (p.nalpha+1):p.nbf5
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
 
@@ -303,11 +302,17 @@ function energy(
     end
 
     if (do_erpa)
-        erpa(n, C, H, I, b_mnl, E_nuc, E, p)
+        erpa(n, C, H, I, E_nuc, E, p)
     end
 
     if (do_translate_to_donofsw)
         write_to_DoNOFsw(p, bset, n, C, diag(elag), zeros(p.nbf), 10, E_nuc + E)
+    end
+
+    if do_gradients
+        cj12, ck12 = PNOFi_selector(n, p)
+        grad = compute_geom_gradients(bset,n,C,cj12,ck12,elag,p)
+	return grad, E_nuc + E, C, n
     end
 
     return E_nuc + E, C, n, fmiug0
@@ -532,14 +537,14 @@ function energy2(
         for i = 1:p.nbeta
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
-        for i = p.nbeta+1:p.nalpha
+        for i = (p.nbeta+1):p.nalpha
             if !p.HighSpin
                 @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
             else
                 @printf(" %3i    %9.7f  %10.8f\n", i, n[i], elag[i, i])
             end
         end
-        for i = p.nalpha+1:p.nbf5
+        for i = (p.nalpha+1):p.nbf5
             @printf(" %3i    %9.7f  %10.8f\n", i, 2 * n[i], elag[i, i])
         end
 

@@ -8,45 +8,51 @@ function compute_integrals(bset, p)
     V = nuclear(bset)
     V = (V .+ V') ./ 2
     H = T + V
-    I= nothing
+    I = nothing
+    println("Basis Set                                            = ", bset.name)
     if (!p.RI)
         # Integrales de Repulsión Electrónica, ERIs (mu nu | sigma lambda)
         I = ERI_2e4c(bset)
     else
-	aux = nothing
+        aux = nothing
         if p.spherical
-	    try
+            try
                 aux = BasisSet(bset.name * "-jkfit", bset.atoms)
-	    catch
+            catch
                 aux = BasisSet("def2-universal-jkfit", bset.atoms)
-	    end
+            end
         else
-	    try
-            aux =
-                BasisSet(bset.name * "-jkfit", bset.atoms, spherical = false, lib = :acsint)
-	    catch
-            aux =
-                BasisSet("def2-universal-jkfit", bset.atoms, spherical = false, lib = :acsint)
-	    end
+            try
+                aux = BasisSet(
+                    bset.name * "-jkfit",
+                    bset.atoms,
+                    spherical = false,
+                    lib = :acsint,
+                )
+            catch
+                aux = BasisSet(
+                    "def2-universal-jkfit",
+                    bset.atoms,
+                    spherical = false,
+                    lib = :acsint,
+                )
+            end
         end
-        #Iaux = ERI_2e3c(bset, aux)
-        #G = ERI_2e2c(aux)
-        #G = (G .+ G') ./ 2
+        println("Auxiliary Basis Set                                  = ", aux.name)
+        println(
+            "Gaussian Type                                        = ",
+            p.spherical ? "Spherical" : "Cartesian",
+        )
 
-        #evals, evecs = eigen(G)
-        #sqrtinv = Float64[]
-        #for i = 1:size(evals)[1]
-        #    if (evals[i] < 0.0)
-        #        append!(sqrtinv, 0.0)
-        #    else
-        #        append!(sqrtinv, 1 / sqrt(evals[i]))
-        #    end
-        #end
-        #Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
-        #@tullio I[m, n, l] := Iaux[m, n, k] * Gmsqrt[k, l]
-
-        I = Iaux(bset,aux)
-
+        G = ERI_2e2c(aux)
+        G = (G .+ G') ./ 2
+        I = ERI_2e3c(bset, aux)
+        ext = Base.get_extension(@__MODULE__, :DoNOFGPUExt)
+        if !isnothing(ext)
+            I = ext.Iaux_gpu(G, I)
+        else
+            I = Iaux(G, I)
+        end
         p.nbfaux = size(I)[3]
     end
 
@@ -59,18 +65,15 @@ function compute_integrals(bset, p)
 
 end
 
-function Iaux(bset,aux)
-    I = ERI_2e3c(bset, aux)
+function Iaux(G::Matrix{Float64}, I::Array{Float64,3})
 
     nbf = size(I)[1]
     nbfaux = size(I)[3]
 
-    G = ERI_2e2c(aux)
-    G = (G .+ G') ./ 2
-
+    G = Symmetric(G)
     evals, evecs = eigen(G)
     sqrtinv = Float64[]
-    for i = 1:size(evals)[1]
+    for i = 1:nbfaux
         if (evals[i] < 0.0)
             append!(sqrtinv, 0.0)
         else
@@ -80,7 +83,7 @@ function Iaux(bset,aux)
     Gmsqrt = evecs * Diagonal(sqrtinv) * evecs'
 
     #@tullio I[m, n, l] := I[m, n, k] * Gmsqrt[k, l]
-    Threads.@threads for m in 1:nbf
+    Threads.@threads for m = 1:nbf
         I[m, :, :] = I[m, :, :] * Gmsqrt
     end
 
@@ -147,7 +150,14 @@ end
 
 #########################################
 
-function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3}, nbf::Int64, nbf5::Int64, nbfaux::Int64)
+function JKH_MO(
+    C::Matrix{Float64},
+    H::Matrix{Float64},
+    b_mnl::Array{Float64,3},
+    nbf::Int64,
+    nbf5::Int64,
+    nbfaux::Int64,
+)
 
     Cnbf5 = view(C, :, 1:nbf5)
 
@@ -170,7 +180,13 @@ function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, b_mnl::Array{Float64,3},
     return J_MO, K_MO, H_core
 end
 
-function JKH_MO(C::Matrix{Float64}, H::Matrix{Float64}, I::Array{Float64,4}, nbf::Int64, nbf5::Int64)
+function JKH_MO(
+    C::Matrix{Float64},
+    H::Matrix{Float64},
+    I::Array{Float64,4},
+    nbf::Int64,
+    nbf5::Int64,
+)
 
 
     Cnbf5 = view(C, :, 1:nbf5)
@@ -203,7 +219,7 @@ end
 
 function computeDalpha_HF(C, I, b_mnl, p)
 
-    Calpha = view(C, :, p.nbeta+1:p.nalpha)
+    Calpha = view(C, :, (p.nbeta+1):p.nalpha)
     @tullio D[m, n] := Calpha[m, j] * Calpha[n, j]
 
     return D
@@ -246,8 +262,8 @@ end
 
 function iajb_Full(C, I, no1, nalpha, nbf, nbf5)
 
-    Cocc = view(C, :, no1+1:nalpha)
-    Ccwo = view(C, :, nalpha+1:nbf)
+    Cocc = view(C, :, (no1+1):nalpha)
+    Ccwo = view(C, :, (nalpha+1):nbf)
 
     @tullio iajb[i, a, j, b] :=
         ((Ccwo[n, a] * ((Cocc[m, i] * I[m, n, s, l]) * Cocc[s, j])) * Ccwo[l, b])
@@ -256,27 +272,32 @@ function iajb_Full(C, I, no1, nalpha, nbf, nbf5)
 
 end
 
-function compute_eris_full(b_mnl, I_AO, C, nbf5)
+function compute_eris_full(I_AO::Array{Float64,4}, C, nbf5)
 
     C_nbf5 = @view C[1:end, 1:nbf5]
 
-    if isnothing(b_mnl)
-        @tullio Iinsl[i, n, s, l] := I_AO[m, n, s, l] * C_nbf5[m, i]
-        @tullio Iijsl[i, j, s, l] := Iinsl[i, n, s, l] * C_nbf5[n, j]
-        Iinsl = nothing
-        @tullio Iijkl[i, j, k, l] := Iijsl[i, j, s, l] * C_nbf5[s, k]
-        Iijsl = nothing
-        @tullio I_MO[i, j, k, r] := Iijkl[i, j, k, l] * C_nbf5[l, r]
-        Iijkl = nothing
-        #if(pp.gpu):
-        #    I = I.get()
-    else
-        @tullio b_pnl[p, n, l] := C_nbf5[m, p] * b_mnl[m, n, l]
-        @tullio b_pql[p, q, l] := C_nbf5[n, q] * b_pnl[p, n, l]
-        b_pnl = nothing
-        @tullio I_MO[p, q, s, l] := b_pql[p, q, R] * b_pql[s, l, R]
-        b_pql = nothing
-    end
+    @tullio Iinsl[i, n, s, l] := I_AO[m, n, s, l] * C_nbf5[m, i]
+    @tullio Iijsl[i, j, s, l] := Iinsl[i, n, s, l] * C_nbf5[n, j]
+    Iinsl = nothing
+    @tullio Iijkl[i, j, k, l] := Iijsl[i, j, s, l] * C_nbf5[s, k]
+    Iijsl = nothing
+    @tullio I_MO[i, j, k, r] := Iijkl[i, j, k, l] * C_nbf5[l, r]
+    Iijkl = nothing
+    #if(pp.gpu):
+    #    I = I.get()
+
+    return I_MO
+end
+
+function compute_eris_full(b_mnl::Array{Float64,3}, C, nbf5)
+
+    C_nbf5 = @view C[1:end, 1:nbf5]
+
+    @tullio b_pnl[p, n, l] := C_nbf5[m, p] * b_mnl[m, n, l]
+    @tullio b_pql[p, q, l] := C_nbf5[n, q] * b_pnl[p, n, l]
+    b_pnl = nothing
+    @tullio I_MO[p, q, s, l] := b_pql[p, q, R] * b_pql[s, l, R]
+    b_pql = nothing
 
     return I_MO
 end

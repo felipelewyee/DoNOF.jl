@@ -46,7 +46,7 @@ function fchk(filename, p, bset, jobtype, E_t, elag, n, C)
             elseif l > 4
                 println("Warning: l>4, incorrect order in fchk")
             else
-                Cnew[i+1:i+ori, 1:end] = C[i+1:i+ori, 1:end]
+                Cnew[(i+1):(i+ori), 1:end] = C[(i+1):(i+ori), 1:end]
             end
             i += ori
         end
@@ -54,9 +54,9 @@ function fchk(filename, p, bset, jobtype, E_t, elag, n, C)
 
     gb_path = pathof(GaussianBasis)
     coef = []
-    for atom in split(p.mol[1:end-1], "\n")
+    for atom in split(p.mol[1:(end-1)], "\n")
         symbol = split(atom)[1]
-        f = open(gb_path[1:end-20] * "lib/" * bset.name * ".gbs", "r")
+        f = open(gb_path[1:(end-20)] * "lib/" * bset.name * ".gbs", "r")
         found = false
         while !found
             line = readline(f)
@@ -96,7 +96,7 @@ function fchk(filename, p, bset, jobtype, E_t, elag, n, C)
     i = 0
     for iatom = 1:bset.natoms
         nshells_atom = bset.shells_per_atom[iatom]
-        shells2atom[i+1:i+nshells_atom] .= iatom
+        shells2atom[(i+1):(i+nshells_atom)] .= iatom
         i += nshells_atom
     end
 
