@@ -12,6 +12,8 @@ using Optim
 using GaussianBasis
 using FileIO, JLD2
 
+using FiniteDiff
+
 include("io.jl")
 include("param.jl")
 include("integrals.jl")
@@ -23,6 +25,6 @@ include("postpnof.jl")
 include("energy.jl")
 include("output.jl")
 include("grads.jl")
-#include("FiniteDifferences.jl")
+include("hess.jl")
 
 end # module
