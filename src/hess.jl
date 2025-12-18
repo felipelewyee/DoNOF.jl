@@ -4,7 +4,8 @@ const ANGSTROM_TO_BOHR = 1.8897261246
 function freq(mol::String, bset_ref, p_ref)
 
     # Move coordinates so center of mass is at origin
-    mt, cm = center_of_mass(bset_ref)
+    bset, _ = DoNOF.molecule(mol, bset_ref.name, spherical = true)
+    mt, cm = center_of_mass(bset)
     spin_mult, symbols, coords = string_to_xyz(mol, cm)
     mol_at_cm = xyz_data_to_string(spin_mult, symbols, coords)
 
@@ -71,6 +72,7 @@ function freq(mol::String, bset_ref, p_ref)
     output_freqs(symbols, coords, bset, hess_purified)
     freq_to_molden(symbols, coords, bset, hess_purified, p_ref.title*".molden")
 
+
     return Symmetric(hess_purified)
 
 end
@@ -109,7 +111,9 @@ function center_of_mass(bset)
 
     masses = [a.mass for a in bset.atoms]
     mt = sum(masses)
+
     cm = sum(bset.atoms[i].mass .* bset.atoms[i].xyz for i = 1:bset.natoms) ./ mt
+
     return mt, cm
 
 end
