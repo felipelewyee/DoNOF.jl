@@ -68,7 +68,8 @@ function freq(mol::String, bset_ref, p_ref)
     P = Id - U * U'
     hess_purified = Symmetric(P * hess_mass * P)
 
-    freq_to_molden(symbols, coords, bset, Symmetric(hess_purified), p_ref.title*".molden")
+    output_freqs(symbols, coords, bset, hess_purified)
+    freq_to_molden(symbols, coords, bset, hess_purified, p_ref.title*".molden")
 
     return Symmetric(hess_purified)
 
@@ -154,11 +155,41 @@ function string_to_xyz(mol::String, xyz)
     return spin_mult, symbols, coords
 end
 
+function output_freqs(symbols, coords, bset, hess)
+
+    vals, vecs = eigen(hess)
+
+    println("======== Frequencies Calculation ========\n")
+    vals[abs.(vals) .< 1e-1] .= 0
+
+        println("Atomic Coordinates in Angstroms")
+        println("===============================")
+        for iA = 1:bset.natoms
+            @printf(
+                "%s     % .10f  % .10f  % .10f\n",
+                symbols[iA],
+                coords[3*(iA-1)+1]*BOHR_TO_ANGSTROM,
+                coords[3*(iA-1)+2]*BOHR_TO_ANGSTROM,
+                coords[3*(iA-1)+3]*BOHR_TO_ANGSTROM
+            )
+        end
+	println("\nFrequencies (cm^-1)")
+	println("====================")
+        for v in vals
+            freq = sqrt(abs(v)) .* 5140.487143921527
+            if (v < 0.0)
+                freq = -freq
+	    end
+            @printf("% 16.8f\n", freq)
+        end
+        println()
+
+end
+
 function freq_to_molden(symbols, coords, bset, hess, filename)
 
     vals, vecs = eigen(hess)
 
-    println("freq^2")
     vals[abs.(vals) .< 1e-1] .= 0
 
     open(filename, "w") do io
@@ -182,12 +213,11 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
         println(io, "[END]")
         println(io, "[FREQ]")
         for v in vals
-            if (v >= 0.0)
-                freq = sqrt(v) .* 5140.487143921527
-            else
-                freq = -sqrt(abs(v)) .* 5140.487143921527
-            end
-            @printf(io, "        % .10f", freq)
+            freq = sqrt(abs(v)) .* 5140.487143921527
+            if (v < 0.0)
+                freq = -freq
+	    end
+            @printf(io, "% 16.8f", freq)
             println(io)
         end
 
@@ -222,5 +252,7 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
         end
 
     end
+    
+    println("Normal Vibrational Modes have been written in $filename")
 
 end
