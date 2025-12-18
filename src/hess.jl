@@ -18,10 +18,12 @@ function freq(mol::String, bset_ref, p_ref)
     hess_fin = FiniteDiff.finite_difference_jacobian(
         c -> g_linearized(c, symbols, spin_mult, C_ref, n_ref, bset, p_ref),
         coords,
+        absstep = 1e-3,
     )
     #hess_fin = FiniteDiff.finite_difference_hessian(
     #    c -> e_linearized(c, symbols, spin_mult, C_ref, n_ref, bset, p_ref),
     #    coords,
+    #    absstep=1e-3
     #)    
 
     # Mass-weighted hessian (h_ij/sqrt(m_iA m_jA))
@@ -157,11 +159,7 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
     vals, vecs = eigen(hess)
 
     println("freq^2")
-    println(vals)
-    #vals[vals .< 1e-2] .= 0
-    vals[abs.(vals) .< 1e-2] .= 0
-
-    vals = sqrt.(vals) .* 2194.746
+    vals[abs.(vals) .< 1e-1] .= 0
 
     open(filename, "w") do io
 
@@ -184,10 +182,13 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
         println(io, "[END]")
         println(io, "[FREQ]")
         for v in vals
-            #if(v > -500)
-            @printf(io, "        % .10f", v)
+            if (v >= 0.0)
+                freq = sqrt(v) .* 5140.487143921527
+            else
+                freq = -sqrt(abs(v)) .* 5140.487143921527
+            end
+            @printf(io, "        % .10f", freq)
             println(io)
-            #end
         end
 
         println(io, "[FR-COORD]")
@@ -206,7 +207,6 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
         println(io, "[FR-NORM-COORD]")
         j = 0
         for (i, v) in enumerate(vals)
-            #if(v > -500)
             j = j + 1
             println(io, "vibration $j")
             for iA = 1:bset.natoms
@@ -219,7 +219,6 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
                 )
                 println(io)
             end
-            #end
         end
 
     end

@@ -26,5 +26,6 @@ include("energy.jl")
 include("output.jl")
 include("grads.jl")
 include("hess.jl")
+include("optgeo.jl")
 
 end # module
