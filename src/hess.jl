@@ -164,7 +164,7 @@ function output_freqs(symbols, coords, bset, hess)
     vals, vecs = eigen(hess)
 
     println("======== Frequencies Calculation ========\n")
-    vals[abs.(vals) .< 1e-1] .= 0
+    vals[abs.(vals) .< 1e-2] .= 0
 
         println("Atomic Coordinates in Angstroms")
         println("===============================")
@@ -182,9 +182,10 @@ function output_freqs(symbols, coords, bset, hess)
         for v in vals
             freq = sqrt(abs(v)) .* 5140.487143921527
             if (v < 0.0)
-                freq = -freq
+                @printf("% 16.8f I\n", freq)
+	    else
+                @printf("% 16.8f\n", freq)
 	    end
-            @printf("% 16.8f\n", freq)
         end
         println()
 
@@ -194,7 +195,7 @@ function freq_to_molden(symbols, coords, bset, hess, filename)
 
     vals, vecs = eigen(hess)
 
-    vals[abs.(vals) .< 1e-1] .= 0
+    vals[abs.(vals) .< 1e-2] .= 0
 
     open(filename, "w") do io
 
