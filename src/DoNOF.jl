@@ -38,7 +38,7 @@ mol = """
  H  0.0000  -0.751  -0.485
 """
 
-@compile_worload begin
+@compile_workload begin
 bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 
 p.ipnof = 8
