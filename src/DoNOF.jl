@@ -39,6 +39,7 @@ mol = """
 """
 
 @compile_workload begin
+redirect_stdout(devnull) do
 bset,p = DoNOF.molecule(mol,"cc-pvdz",spherical=true)
 
 p.ipnof = 8
@@ -47,6 +48,7 @@ p.ista = 0
 p.maxit = 2
 
 DoNOF.energy(bset,p)
+end
 end
 
 end
