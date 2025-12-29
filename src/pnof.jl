@@ -1145,10 +1145,10 @@ function ocupacion_softmax(gamma, no1, ndoc, nalpha, nv, nbf5, ndns, ncwo, HighS
 
         den = 1 + sum(exp_gamma_pi)
 
-        n[i] = 1 / den
+        n[no1+i] = 1 / den
         n_pi .= exp_gamma_pi / den
 
-        dn_g_dgamma_pi = @view dn_dgamma[i, llg:ndoc:ulg]
+        dn_g_dgamma_pi = @view dn_dgamma[no1 + i, llg:ndoc:ulg]
         dn_g_dgamma_pi .= - n[i] * n_pi
 
         dn_pi_dgamma_pi = @view dn_dgamma[ll:ndoc:ul, llg:ndoc:ulg]

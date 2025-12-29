@@ -120,7 +120,7 @@ function ENERGY1r(C, n, H, I, cj12, ck12, p)
         elag, Hmat = compute_Lagrange2(C, n, H, I, cj12, ck12, p.nalpha, p.nbeta)
         E = computeE_elec(Hmat, n, elag, p)
     else
-        J, K = computeJKj(C, I, b_mnl, p)
+        J, K = computeJKj(C, I, p)
 
         F = computeF_RC(J, K, n, H, cj12, ck12, p)
 

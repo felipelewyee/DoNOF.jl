@@ -69,7 +69,7 @@ function order_subspaces(old_C, old_n, elag, H, I, p)
     end
 
     #Sort ndoc subspaces
-    elag_diag = diag(elag)[(p.no1+1):p.ndoc]
+    elag_diag = diag(elag)[(p.no1+1):p.nbeta]
     sort_idx = sortperm(elag_diag)
     C[1:p.nbf, 1:p.no1] = old_C[1:p.nbf, 1:p.no1]
     n[1:p.no1] = old_n[1:p.no1]

@@ -92,20 +92,9 @@ end
 
 ######################################### J_mn^(j) K_mn^(j) #########################################
 
-function computeJKj(C, I, b_mnl, p)
+function computeJKj(C, I::Array{Float64,4}, p)
 
-    if (p.RI)
-        J, K = JKj_RI(C, b_mnl, p.nbf, p.nbf5, p.nbfaux)
-    else
-        J, K = JKj_Full(C, I, p.nbf, p.nbf5)
-    end
-    return J, K
-
-end
-
-#########################################
-
-function JKj_Full(C, I, nbf, nbf5)
+    nbf5 = p.nbf5
 
     Cnbf5 = view(C, :, 1:nbf5)
 
@@ -117,7 +106,9 @@ function JKj_Full(C, I, nbf, nbf5)
 
 end
 
-function JKj_RI(C, b_mnl, nbf, nbf5, nbfaux)
+function computeJKj(C, b_mnl::Array{Float64,3}, p)
+
+    nbf5 = p.nbf5
 
     Cnbf5 = view(C, :, 1:nbf5)
 
